@@ -6,3 +6,4 @@ tm/*.db
 benchmark.json
 .DS_Store
 config/ollama_cache.json
+tmpe02/
