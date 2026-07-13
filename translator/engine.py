@@ -1710,7 +1710,7 @@ def translate_fast(fpath: Path, cfg: Config,
     # NOTE: --force skips TM reads to avoid stale cached data poisoning re-runs
     timer.start("TM")
     tm_hits = 0
-    if cfg.use_tm:
+    if cfg.use_tm and not cfg.force:
         _get_tm().execute("BEGIN")
         for i in range(n):
             cached = tm_lookup(eng_texts[i], commit=False)
