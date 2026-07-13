@@ -1,0 +1,79 @@
+1
+00:00:01,000 --> 00:00:03,000
+Yes.
+
+2
+00:00:04,000 --> 00:00:06,000
+No.
+
+3
+00:00:07,000 --> 00:00:08,000
+Go.
+
+4
+00:00:09,000 --> 00:00:10,500
+Wait.
+
+5
+00:00:11,000 --> 00:00:14,000
+General, the enemy is at the gate.
+
+6
+00:00:15,000 --> 00:00:17,500
+Yes, General.
+
+7
+00:00:18,000 --> 00:00:21,000
+Colonel, what are your orders?
+
+8
+00:00:22,000 --> 00:00:25,000
+Captain, report to the command post.
+
+9
+00:00:26,000 --> 00:00:29,000
+Lieutenant, take your squad and hold the bridge.
+
+10
+00:00:30,000 --> 00:00:33,000
+Commander, the fleet is ready.
+
+11
+00:00:34,000 --> 00:00:37,000
+Sect Leader, the demon is approaching.
+
+12
+00:00:38,000 --> 00:00:41,000
+Young Master, your elder brother is waiting.
+
+13
+00:00:42,000 --> 00:00:45,000
+Elder Sister, please forgive me.
+
+14
+00:00:46,000 --> 00:00:49,000
+Sir, yes sir!
+
+15
+00:00:50,000 --> 00:00:53,000
+Young Lady, the carriage is ready.
+
+16
+00:00:54,000 --> 00:00:57,000
+Master, the cultivation hall is prepared.
+
+17
+00:00:58,000 --> 00:01:01,000
+Disciple, you must train harder.
+
+18
+00:01:02,000 --> 00:01:05,000
+Immortal, please accept this offering.
+
+19
+00:01:06,000 --> 00:01:09,000
+General, thank you for your service.
+
+20
+00:01:10,000 --> 00:01:13,000
+I said, don't ever let me see you again.

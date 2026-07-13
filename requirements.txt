@@ -1,0 +1,6 @@
+pysrt>=1.1.2
+torch>=2.6.0
+transformers>=4.45.0
+sentencepiece>=0.2.0
+sacremoses>=0.0.53
+requests>=2.31.0

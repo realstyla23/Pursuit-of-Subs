@@ -1,0 +1,48 @@
+{
+  "General": {
+    "default": "General",
+    "acceptable": ["Generalin"]
+  },
+  "Colonel": "Oberst",
+  "Major": "Major",
+  "Lieutenant": "Leutnant",
+  "Sergeant": "Unteroffizier",
+  "Commander": "Kommandant",
+  "Admiral": "Admiral",
+  "Sir": "mein Herr",
+  "Sect": "Sekte",
+  "Sect Leader": "Sektenführer",
+  "Disciple": "Schüler",
+  "Cultivation": "Kultivierung",
+  "Immortal": "Unsterblicher",
+  "Demon": "Dämon",
+  "young master": "Junger Herr",
+  "elder brother": "älterer Bruder",
+  "elder sister": "ältere Schwester",
+  "young lady": "junge Dame",
+  "sect leader": "Sektenführer",
+  "head disciple": "Hauptschüler",
+  "master": "Meister",
+  "martial brother": "Kampfbruder",
+  "martial sister": "Kampfschwester",
+
+  "Father": "Vater",
+  "Mother": "Mutter",
+  "Your Lordship": "Eure Lordschaft",
+  "Your Ladyship": "Eure Ladyschaft",
+  "Your Highness": "Eure Hoheit",
+  "Your Majesty": "Eure Majestät",
+  "Your Excellency": "Eure Exzellenz",
+  "Your Honor": "Euer Ehren",
+  "blades": "Klingen",
+  "Blades": "Klingen",
+
+  "Captain": {
+    "default": "Hauptmann",
+    "contexts": {
+      "military": "Hauptmann",
+      "ship": "Kapitän",
+      "vehicle": "Kapitän"
+    }
+  }
+}
