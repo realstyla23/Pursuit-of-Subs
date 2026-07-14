@@ -2572,7 +2572,7 @@ def load_polisher(cfg: Config, model_override: str | None = None):
         "stream": False,
         "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 16, "keep_alive": "30m"},
     }
-    result = _ollama_chat(session, chat_url, payload, timeout=30)
+    result = _ollama_chat(session, chat_url, payload, timeout=120)
     if result is None:
         print("FAILED", flush=True)
         return None
