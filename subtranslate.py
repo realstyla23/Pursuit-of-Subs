@@ -47,8 +47,8 @@ def main():
                    help="API key for proxy. Falls back to PROXY_API_KEY env var.")
     p.add_argument("--polish-model", default="qwen2.5:7b",
                    help="Ollama model used for polish mode (default: qwen2.5:7b)")
-    p.add_argument("--polish-parallel", type=int, default=1,
-                   help="Number of polish batches to run in parallel (default: 1, max 3 for small models)")
+    p.add_argument("--polish-parallel", type=int, default=2,
+                   help="Number of polish batches to run in parallel (default: 2)")
     p.add_argument("--gui", action="store_true",
                    help="Launch the PySide6 graphical interface")
     p.add_argument("--web-gui", action="store_true",
