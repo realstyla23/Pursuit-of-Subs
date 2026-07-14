@@ -1132,7 +1132,7 @@ def qa_report(
     srt_path: Path,
     eng_srt_path: Path,
     glossary: dict,
-    names: dict,
+    names: list[str],
     spotcheck_lines: int = 50,
 ) -> dict:
     """Scan the first spotcheck_lines of German output and flag issues.
@@ -1161,12 +1161,7 @@ def qa_report(
         if default:
             gloss_lookup[k.lower()] = (default.lower(), [a.lower() for a in acceptable])
 
-    name_set = set()
-    for k, v in names.items():
-        if isinstance(v, str):
-            name_set.add(v.lower())
-        elif isinstance(v, list):
-            name_set.update(x.lower() for x in v)
+    name_set = set(n.lower() for n in names)
 
     errors = 0
     warnings = 0
@@ -1200,14 +1195,17 @@ def qa_report(
                             f"  Line {i+1}: '{eng_term}' -> '{ger_term}' missing in German output"
                         )
 
-        # 2. Name preservation
+        # 2. Name preservation — names should survive translation unchanged
         ger_lower = ger_text.lower()
-        for name in name_set:
-            if re.search(r'(?<!\w)' + re.escape(name) + r'(?!\w)', ger_lower):
-                warnings += 1
-                details.append(
-                    f"  Line {i+1}: Name '{name}' appears untranslated in German"
-                )
+        if eng_text:
+            for name in name_set:
+                name_in_en = re.search(r'(?<!\w)' + re.escape(name) + r'(?!\w)', eng_text)
+                name_in_de = re.search(r'(?<!\w)' + re.escape(name) + r'(?!\w)', ger_lower)
+                if name_in_en and not name_in_de:
+                    errors += 1
+                    details.append(
+                        f"  Line {i+1}: Name '{name}' present in English but missing from German"
+                    )
 
         # 3. Line length
         if visible_chars > 42:
