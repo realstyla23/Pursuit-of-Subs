@@ -2606,7 +2606,7 @@ def load_polisher(cfg: Config, model_override: str | None = None):
     print("OK", flush=True)
     return session, chat_url, model, None
 
-SUSPICIOUS_THRESHOLD = 4
+SUSPICIOUS_THRESHOLD = 2
 
 
 def find_suspicious_lines(eng_texts: list[str], ger_texts: list[str],
@@ -2793,6 +2793,12 @@ def translate_polish(fpath: Path, cfg: Config,
             "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
             "- Never merge two speakers into one line\n"
             "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
+            "- Fix German grammar specifically:\n"
+            "  * Fix adjective declension to match article/preposition (e.g. 'mit feine Augen' -> 'mit feinen Augen')\n"
+            "  * Fix separable verb prefixes in zu-infinitives (e.g. 'um es zu fangen' -> 'um es aufzufangen')\n"
+            "  * Fix compound word errors (e.g. 'Generalfeind' -> 'General des Feindes')\n"
+            "  * Fix word order: verb must be second position in main clauses\n"
+            "  * Fix garbled constructions (e.g. 'Die Fan Das Paar' -> 'Das Ehepaar Fan')\n"
             "- Produce natural spoken German, as if written by a native speaker\n"
             "- Keep subtitle length appropriate\n"
             + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
