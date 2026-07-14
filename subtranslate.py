@@ -16,6 +16,8 @@ from translator import (
     run_test, run_benchmark, run_regression,
     _checkpoint_path,
     generate_glossary, merge_glossary_auto,
+    seconv_fix_timing, qa_report,
+    load_glossary, load_names,
 )
 
 
@@ -62,6 +64,19 @@ def main():
                    help="With --merge-glossary: prompt per new entry (default: auto-merge all).")
     p.add_argument("--dry-run", action="store_true",
                    help="With --merge-glossary: show diff without writing.")
+
+    # Auto-glossary + QA flags
+    p.add_argument("--auto-glossary", action="store_true",
+                   help="Before each file: extract domain terms, auto-merge into glossary, "
+                        "then translate with updated glossary.")
+    p.add_argument("--fix-timing", action="store_true",
+                   help="After translation, run seconv --fix-common-errors on output SRT.")
+    p.add_argument("--fix-aggressive", action="store_true",
+                   help="Run seconv fix pass twice to resolve stubborn overlap issues.")
+    p.add_argument("--qa-report", action="store_true",
+                   help="After translation, print per-episode QA summary (first N lines).")
+    p.add_argument("--qa-spotcheck-lines", type=int, default=50,
+                   help="Number of leading lines to scan for --qa-report (default: 50).")
 
     a = p.parse_args()
 
@@ -137,6 +152,21 @@ def main():
             return
 
         for f in files:
+            # --auto-glossary: extract, merge, then translate with updated glossary
+            if a.auto_glossary:
+                print(f"  [auto-glossary] Extracting terms from {f.name}...", flush=True)
+                glossary_focus = a.glossary_focus or (
+                    "butchery trades and meat processing, "
+                    "matrilocal marriage customs (ruzhu), "
+                    "Qing-style military ranks and titles, "
+                    "traditional medicine and herbal dosages, "
+                    "court factions and rebellion terminology"
+                )
+                generate_glossary([f], cfg, focus_topics=glossary_focus)
+                added = merge_glossary_auto(dry_run=False)
+                if added:
+                    print(f"  [auto-glossary] {added} new term(s) merged")
+
             out = output_path_for(f)
             if cfg.mode == "fast":
                 has_checkpoint = _checkpoint_path(out).exists() if cfg.resume else False
@@ -166,6 +196,22 @@ def main():
                     continue
                 translate_llm(f, cfg)
                 translate_polish(f, cfg, polish_model=cfg.polish_model)
+
+        # Post-processing: timing fix + QA report
+        if a.fix_timing or a.fix_aggressive:
+            seconv_fix_timing(out, aggressive=a.fix_aggressive)
+
+        if a.qa_report:
+            result = qa_report(
+                out, f,
+                glossary=load_glossary(),
+                names=load_names(),
+                spotcheck_lines=a.qa_spotcheck_lines,
+            )
+            print(f"  [QA] {f.name} -> {result['status']} "
+                  f"({result['errors']} err, {result['warnings']} warn)")
+            for d in result["details"]:
+                print(d)
 
     except KeyboardInterrupt:
         print("\nInterrupted by user.", flush=True)
