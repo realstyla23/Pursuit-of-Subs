@@ -45,6 +45,10 @@ def main():
                    help="OpenAI-compatible proxy URL (e.g. http://127.0.0.1:6446). Falls back to PROXY_BASE_URL env var.")
     p.add_argument("--proxy-api-key",
                    help="API key for proxy. Falls back to PROXY_API_KEY env var.")
+    p.add_argument("--polish-model", default="qwen2.5:7b",
+                   help="Ollama model used for polish mode (default: qwen2.5:7b)")
+    p.add_argument("--polish-parallel", type=int, default=2,
+                   help="Number of polish batches/files to run in parallel (default: 2)")
     p.add_argument("--gui", action="store_true",
                    help="Launch the PySide6 graphical interface")
     p.add_argument("--web-gui", action="store_true",
@@ -131,6 +135,8 @@ def main():
         use_tm=a.cache or a.ignore_tm,
         proxy_base_url=a.proxy_base_url or "",
         proxy_api_key=a.proxy_api_key or "",
+        polish_model=a.polish_model,
+        polish_parallel=a.polish_parallel,
     )
 
     try:
@@ -178,7 +184,7 @@ def main():
                 translate_fast(f, cfg)
 
             elif cfg.mode == "polish":
-                translate_polish(f, cfg)
+                translate_polish(f, cfg, polish_model=cfg.polish_model)
 
             elif cfg.mode == "full":
                 has_checkpoint = _checkpoint_path(out).exists() if cfg.resume else False
@@ -188,7 +194,7 @@ def main():
                     if cfg.resume and not has_checkpoint:
                         print(f"  No checkpoint for {f.name}, starting fresh")
                     translate_fast(f, cfg)
-                translate_polish(f, cfg)
+                translate_polish(f, cfg, polish_model=cfg.polish_model)
 
             elif cfg.mode == "llm":
                 if out.exists() and not cfg.force:

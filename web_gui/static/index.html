@@ -206,12 +206,12 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
           <input type="radio" name="mode" value="full" checked>
           <span class="mode-label">Full</span>
           <span class="mode-badge">&#9733; Recommended</span>
-          <span class="mode-desc">NLLB + Deepseek polish</span>
+          <span class="mode-desc">NLLB + LLM polish</span>
         </label>
         <label class="mode-option">
           <input type="radio" name="mode" value="polish">
           <span class="mode-label">Polish</span>
-          <span class="mode-desc">Deepseek on existing</span>
+          <span class="mode-desc">LLM on existing</span>
         </label>
         <label class="mode-option">
           <input type="radio" name="mode" value="regression">
@@ -229,6 +229,18 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <input type="number" id="batchSize" value="64" min="1" max="512" title="Lines per NLLB batch">
         <label>Beams:</label>
         <input type="number" id="numBeams" value="4" min="1" max="8" title="NLLB beam search width">
+        <label>Model:</label>
+        <select id="polishModelSelect">
+          <option value="gemma4:e4b">gemma4 (quality, 9.6 GB)</option>
+          <option value="qwen2.5:7b">qwen2.5 (fast, 4.7 GB)</option>
+          <option value="deepseek-v4-flash-free">DeepSeek (proxy)</option>
+        </select>
+        <label>Parallel:</label>
+        <select id="polishParallelSelect">
+          <option value="1">1 (sequential)</option>
+          <option value="2" selected>2 (balanced)</option>
+          <option value="3">3 (fast)</option>
+        </select>
         <div class="full-row checkbox-row">
           <input type="checkbox" id="resumeCheck">
           <label for="resumeCheck">Resume checkpoints</label>
@@ -456,30 +468,29 @@ $('browseFolderBtn').addEventListener('click', function() {
 });
 
 function uploadFile(fileObj) {
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var content = e.target.result;
-    fetch('/api/upload', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name: fileObj.name, content: content})
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.path) {
-        addFile(d.path, d.size || fileObj.size);
-      } else {
-        logLine('[ERROR] Upload failed: ' + (d.error || 'unknown'), 'error');
-      }
-    })
-    .catch(function(err) {
-      logLine('[ERROR] Upload error: ' + err.message, 'error');
+  var fd = new FormData();
+  fd.append('file', fileObj);
+  fetch('/api/upload', {
+    method: 'POST',
+    body: fd
+  })
+  .then(function(r) {
+    var ct = r.headers.get('content-type') || '';
+    if (ct.indexOf('application/json') >= 0) return r.json();
+    return r.text().then(function(t) {
+      throw new Error('Server returned ' + r.status + ' (' + t.slice(0, 200) + ')');
     });
-  };
-  reader.onerror = function() {
-    logLine('[ERROR] Failed to read file: ' + fileObj.name, 'error');
-  };
-  reader.readAsText(fileObj, 'UTF-8');
+  })
+  .then(function(d) {
+    if (d.path) {
+      addFile(d.path, d.size || fileObj.size);
+    } else {
+      logLine('[ERROR] Upload failed: ' + (d.error || 'unknown'), 'error');
+    }
+  })
+  .catch(function(err) {
+    logLine('[ERROR] Upload error: ' + err.message, 'error');
+  });
 }
 
 function addFile(path, size) {
@@ -676,8 +687,8 @@ function connectSSE() {
     var d = JSON.parse(e.data);
     curStepLabel.textContent = d.step;
     var s = d.step.toLowerCase();
-    if (s.indexOf('deepseek') >= 0 || s.indexOf('ollama') >= 0) {
-      $('statOllama').textContent = 'Ollama: Active';
+    if (s.indexOf('polishing') >= 0) {
+      $('statOllama').textContent = s.indexOf('deepseek') >= 0 ? 'Proxy: Active' : 'Ollama: Active';
     } else if (s.indexOf('nllb') >= 0) {
       $('statOllama').textContent = 'Ollama: \u2014';
     } else if (d.step === 'Complete') {
@@ -760,7 +771,9 @@ startBtn.addEventListener('click', function() {
     batch_size: batchSize,
     num_beams: numBeams,
     resume: resume,
-    output_dir: outputDir
+    output_dir: outputDir,
+    polish_model: $('polishModelSelect').value,
+    polish_parallel: parseInt($('polishParallelSelect').value) || 2
   });
 
   results = [];

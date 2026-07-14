@@ -68,7 +68,8 @@ def _format_event(idx: int, ev: dict) -> str:
 # ---------------------------------------------------------------------------
 
 def _worker(files: list[Path], cfg: Config, output_dir: str | None,
-            mode: str, polish_model: str, ollama_host: str, resume: bool):
+            mode: str, polish_model: str, polish_parallel: int,
+            ollama_host: str, resume: bool):
     global _job_running
     try:
         total_files = len(files)
@@ -110,12 +111,20 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 proxy_base_url=cfg.proxy_base_url,
                 proxy_api_key=cfg.proxy_api_key,
                 mode="fast",
+                polish_parallel=polish_parallel,
             )
 
             # Pre-read SRT for live preview
             import pysrt
-            eng_subs = pysrt.open(str(fpath), encoding="utf-8")
-            eng_texts = [s.text for s in eng_subs]
+            try:
+                eng_subs = pysrt.open(str(fpath), encoding="utf-8")
+                eng_texts = [s.text for s in eng_subs]
+            except Exception as e:
+                push_event("log", {"message": f"  [SKIP] {fpath.name} (unreadable SRT: {e})",
+                                   "level": "skip"})
+                push_event("file_done", {"name": fpath.name,
+                                         "stats": {"error": f"unreadable SRT: {e}"}})
+                continue
 
             push_event("step_changed", {"step": "Translating (NLLB)"})
 
@@ -160,9 +169,11 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
 
             # Polish pass
             if mode in ("polish", "full"):
-                push_event("step_changed", {"step": "Polishing (Deepseek)"})
+                model_label = polish_model.split(":")[0] if polish_model else "qwen"
+                push_event("step_changed", {"step": f"Polishing ({model_label})"})
                 try:
-                    translate_polish(fpath, file_cfg, nllb_path=out)
+                    translate_polish(fpath, file_cfg, nllb_path=out,
+                                    polish_model=polish_model or None)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Polish error (non-fatal): {e}",
                                        "level": "warn"})
@@ -202,6 +213,27 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
 
 
 # ---------------------------------------------------------------------------
+# Error handlers — always return JSON
+# ---------------------------------------------------------------------------
+
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"error": str(e)}), 400
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "not found"}), 404
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({"error": str(e)}), 405
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({"error": "internal server error"}), 500
+
+
+# ---------------------------------------------------------------------------
 # Routes — API
 # ---------------------------------------------------------------------------
 
@@ -236,12 +268,13 @@ def api_start():
         proxy_api_key=body.get("proxy_api_key", ""),
     )
 
-    polish_model = body.get("polish_model", "subtitle-translator")
+    polish_model = body.get("polish_model", "gemma4:e4b")
+    polish_parallel = body.get("polish_parallel", 2)
     ollama_host = body.get("ollama_host", "http://127.0.0.1:11434")
 
     _worker_thread = threading.Thread(
         target=_worker,
-        args=(file_paths, cfg, output_dir, mode, polish_model, ollama_host, resume),
+        args=(file_paths, cfg, output_dir, mode, polish_model, polish_parallel, ollama_host, resume),
         daemon=True,
     )
     _worker_thread.start()
@@ -370,23 +403,39 @@ def api_open_folder():
 _UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 
 
+def _save_upload(name: str, content: str | bytes, is_bytes: bool = False) -> tuple[Path, int]:
+    """Save an uploaded file preserving the original name, inside a unique batch subdirectory."""
+    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    batch_dir = _UPLOAD_DIR / uuid.uuid4().hex[:8]
+    batch_dir.mkdir(exist_ok=True)
+    dest = batch_dir / name
+    if is_bytes:
+        dest.write_bytes(content)
+    else:
+        dest.write_text(content, encoding="utf-8")
+    return dest.resolve(), dest.stat().st_size
+
+
 @app.route("/api/upload", methods=["POST"])
 def api_upload():
-    body = request.get_json(force=True)
-    name = body.get("name", "")
-    content = body.get("content", "")
-    if not name or not content:
-        return jsonify({"error": "name and content required"}), 400
-    if not name.lower().endswith(".srt"):
-        return jsonify({"error": "only .srt files accepted"}), 400
-
-    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    # Keep original name but ensure uniqueness
-    stem = Path(name).stem
-    safe_name = f"{stem}_{uuid.uuid4().hex[:8]}.srt"
-    dest = _UPLOAD_DIR / safe_name
-    dest.write_text(content, encoding="utf-8")
-    return jsonify({"path": str(dest.resolve()), "size": len(content.encode("utf-8"))})
+    if request.content_type and "json" in request.content_type:
+        body = request.get_json(force=True, silent=True) or {}
+        name = body.get("name", "")
+        content = body.get("content", "")
+        if not name or not content:
+            return jsonify({"error": "name and content required"}), 400
+        if not name.lower().endswith(".srt"):
+            return jsonify({"error": "only .srt files accepted"}), 400
+        path, size = _save_upload(name, content)
+        return jsonify({"path": str(path), "size": size})
+    else:
+        f = request.files.get("file")
+        if not f or not f.filename:
+            return jsonify({"error": "no file provided"}), 400
+        if not f.filename.lower().endswith(".srt"):
+            return jsonify({"error": "only .srt files accepted"}), 400
+        path, size = _save_upload(f.filename, f.read(), is_bytes=True)
+        return jsonify({"path": str(path), "size": size})
 
 
 # ---------------------------------------------------------------------------

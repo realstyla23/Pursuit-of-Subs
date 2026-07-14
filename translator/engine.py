@@ -11,7 +11,7 @@ Modes:
 
 __version__ = "4.3.0"
 
-import argparse, json, os, re, sys, time, warnings, subprocess, shutil
+import argparse, json, os, re, sys, time, warnings, subprocess, shutil, threading
 from dataclasses import dataclass
 from pathlib import Path
 import pysrt
@@ -81,6 +81,7 @@ class Config:
     llm_batch_size: int = 30
     proxy_base_url: str = ""
     proxy_api_key: str = ""
+    polish_parallel: int = 2
 
     def __post_init__(self):
         if not self.proxy_base_url:
@@ -2232,9 +2233,11 @@ class ConversationMemory:
     Tracks which glossary terms and character names appear in recent
     subtitles. Used during Ollama polish to provide scene context.
     Discarded automatically as subtitles advance (max 20 entries).
+    Thread-safe via class-level lock.
     """
     _lines: list[dict] = []
     _MAX = 20
+    _lock: threading.Lock = threading.Lock()
 
     @classmethod
     def feed(cls, en_text: str, de_text: str,
@@ -2248,15 +2251,18 @@ class ConversationMemory:
             n for n in known_names
             if all(p.lower() in en_text.lower() for p in n.split())
         ]
-        cls._lines.append(entry)
-        if len(cls._lines) > cls._MAX:
-            cls._lines.pop(0)
+        with cls._lock:
+            cls._lines.append(entry)
+            if len(cls._lines) > cls._MAX:
+                cls._lines.pop(0)
 
     @classmethod
     def get_context(cls) -> dict:
         names: set[str] = set()
         terms: set[str] = set()
-        for e in cls._lines:
+        with cls._lock:
+            lines_copy = list(cls._lines)
+        for e in lines_copy:
             names.update(e["active_names"])
             terms.update(e["active_terms"])
         return {"names": sorted(names), "terms": sorted(terms)}
@@ -2273,7 +2279,8 @@ class ConversationMemory:
 
     @classmethod
     def reset(cls):
-        cls._lines.clear()
+        with cls._lock:
+            cls._lines.clear()
 
     @classmethod
     def build_from_file(cls, eng_texts: list[str], ger_texts: list[str]):
@@ -2533,10 +2540,11 @@ def _ollama_chat(session, url: str, payload: dict, timeout: int = 120, headers: 
 
 def load_polisher(cfg: Config, model_override: str | None = None):
     session = requests.Session()
+    model_name = model_override or cfg.ollama_model
 
-    if cfg.proxy_base_url:
+    if cfg.proxy_base_url and model_name.startswith("deepseek"):
         chat_url = cfg.proxy_base_url.rstrip("/") + "/v1/chat/completions"
-        model = model_override or "deepseek-v4-flash-free"
+        model = model_name
         api_key = cfg.proxy_api_key
         print(f"  Loading proxy polisher ({model})...", end=" ", flush=True)
         payload = {
@@ -2556,7 +2564,7 @@ def load_polisher(cfg: Config, model_override: str | None = None):
             return None
 
     chat_url = f"{cfg.ollama_host}/api/chat"
-    model = model_override or cfg.ollama_model
+    model = model_name
     print(f"  Loading Ollama polisher ({model})...", end=" ", flush=True)
     payload = {
         "model": model,
@@ -2698,7 +2706,7 @@ def translate_polish(fpath: Path, cfg: Config,
     session, chat_url, polish_model_name, proxy_api_key = polisher
     t_start = time.time()
 
-    batch_size = 5
+    batch_size = 10
     ollama_fixes = {}
     n_rejected = 0
     n_cache_hits = 0
@@ -2714,38 +2722,42 @@ def translate_polish(fpath: Path, cfg: Config,
         except Exception as e:
             print(f"  [WARN] Failed to load Ollama cache: {e}", flush=True)
     timer.start("Ollama Batches")
-    for s in range(0, len(suspicious), batch_size):
-        batch_ids = suspicious[s : s + batch_size]
+    total_batches = (len(suspicious) + batch_size - 1) // batch_size
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
+    _cache_lock = threading.Lock()
+    _fixes_lock = threading.Lock()
 
-        # Check cache: skip lines where (EN, NLLB) pair already has polished result
-        cached_results: dict[int, str] = {}
-        uncached_ids: list[int] = []
+    def _submit_batch(s):
+        """Send one batch to the LLM, return (fixes, rejected, cache_hits, all_cached) or (None, ...)."""
+        batch_ids = suspicious[s : s + batch_size]
+        local_fixes = []
+        local_rejected = 0
+        local_cache_hits = 0
+
+        cached_results = {}
+        uncached_ids = []
         for idx in batch_ids:
-            key = (eng_texts[idx], ger_texts[idx])
-            if key in _ollama_cache:
-                cached_results[idx] = _ollama_cache[key]
-                n_cache_hits += 1
-            else:
-                uncached_ids.append(idx)
+            with _cache_lock:
+                key = (eng_texts[idx], ger_texts[idx])
+                if key in _ollama_cache:
+                    cached_results[idx] = _ollama_cache[key]
+                    local_cache_hits += 1
+                else:
+                    uncached_ids.append(idx)
 
         if not uncached_ids:
-            # All lines in this batch were cached — apply directly
             for idx, corr in cached_results.items():
                 if corr != ger_texts[idx]:
                     if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
-                        n_rejected += 1
-                        print(f"    L{idx+1}: rejected (invented content) [cache]", flush=True)
+                        local_rejected += 1
                     else:
-                        ollama_fixes[idx] = corr
-            done = min(s + batch_size, len(suspicious))
-            elapsed = time.time() - t_start
-            print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s  (all cached)]", flush=True)
-            continue
+                        local_fixes.append((idx, corr))
+            return local_fixes, local_rejected, local_cache_hits, True
 
-        # Build contextual XML for uncached lines only
         xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
         mem_ctx = ConversationMemory.get_context_text()
-        full_input = (
+        user_msg = (
             "Improve each German <de> translation inside <current> using context.\n"
             "Rules:\n"
             "- ONLY rewrite the <de> text within <current>, never <previous> or <next>\n"
@@ -2763,7 +2775,7 @@ def translate_polish(fpath: Path, cfg: Config,
         if proxy_api_key is not None:
             payload = {
                 "model": polish_model_name,
-                "messages": [{"role": "user", "content": full_input}],
+                "messages": [{"role": "user", "content": user_msg}],
                 "temperature": 0,
                 "max_tokens": len(batch_ids) * 300,
             }
@@ -2772,7 +2784,7 @@ def translate_polish(fpath: Path, cfg: Config,
         else:
             payload = {
                 "model": polish_model_name,
-                "messages": [{"role": "user", "content": full_input}],
+                "messages": [{"role": "user", "content": user_msg}],
                 "stream": False,
                 "options": {"temperature": 0, "num_ctx": 8192,
                             "num_predict": len(batch_ids) * 300, "keep_alive": "30m"},
@@ -2780,8 +2792,7 @@ def translate_polish(fpath: Path, cfg: Config,
             result = _ollama_chat(session, chat_url, payload, timeout=120)
 
         if result is None:
-            print(f"  [WARN] Skipping batch {s // batch_size + 1}", flush=True)
-            continue
+            return None, local_rejected, local_cache_hits, False
 
         if proxy_api_key is not None:
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -2789,32 +2800,50 @@ def translate_polish(fpath: Path, cfg: Config,
             content = result.get("message", {}).get("content", "")
         parsed = parse_xml(content)
 
-        # Validate: all expected IDs should be present with non-empty content
         for idx in uncached_ids:
             sid = idx + 1
             if sid in parsed and parsed[sid]:
                 corr = parsed[sid]
-                # Store in cache before validation
-                _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
+                with _cache_lock:
+                    _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
                 if corr != ger_texts[idx]:
                     if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
-                        n_rejected += 1
-                        print(f"    L{sid}: rejected (invented content)", flush=True)
+                        local_rejected += 1
                     else:
-                        ollama_fixes[idx] = corr
+                        local_fixes.append((idx, corr))
 
-        # Apply cached results for this batch
         for idx, corr in cached_results.items():
             if corr != ger_texts[idx]:
                 if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
-                    n_rejected += 1
-                    print(f"    L{idx+1}: rejected (invented content) [cache]", flush=True)
+                    local_rejected += 1
                 else:
-                    ollama_fixes[idx] = corr
+                    local_fixes.append((idx, corr))
 
-        elapsed = time.time() - t_start
-        done = min(s + batch_size, len(suspicious))
-        print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s]", flush=True)
+        return local_fixes, local_rejected, local_cache_hits, False
+
+    batch_starts = list(range(0, len(suspicious), batch_size))
+    parallel = getattr(cfg, "polish_parallel", 2) if total_batches > 1 else 1
+    with ThreadPoolExecutor(max_workers=parallel) as executor:
+        futures = {executor.submit(_submit_batch, s): s for s in batch_starts}
+        for future in as_completed(futures):
+            s = futures[future]
+            try:
+                local_fixes, local_rejected, local_cache_hits, all_cached = future.result()
+            except Exception as exc:
+                print(f"  [WARN] Batch at line {s+1} failed: {exc}", flush=True)
+                continue
+            if local_fixes is None:
+                print(f"  [WARN] Skipping batch at line {s+1}", flush=True)
+                continue
+            with _fixes_lock:
+                for idx, corr in local_fixes:
+                    ollama_fixes[idx] = corr
+                n_rejected += local_rejected
+                n_cache_hits += local_cache_hits
+            done = min(s + batch_size, len(suspicious))
+            elapsed = time.time() - t_start
+            tag = "  (all cached)" if all_cached else ""
+            print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s{tag}]", flush=True)
 
     timer.stop("Ollama Batches")
     for idx, new_text in ollama_fixes.items():
@@ -3335,6 +3364,37 @@ def translate_fast_to_texts(fpath: Path, cfg: Config) -> list[str] | None:
     cleanup_subtitles(ger_texts)
 
     return ger_texts
+
+
+def translate_polish_multi(files: list[Path], cfg: Config,
+                           nllb_dir: Path | None = None,
+                           polish_model: str | None = None,
+                           max_workers: int = 3) -> dict[str, bool]:
+    """Run translate_polish on multiple files concurrently.
+    Each file's NLLB output is looked up via output_path_for() or nllb_dir.
+    NOTE: each call to translate_polish resets ConversationMemory,
+    so concurrent calls will race on the shared context. This is acceptable
+    because ConversationMemory is best-effort context, not correctness-critical.
+    Returns dict of filename → success bool.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    results = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {}
+        for fpath in files:
+            nllb_path = (nllb_dir / output_path_for(fpath).name) if nllb_dir else None
+            futures[executor.submit(translate_polish, fpath, cfg,
+                                    nllb_path=nllb_path,
+                                    polish_model=polish_model)] = fpath
+        for future in as_completed(futures):
+            fpath = futures[future]
+            try:
+                ok = future.result()
+                results[fpath.name] = ok
+            except Exception as e:
+                print(f"  [ERROR] Polish failed for {fpath.name}: {e}", flush=True)
+                results[fpath.name] = False
+    return results
 
 
 # (CLI lives in subtranslate.py — this module is import-only)

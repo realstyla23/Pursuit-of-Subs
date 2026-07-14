@@ -1,12 +1,14 @@
 # Subtitle Translator v4
 
-GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with optional Deepseek AI polishing via OpenCode proxy.
+GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with optional LLM polishing (local via Ollama or proxy via DeepSeek).
 
 ## Features
 
 - **Fast** — Batch NLLB-600M translation at ~30 lines/second on an RTX 4060 Ti
-- **Polish** — Deepseek-powered quality pass on suspicious lines via OpenCode proxy
+- **Polish** — LLM quality pass on suspicious lines (Gemma 4 / Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
 - **Full** — Both passes combined for highest quality
+- **Local models** — Gemma 4 E4B (9.6 GB) or Qwen 2.5 7B (4.7 GB) via Ollama, no internet needed
+- **Parallel batches** — Suspicious lines grouped into batches of 10, sent concurrently (2 by default)
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
 - **Glossary** — Domain-specific terminology enforcement
 - **Glossary Automation** — Extract domain terms from source SRTs via DeepSeek, then merge into glossary with dry-run preview
@@ -48,13 +50,19 @@ pip install -r requirements.txt
 # Fast mode (NLLB only) — ~28s per episode
 python subtranslate.py --mode fast --input-dir "path\to\subs"
 
-# Full mode (NLLB + Deepseek proxy polish) — ~80s per episode
+# Full mode (NLLB + LLM polish) — ~80s per episode
 python subtranslate.py --mode full --input-dir "path\to\subs"
+
+# Full with Gemma 4 and 3 parallel batches
+python subtranslate.py --mode full --polish-model gemma4:e4b --polish-parallel 3 --input-dir "path\to\subs"
+
+# Polish-only on existing NLLB output with Gemma 4
+python subtranslate.py --mode polish --polish-model gemma4:e4b --input-dir "path\to\subs"
 
 # Force re-translate (no TM reads)
 python subtranslate.py --mode fast --force --input-dir "path\to\subs"
 
-# Launch the browser-based web GUI
+# Launch the browser-based web GUI (model dropdown in browser settings)
 python subtranslate.py --web-gui
 # Or double-click launch_web_gui.bat
 ```
@@ -74,6 +82,8 @@ Options:
   --cache               Enable Translation Memory (default: off)
   --proxy-base-url URL  OpenCode proxy URL (default: http://127.0.0.1:6446)
   --proxy-api-key KEY   OpenCode API key (default: oc-efb2bc22...)
+  --polish-model MODEL  Ollama model for polish (default: qwen2.5:7b, or gemma4:e4b)
+  --polish-parallel N   Parallel polish batches (default: 2, max: 3)
   --resume              Resume from checkpoint
   --gui                 Launch PySide6 desktop GUI
   --web-gui             Launch browser-based GUI (Flask + SSE)
@@ -97,8 +107,14 @@ Examples:
 # Fast NLLB-only pass
 python subtranslate.py --mode fast --input-dir "D:\Shows\Season 1"
 
-# Full pipeline: NLLB + Deepseek proxy polish
-python subtranslate.py --mode full --force
+# Full pipeline: NLLB + local Gemma 4 polish
+python subtranslate.py --mode full --force --polish-model gemma4:e4b
+
+# Polish NLLB output with Qwen 2.5 (default)
+python subtranslate.py --mode polish --polish-model qwen2.5:7b
+
+# Fastest polish: Gemma 4 with 3 parallel batches
+python subtranslate.py --mode polish --polish-model gemma4:e4b --polish-parallel 3
 
 # Extract domain glossary from source SRTs
 python subtranslate.py --generate-glossary --input-dir "D:\Shows\Season 1"
@@ -109,7 +125,7 @@ python subtranslate.py --merge-glossary --dry-run
 # Merge into glossary.json
 python subtranslate.py --merge-glossary
 
-# Full auto-pipeline: glossary learning + NLLB + DeepSeek polish + QA
+# Full auto-pipeline: glossary learning + NLLB + polish + QA
 python subtranslate.py --mode full --auto-glossary --qa-report --input-dir "D:\Shows\E06"
 
 # Fast pipeline with timing fix and QA
@@ -202,8 +218,11 @@ Source SRT (*.srt)
 └──────────────────────┬──────────────────────┘
                        ▼
 ┌─────────────────────────────────────────────┐
-│ 5. POLISH (Deepseek proxy) [optional]       │
+│ 5. POLISH (LLM — local or proxy) [optional]│
 │    Only suspicious lines sent to LLM        │
+│    Parallel batches (10 lines, 2 workers)   │
+│    Local: Gemma4 / Qwen via Ollama          │
+│    Proxy: DeepSeek via OpenCode proxy       │
 │    Hallucination safeguard filters bad      │
 │    Re-glossary after correction             │
 └──────────────────────┬──────────────────────┘
@@ -302,18 +321,25 @@ Measured on RTX 4060 Ti 16GB (CUDA 12.4), Ryzen 7 5800X, 16GB RAM:
 |---|---|
 | NLLB throughput | 27–32 l/s (num_beams=4) |
 | 763-line episode (fast) | ~27s |
-| Deepseek proxy batch | ~13s per 5-line batch |
-| Full pipeline (fast + polish) | ~72s–2min total |
-| Model | NLLB-200-distilled-600M |
-| Batch size | 64 |
+| DeepSeek proxy batch (5 lines) | ~13s per batch |
+| Qwen 2.5 7B polish (10 lines, parallel=2) | ~1.2s per batch |
+| Gemma 4 E4B polish (10 lines, parallel=2) | ~2–3s per batch |
+| Full pipeline (fast + DeepSeek polish) | ~72s–2min total |
+| Full pipeline (fast + Qwen polish) | ~35–45s total |
+| Full pipeline (fast + Gemma 4 polish) | ~40–55s total |
+| NLLB model | NLLB-200-distilled-600M |
+| Ollama models | qwen2.5:7b (4.7 GB) / gemma4:e4b (9.6 GB) |
+| NLLB batch size | 64 |
 | Beam width | 4 |
-| VRAM usage | ~2–3 GB |
+| NLLB VRAM usage | ~2–3 GB |
+| Ollama VRAM (one model at a time) | ~5–10 GB |
 
 ## Known Limitations
 
 - **EN → DE only** — Hardcoded language pair (NLLB supports 200+ languages, easily configurable)
 - **NLLB short-line hallucination** — Very short lines like "Mom." or "But..." can produce wrong output. Mitigated via `config/short_fragments.json` dictionary
-- **Proxy polish latency** — Each Deepseek proxy request has ~10-15s overhead regardless of batch size
+- **Proxy polish latency** — Each DeepSeek proxy request has ~10-15s overhead regardless of batch size
+- **Gemma 4 VRAM** — Uses ~9.6 GB VRAM; may not fit alongside NLLB on 8 GB GPUs. Qwen 2.5 7B is recommended for 8 GB cards
 - **SRT only** — No ASS/SSA/VTT support
 
 ## Tests
