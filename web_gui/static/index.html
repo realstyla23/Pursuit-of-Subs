@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subtitle Translator v4</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1e1e1e;--bg2:#252525;--bg3:#1a1a1a;--bg4:#121212;--fg:#ddd;--fg2:#aaa;--fg3:#888;--border:#444;--border2:#333;--accent:#4a9eff;--green:#1a6b3c;--green2:#2a8b4c;--green3:#51cf66;--red:#6b1a1a;--red2:#ff6b6b;--yellow:#ffd93d;--purple:#da77f2;--blue:#6bcbff;font-size:13px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;min-height:100vh;overflow-y:scroll}
+.header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.header h1{font-size:15px;font-weight:600;color:var(--fg)}
+.header .version{color:var(--fg3);font-size:11px}
+.content{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:6px;min-height:0}
+.io-row{display:flex;gap:8px;flex-wrap:wrap}
+.input-section{flex:3;min-width:280px}
+.output-section{flex:1;min-width:200px}
+.section-box{border:1px solid var(--border);border-radius:6px;padding:12px}
+.section-box h3{font-size:12px;font-weight:700;color:var(--fg2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.drop-zone{border:2px dashed var(--border);border-radius:6px;padding:20px;text-align:center;color:var(--fg3);font-size:12px;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:8px}
+.drop-zone.dragover{border-color:var(--accent);background:#1a2a40}
+.drop-zone:hover{border-color:#666}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.output-row{display:flex;gap:6px;align-items:center}
+.output-row .path-display{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--fg3);font-size:12px;cursor:default;min-height:32px;line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{background:#2d2d2d;border:1px solid var(--border);border-radius:4px;padding:6px 14px;color:var(--fg);font-size:12px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s;font-family:inherit}
+.btn:hover{background:#3a3a3a;border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:disabled:hover{background:#2d2d2d;border-color:var(--border)}
+.btn-start{background:var(--green);border-color:var(--green2);font-weight:700;font-size:14px;padding:10px 40px;border-radius:6px}
+.btn-start:hover{background:#1f7d46}
+.btn-start:disabled{background:#1a3b2c;border-color:#2a4b3c;color:#555}
+.btn-cancel{background:var(--red);border-color:#8b2a2a;font-weight:700;font-size:14px;padding:10px 40px;border-radius:6px}
+.btn-cancel:hover{background:#7d1f1f}
+.btn-cancel:disabled{background:#3b1a1a;border-color:#4b2a2a;color:#555}
+.btn-small{font-size:11px;padding:4px 10px}
+.queue-section{border:1px solid var(--border);border-radius:6px;padding:0;overflow:hidden;min-height:0}
+.queue-section h3{font-size:12px;font-weight:700;color:var(--fg2);padding:8px 12px 0;text-transform:uppercase;letter-spacing:.5px}
+.queue-table-wrap{overflow-x:auto}
+.queue-table{width:100%;border-collapse:collapse}
+.queue-table th{background:var(--bg2);color:var(--fg2);font-size:11px;font-weight:600;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border2);position:sticky;top:0}
+.queue-table td{padding:4px 10px;font-size:12px;border-bottom:1px solid var(--border2);max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-table tr:last-child td{border-bottom:none}
+.queue-table tr:hover td{background:rgba(255,255,255,.03)}
+.queue-table .col-file{min-width:120px}
+.queue-table .col-size{width:80px;text-align:right;color:var(--fg3)}
+.queue-table .col-progress{width:160px}
+.queue-table .col-status{width:130px}
+.progress-bar-wrap{width:100%;height:18px;background:var(--bg3);border-radius:3px;overflow:hidden;position:relative}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green3));transition:width .3s;border-radius:3px}
+.progress-bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg);font-weight:600;text-shadow:0 0 3px rgba(0,0,0,.8)}
+.status-waiting{color:var(--fg3)}
+.status-running{color:var(--accent);font-weight:600}
+.status-done{color:var(--green3);font-weight:600}
+.status-skipped{color:var(--blue)}
+.status-error{color:var(--red2);font-weight:600}
+.queue-table .empty-msg{text-align:center;color:var(--fg3);font-size:12px;padding:24px}
+.settings-row{display:flex;gap:8px;flex-wrap:wrap}
+.settings-row .mode-section{flex:3;min-width:300px}
+.settings-row .gpu-section{flex:2;min-width:280px}
+.gpu-grid{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr;gap:4px 6px;align-items:center}
+.gpu-grid label{font-size:12px;color:var(--fg2);text-align:right}
+.gpu-grid select,.gpu-grid input[type=number]{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:4px 8px;color:var(--fg);font-size:12px;min-height:28px;width:100%}
+.gpu-grid .full-row{grid-column:1/-1}
+.mode-options{display:flex;gap:16px;flex-wrap:wrap}
+.mode-option{display:flex;flex-direction:column;gap:0;cursor:pointer}
+.mode-option input[type=radio]{display:none}
+.mode-option .mode-label{font-size:12px;font-weight:600;color:var(--fg2);padding:2px 0;transition:color .15s}
+.mode-option input[type=radio]:checked+.mode-label{color:var(--accent)}
+.mode-option .mode-desc{font-size:10px;color:var(--fg3)}
+.mode-option .mode-badge{font-size:9px;color:var(--accent);font-weight:700}
+.checkbox-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.checkbox-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--green2);cursor:pointer}
+.checkbox-row label{font-size:12px;color:var(--fg2);cursor:pointer}
+.progress-section{border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.progress-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.progress-top .cur-file{font-size:14px;font-weight:700;color:var(--accent);flex:1;min-width:120px;white-space:pre-wrap}
+.progress-top .cur-step{font-size:12px;color:var(--fg2)}
+.main-progress{width:100%;height:22px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative;margin-bottom:4px}
+.main-progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green3));transition:width .3s;border-radius:4px}
+.main-progress-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg);font-weight:600}
+.progress-stats{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-bottom:6px}
+.progress-stats span{white-space:nowrap}
+.preview-panel{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.preview-header{font-size:10px;font-weight:700;color:#666;padding:2px 0}
+.preview-box{background:#181818;border:1px solid var(--border2);border-radius:3px;padding:6px 8px;min-height:52px;max-height:80px;overflow-y:auto;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;font-family:'Consolas','Courier New',monospace}
+.preview-box.en{color:#7af}
+.preview-box.de{color:#7f7}
+.preview-box .placeholder{color:var(--fg3);font-style:italic}
+.log-section{border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;min-height:100px;flex:1}
+.log-section h3{font-size:12px;font-weight:700;color:var(--fg2);padding:8px 12px 0;text-transform:uppercase;letter-spacing:.5px}
+.log-wrap{flex:1;min-height:0;position:relative}
+.log-view{position:absolute;inset:0;background:var(--bg4);border:none;border-top:1px solid var(--border2);color:var(--fg);font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.5;padding:6px 10px;resize:none;width:100%;height:100%;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.log-controls{display:flex;gap:6px;padding:4px 12px 8px;flex-shrink:0}
+.log-line-error{color:var(--red2);font-weight:700}
+.log-line-warn{color:var(--yellow)}
+.log-line-skip{color:var(--blue)}
+.log-line-info{color:var(--blue)}
+.log-line-done{color:var(--green3)}
+.log-line-summary{color:var(--purple);font-weight:700}
+.action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.action-row .spacer{flex:1}
+.status-bar{display:flex;gap:0;align-items:center;padding:2px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--fg2);flex-shrink:0;flex-wrap:wrap}
+.status-bar .item{padding:4px 8px;white-space:nowrap}
+.status-bar .sep{color:var(--border);padding:4px 0}
+.status-bar .cuda-yes{color:var(--accent)}
+.status-bar .cuda-no{color:var(--fg3)}
+.status-bar .tm{color:var(--green3)}
+.status-bar .qa{color:var(--yellow)}
+.status-bar .ollama{color:var(--purple)}
+.status-bar .elapsed{color:var(--fg2)}
+.status-bar .msg{flex:1;text-align:right;color:var(--fg3);font-style:italic;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:24px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto}
+.modal-box h2{font-size:18px;text-align:center;margin-bottom:12px}
+.modal-box hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+.modal-box .file-result{margin:8px 0}
+.modal-box .file-result h4{font-size:13px;font-weight:700;margin-bottom:4px;color:var(--fg)}
+.modal-result-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.modal-result-grid .label{color:var(--fg3);text-align:right}
+.modal-result-grid .value{font-weight:700}
+.modal-box .modal-close{margin-top:16px;text-align:center}
+.dir-browser{max-width:640px;max-height:70vh}
+.dir-browser .dir-path{font-size:12px;color:var(--fg2);padding:4px 0 8px;word-break:break-all}
+.dir-browser .dir-up{color:var(--accent);cursor:pointer;padding:4px 0;font-size:12px}
+.dir-browser .dir-up:hover{text-decoration:underline}
+.dir-browser .dir-entry{padding:3px 6px;cursor:pointer;font-size:12px;border-radius:3px;display:flex;align-items:center;gap:6px}
+.dir-browser .dir-entry:hover{background:rgba(255,255,255,.05)}
+.dir-browser .dir-entry .icon{flex-shrink:0}
+.dir-browser .dir-entry .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dir-browser .dir-entry .size{color:var(--fg3);font-size:11px}
+.dir-browser .dir-list{max-height:400px;overflow-y:auto}
+input[type=text],select{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--fg);font-size:12px;min-height:28px}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg3)}
+::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#555}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Subtitle Translator</h1>
+  <span class="version" id="versionLabel">v4.3.0</span>
+</div>
+
+<div class="content">
+  <div class="io-row">
+    <div class="input-section section-box">
+      <h3>Input Files</h3>
+      <div class="drop-zone" id="dropZone">Drop .srt files here</div>
+      <div class="btn-row">
+        <button class="btn" id="browseFilesBtn">Browse Files&hellip;</button>
+        <button class="btn" id="browseFolderBtn">Browse Folder&hellip;</button>
+        <button class="btn" id="clearQueueBtn">Clear Queue</button>
+        <input type="file" id="fileInput" multiple accept=".srt" hidden>
+      </div>
+    </div>
+    <div class="output-section section-box">
+      <h3>Output Folder</h3>
+      <div class="output-row">
+        <span class="path-display" id="outputPathDisplay">Same as input (default)</span>
+        <button class="btn" id="changeOutputBtn">Change&hellip;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="queue-section">
+    <h3>File Queue</h3>
+    <div class="queue-table-wrap">
+      <table class="queue-table" id="queueTable">
+        <thead><tr>
+          <th class="col-file">File</th>
+          <th class="col-size">Size</th>
+          <th class="col-progress">Progress</th>
+          <th class="col-status">Status</th>
+        </tr></thead>
+        <tbody id="queueBody">
+          <tr><td class="empty-msg" colspan="4">No files added yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="mode-section section-box">
+      <h3>Mode</h3>
+      <div class="mode-options" id="modeOptions">
+        <label class="mode-option">
+          <input type="radio" name="mode" value="fast">
+          <span class="mode-label">Fast</span>
+          <span class="mode-desc">Fastest (NLLB only)</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="full" checked>
+          <span class="mode-label">Full</span>
+          <span class="mode-badge">&#9733; Recommended</span>
+          <span class="mode-desc">NLLB + Deepseek polish</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="polish">
+          <span class="mode-label">Polish</span>
+          <span class="mode-desc">Deepseek on existing</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="regression">
+          <span class="mode-label">Regression</span>
+          <span class="mode-desc">Developer testing</span>
+        </label>
+      </div>
+    </div>
+    <div class="gpu-section section-box">
+      <h3>GPU</h3>
+      <div class="gpu-grid">
+        <label>Device:</label>
+        <select id="deviceSelect"><option value="cuda" selected>cuda</option><option value="cpu">cpu</option></select>
+        <label>Batch:</label>
+        <input type="number" id="batchSize" value="64" min="1" max="512" title="Lines per NLLB batch">
+        <label>Beams:</label>
+        <input type="number" id="numBeams" value="4" min="1" max="8" title="NLLB beam search width">
+        <div class="full-row checkbox-row">
+          <input type="checkbox" id="resumeCheck">
+          <label for="resumeCheck">Resume checkpoints</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-top">
+      <span class="cur-file" id="curFileLabel">No file selected</span>
+      <span class="cur-step" id="curStepLabel">Waiting&hellip;</span>
+    </div>
+    <div class="main-progress">
+      <div class="main-progress-fill" id="mainProgressFill" style="width:0%"></div>
+      <div class="main-progress-text" id="mainProgressText">0%</div>
+    </div>
+    <div class="progress-stats">
+      <span id="linesLabel">Lines: 0 / 0</span>
+      <span id="speedLabel">Speed: --</span>
+      <span id="etaLabel">ETA: --</span>
+    </div>
+    <div class="preview-panel">
+      <div class="preview-col">
+        <div class="preview-header">English</div>
+        <div class="preview-box en" id="enPreview"><span class="placeholder">No subtitles yet</span></div>
+      </div>
+      <div class="preview-col">
+        <div class="preview-header">German</div>
+        <div class="preview-box de" id="dePreview"><span class="placeholder"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <h3>Log</h3>
+    <div class="log-wrap">
+      <div class="log-view" id="logView"></div>
+    </div>
+    <div class="log-controls">
+      <button class="btn btn-small" id="saveLogBtn">Save Log&hellip;</button>
+      <button class="btn btn-small" id="clearLogBtn">Clear Log</button>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn btn-start" id="startBtn">START TRANSLATION</button>
+    <button class="btn btn-cancel" id="cancelBtn" disabled>CANCEL</button>
+    <span class="spacer"></span>
+    <button class="btn" id="openOutputBtn">Open Output Folder</button>
+  </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <span class="item cuda-yes" id="statCuda">CUDA &check;</span>
+  <span class="sep">|</span>
+  <span class="item" id="statGpu">GPU --</span>
+  <span class="sep">|</span>
+  <span class="item tm" id="statTm">TM: 0%</span>
+  <span class="sep">|</span>
+  <span class="item qa" id="statQa">QA: 0</span>
+  <span class="sep">|</span>
+  <span class="item ollama" id="statOllama">Ollama: &mdash;</span>
+  <span class="sep">|</span>
+  <span class="item elapsed" id="statElapsed">Elapsed: 00:00</span>
+  <span class="msg" id="statusMsg">Ready</span>
+</div>
+
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal-box">
+    <h2>Translation Complete</h2>
+    <hr>
+    <div id="summaryContent"></div>
+    <hr>
+    <div class="modal-close"><button class="btn" id="summaryCloseBtn">OK</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dirBrowserModal">
+  <div class="modal-box dir-browser">
+    <h2>Browse Directory</h2>
+    <div class="dir-path" id="dirBrowserPath"></div>
+    <div class="dir-up" id="dirBrowserUp" style="display:none">&#8593; Go up</div>
+    <div class="dir-list" id="dirBrowserList"></div>
+    <hr>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn" id="dirBrowserSelectBtn" style="display:none">Select This Folder</button>
+      <button class="btn" id="dirBrowserCloseBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+var fileQueue = [];   // [{path, name, size, status:'waiting'|'running'|'done'|'skipped'|'error', progress:0, stats:null}]
+var results = [];     // [[name, stats], ...]
+var jobRunning = false;
+var startTime = null;
+var elapsedTimer = null;
+var eventSource = null;
+var logAutoScroll = true;
+
+var $ = function(id) { return document.getElementById(id); };
+var dropZone = $('dropZone');
+var fileInput = $('fileInput');
+var queueBody = $('queueBody');
+var curFileLabel = $('curFileLabel');
+var curStepLabel = $('curStepLabel');
+var mainProgressFill = $('mainProgressFill');
+var mainProgressText = $('mainProgressText');
+var linesLabel = $('linesLabel');
+var speedLabel = $('speedLabel');
+var etaLabel = $('etaLabel');
+var enPreview = $('enPreview');
+var dePreview = $('dePreview');
+var logView = $('logView');
+var startBtn = $('startBtn');
+var cancelBtn = $('cancelBtn');
+var outputPathDisplay = $('outputPathDisplay');
+var summaryModal = $('summaryModal');
+var summaryContent = $('summaryContent');
+var dirBrowserModal = $('dirBrowserModal');
+var dirBrowserPath = $('dirBrowserPath');
+var dirBrowserUp = $('dirBrowserUp');
+var dirBrowserList = $('dirBrowserList');
+var dirBrowserSelectBtn = $('dirBrowserSelectBtn');
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' bytes';
+  if (bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function getResultForFile(name) {
+  for (var i = 0; i < results.length; i++) {
+    if (results[i][0] === name) return results[i][1];
+  }
+  return null;
+}
+
+function logLine(msg, level) {
+  var div = document.createElement('div');
+  div.className = 'log-line-' + (level || 'info');
+  div.textContent = msg;
+  logView.appendChild(div);
+  if (logAutoScroll) logView.scrollTop = logView.scrollHeight;
+}
+
+// ---- Status polling ----
+function updateStatus() {
+  fetch('/api/status')
+    .then(function(r) { return r.json(); })
+    .then(function(s) {
+      $('statCuda').textContent = s.cuda_available ? 'CUDA ✓' : 'CPU';
+      $('statCuda').className = 'item ' + (s.cuda_available ? 'cuda-yes' : 'cuda-no');
+      if (s.gpu_total_mb > 0) {
+        $('statGpu').textContent = 'GPU ' + s.gpu_used_mb + ' / ' + s.gpu_total_mb + ' MB';
+      } else {
+        $('statGpu').textContent = 'GPU --';
+      }
+      $('versionLabel').textContent = 'v' + s.version;
+    })
+    .catch(function() {});
+}
+updateStatus();
+setInterval(updateStatus, 5000);
+
+// ---- Drag & drop ----
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  for (var i = 0; i < e.dataTransfer.files.length; i++) {
+    var f = e.dataTransfer.files[i];
+    if (f.name.toLowerCase().endsWith('.srt')) {
+      addFile(f.path || f.name, f.size);
+    }
+  }
+});
+dropZone.addEventListener('click', function() { fileInput.click(); });
+
+// ---- File selection ----
+$('browseFilesBtn').addEventListener('click', function() { fileInput.click(); });
+
+fileInput.addEventListener('change', function() {
+  for (var i = 0; i < fileInput.files.length; i++) {
+    var f = fileInput.files[i];
+    if (f.name.toLowerCase().endsWith('.srt')) {
+      addFile(f.path || f.name, f.size);
+    }
+  }
+  fileInput.value = '';
+});
+
+$('browseFolderBtn').addEventListener('click', function() {
+  currentDirBrowserMode = 'files';
+  dirBrowserSelectBtn.style.display = 'none';
+  browseDir('');
+  dirBrowserModal.classList.add('show');
+});
+
+function addFile(path, size) {
+  var name = path.split(/[\\/]/).pop();
+  if (!name) return;
+  for (var i = 0; i < fileQueue.length; i++) {
+    if (fileQueue[i].path === path) return;
+  }
+  fileQueue.push({path: path, name: name, size: size, status: 'waiting', progress: 0, stats: null});
+  renderQueue();
+}
+
+$('clearQueueBtn').addEventListener('click', function() {
+  if (jobRunning) return;
+  fileQueue.length = 0;
+  results = [];
+  renderQueue();
+});
+
+// ---- Dir browser ----
+var currentDirBrowserMode = 'files'; // 'files' or 'output'
+var currentDirBrowserPath = '';
+
+function browseDir(path) {
+  currentDirBrowserPath = path;
+  var url = '/api/browse' + (path ? '?path=' + encodeURIComponent(path) : '');
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dirBrowserPath.textContent = path || 'Computer';
+      if (path) {
+        dirBrowserUp.style.display = 'block';
+        dirBrowserUp.onclick = function() { browseDir(data.parent); };
+        if (currentDirBrowserMode === 'output') {
+          dirBrowserSelectBtn.style.display = 'inline-block';
+          dirBrowserSelectBtn.onclick = function() { selectOutputDir(path); };
+        } else {
+          dirBrowserSelectBtn.style.display = 'none';
+        }
+      } else {
+        dirBrowserUp.style.display = 'none';
+        dirBrowserSelectBtn.style.display = 'none';
+      }
+      dirBrowserList.innerHTML = '';
+      for (var i = 0; i < data.entries.length; i++) {
+        var e = data.entries[i];
+        var div = document.createElement('div');
+        div.className = 'dir-entry';
+        if (e.is_dir) {
+          div.innerHTML = '<span class="icon">&#128193;</span><span class="name">' + escapeHtml(e.name) + '</span>';
+          div.onclick = function(epath) { return function() { browseDir(epath); }; }(e.path);
+        } else {
+          div.innerHTML = '<span class="icon">&#128196;</span><span class="name">' + escapeHtml(e.name) + '</span><span class="size">' + formatSize(e.size) + '</span>';
+          div.onclick = function(epath, ename, esize) { return function() { addFile(epath, esize); closeDirBrowser(); }; }(e.path, e.name, e.size);
+        }
+        dirBrowserList.appendChild(div);
+      }
+    })
+    .catch(function() {});
+}
+
+function selectOutputDir(path) {
+  outputPathDisplay.textContent = path;
+  outputPathDisplay.title = path;
+  closeDirBrowser();
+}
+
+function closeDirBrowser() {
+  dirBrowserModal.classList.remove('show');
+}
+
+$('dirBrowserCloseBtn').addEventListener('click', closeDirBrowser);
+dirBrowserModal.addEventListener('click', function(e) {
+  if (e.target === dirBrowserModal) closeDirBrowser();
+});
+
+// ---- Output folder ----
+$('changeOutputBtn').addEventListener('click', function() {
+  currentDirBrowserMode = 'output';
+  browseDir('');
+  dirBrowserModal.classList.add('show');
+});
+
+// ---- Queue rendering ----
+function renderQueue() {
+  if (fileQueue.length === 0) {
+    queueBody.innerHTML = '<tr><td class="empty-msg" colspan="4">No files added yet.</td></tr>';
+    // Queue is empty — show idle state in progress panel
+    if (!jobRunning) {
+      curFileLabel.textContent = 'No file selected';
+      curStepLabel.textContent = 'Waiting\u2026';
+    }
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < fileQueue.length; i++) {
+    var f = fileQueue[i];
+    var statusClass = 'status-' + f.status;
+    var statusText = '';
+    if (f.status === 'waiting') statusText = '\u25CB Waiting';
+    else if (f.status === 'running') statusText = '\u25B6 Running';
+    else if (f.status === 'done') {
+      var stats = f.stats || getResultForFile(f.name) || {};
+      var parts = [];
+      if (stats.qa_score !== undefined) parts.push('QA: ' + stats.qa_score);
+      if (stats.lines) parts.push(stats.lines + ' lines');
+      if (stats.suspicious) parts.push(stats.suspicious + ' susp.');
+      statusText = parts.length ? parts.join(' | ') : '\u2713 Finished';
+    }
+    else if (f.status === 'skipped') statusText = '\u23ED Skipped';
+    else if (f.status === 'error') statusText = '\u2716 Failed';
+
+    var progressHtml = '';
+    if (f.status === 'running' || f.status === 'done') {
+      var pct = f.status === 'done' ? 100 : f.progress;
+      progressHtml = '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%"><div class="progress-bar-text">' + pct + '%</div></div></div>';
+    } else {
+      progressHtml = '<span style="color:var(--fg3);font-size:11px;">' + (f.status === 'waiting' ? '\u25CB Waiting' : '\u23ED Skipped') + '</span>';
+    }
+
+    html += '<tr>'
+      + '<td class="col-file" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.name) + '</td>'
+      + '<td class="col-size">' + formatSize(f.size) + '</td>'
+      + '<td class="col-progress">' + progressHtml + '</td>'
+      + '<td class="col-status"><span class="' + statusClass + '">' + statusText + '</span></td>'
+      + '</tr>';
+  }
+  queueBody.innerHTML = html;
+
+  // Progress panel should reflect queue state when no file is being processed
+  if (!jobRunning && fileQueue.length > 0) {
+    var waiting = fileQueue.filter(function(f) { return f.status === 'waiting'; }).length;
+    if (waiting === fileQueue.length) {
+      curFileLabel.textContent = waiting + ' file(s) queued';
+      curStepLabel.textContent = 'Ready to start';
+    }
+  }
+}
+
+// ---- SSE events ----
+function connectSSE() {
+  if (eventSource) eventSource.close();
+  eventSource = new EventSource('/api/events');
+
+  eventSource.addEventListener('progress', function(e) {
+    var d = JSON.parse(e.data);
+    var pct = d.total > 0 ? Math.round(d.done / d.total * 100) : 0;
+    mainProgressFill.style.width = pct + '%';
+    mainProgressText.textContent = pct + '%';
+    linesLabel.textContent = 'Lines: ' + d.done + ' / ' + d.total;
+    var running = null;
+    for (var i = 0; i < fileQueue.length; i++) {
+      if (fileQueue[i].status === 'running') { running = fileQueue[i]; break; }
+    }
+    if (running) {
+      running.progress = pct;
+      renderQueue();
+    }
+  });
+
+  eventSource.addEventListener('file_progress', function(e) {
+    var d = JSON.parse(e.data);
+    for (var i = 0; i < fileQueue.length; i++) {
+      if (fileQueue[i].status === 'running') fileQueue[i].status = 'done';
+    }
+    var idx = d.index - 1;
+    if (idx >= 0 && idx < fileQueue.length) {
+      fileQueue[idx].status = 'running';
+      fileQueue[idx].progress = 0;
+    }
+    renderQueue();
+    mainProgressFill.style.width = '0%';
+    mainProgressText.textContent = '0%';
+    linesLabel.textContent = 'Lines: 0 / 0';
+    enPreview.innerHTML = '<span class="placeholder">Translating\u2026</span>';
+    dePreview.innerHTML = '<span class="placeholder"></span>';
+  });
+
+  eventSource.addEventListener('current_file', function(e) {
+    var d = JSON.parse(e.data);
+    var ep = d.total > 1 ? 'Episode ' + d.episode + ' of ' + d.total + '\n' : '';
+    curFileLabel.textContent = ep + d.name;
+  });
+
+  eventSource.addEventListener('current_en', function(e) {
+    enPreview.textContent = JSON.parse(e.data).text;
+  });
+
+  eventSource.addEventListener('current_de', function(e) {
+    dePreview.textContent = JSON.parse(e.data).text;
+  });
+
+  eventSource.addEventListener('step_changed', function(e) {
+    var d = JSON.parse(e.data);
+    curStepLabel.textContent = d.step;
+    var s = d.step.toLowerCase();
+    if (s.indexOf('deepseek') >= 0 || s.indexOf('ollama') >= 0) {
+      $('statOllama').textContent = 'Ollama: Active';
+    } else if (s.indexOf('nllb') >= 0) {
+      $('statOllama').textContent = 'Ollama: \u2014';
+    } else if (d.step === 'Complete') {
+      $('statOllama').textContent = 'Ollama: \u2014';
+    }
+  });
+
+  eventSource.addEventListener('speed_eta', function(e) {
+    var d = JSON.parse(e.data);
+    speedLabel.textContent = d.speed > 0 ? 'Speed: ' + d.speed + ' l/s' : 'Speed: --';
+    if (d.eta > 0) {
+      var m = Math.floor(d.eta / 60);
+      var s = Math.floor(d.eta % 60);
+      etaLabel.textContent = 'ETA: ' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    } else {
+      etaLabel.textContent = 'ETA: --';
+    }
+  });
+
+  eventSource.addEventListener('log', function(e) {
+    var d = JSON.parse(e.data);
+    logLine(d.message, d.level || 'info');
+  });
+
+  eventSource.addEventListener('file_done', function(e) {
+    var d = JSON.parse(e.data);
+    var st = d.stats || {};
+    for (var i = 0; i < fileQueue.length; i++) {
+      if (fileQueue[i].name === d.name) {
+        fileQueue[i].status = st.error ? 'error' : st.skipped ? 'skipped' : 'done';
+        fileQueue[i].stats = st;
+        break;
+      }
+    }
+    results.push([d.name, st]);
+    renderQueue();
+    if (st.qa_score !== undefined) $('statQa').textContent = 'QA: ' + st.qa_score;
+  });
+
+  eventSource.addEventListener('all_done', function() {
+    onJobEnd();
+    showSummary();
+    curStepLabel.textContent = 'Complete';
+  });
+
+  eventSource.addEventListener('error', function(e) {
+    var msg = 'Connection error';
+    try { msg = JSON.parse(e.data).message; } catch(ex) {}
+    logLine('[ERROR] ' + msg, 'error');
+  });
+
+  eventSource.onerror = function() {
+    if (eventSource.readyState === EventSource.CLOSED && jobRunning) {
+      logLine('[WARN] SSE connection lost, reconnecting...', 'warn');
+    }
+  };
+}
+
+// ---- Start / Cancel ----
+startBtn.addEventListener('click', function() {
+  if (jobRunning) return;
+  if (fileQueue.length === 0) {
+    logLine('Add .srt files to the queue first.', 'warn');
+    return;
+  }
+
+  var modeEl = document.querySelector('input[name="mode"]:checked');
+  var mode = modeEl ? modeEl.value : 'full';
+  var device = $('deviceSelect').value;
+  var batchSize = parseInt($('batchSize').value) || 64;
+  var numBeams = parseInt($('numBeams').value) || 4;
+  var resume = $('resumeCheck').checked;
+  var outText = outputPathDisplay.textContent;
+  var outputDir = (outText === 'Same as input (default)') ? '' : outText;
+
+  var body = JSON.stringify({
+    files: fileQueue.map(function(f) { return f.path; }),
+    mode: mode,
+    device: device,
+    batch_size: batchSize,
+    num_beams: numBeams,
+    resume: resume,
+    output_dir: outputDir
+  });
+
+  results = [];
+  logView.innerHTML = '';
+  mainProgressFill.style.width = '0%';
+  mainProgressText.textContent = '0%';
+  linesLabel.textContent = 'Lines: 0 / 0';
+  speedLabel.textContent = 'Speed: --';
+  etaLabel.textContent = 'ETA: --';
+  curStepLabel.textContent = 'Starting\u2026';
+  curFileLabel.textContent = 'Preparing\u2026';
+  enPreview.innerHTML = '<span class="placeholder"></span>';
+  dePreview.innerHTML = '<span class="placeholder"></span>';
+  startTime = Date.now();
+  $('statElapsed').textContent = 'Elapsed: 00:00';
+  $('statusMsg').textContent = 'Translating\u2026';
+
+  startBtn.disabled = true;
+  cancelBtn.disabled = false;
+  $('browseFilesBtn').disabled = true;
+  $('browseFolderBtn').disabled = true;
+  $('clearQueueBtn').disabled = true;
+  $('changeOutputBtn').disabled = true;
+  var modeInputs = document.querySelectorAll('.mode-option input');
+  for (var i = 0; i < modeInputs.length; i++) modeInputs[i].disabled = true;
+  $('deviceSelect').disabled = true;
+  $('batchSize').disabled = true;
+  $('numBeams').disabled = true;
+  $('resumeCheck').disabled = true;
+  jobRunning = true;
+
+  if (elapsedTimer) clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(function() {
+    if (!startTime) return;
+    var sec = Math.floor((Date.now() - startTime) / 1000);
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    $('statElapsed').textContent = 'Elapsed: ' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+
+  connectSSE();
+
+  for (var i = 0; i < fileQueue.length; i++) {
+    fileQueue[i].status = 'waiting';
+    fileQueue[i].progress = 0;
+  }
+  renderQueue();
+
+  fetch('/api/start', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: body
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) {
+      logLine('[ERROR] ' + d.error, 'error');
+      onJobEnd();
+    } else {
+      logLine('Started translation: ' + d.files + ' file(s)', 'info');
+    }
+  }).catch(function(err) {
+    logLine('[ERROR] ' + err.message, 'error');
+    onJobEnd();
+  });
+});
+
+cancelBtn.addEventListener('click', function() {
+  cancelBtn.disabled = true;
+  logLine('Cancelling\u2026 (will stop after current batch)', 'warn');
+  fetch('/api/cancel', {method: 'POST'}).catch(function() {});
+});
+
+function onJobEnd() {
+  jobRunning = false;
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+  if (eventSource) { eventSource.close(); eventSource = null; }
+  startBtn.disabled = false;
+  cancelBtn.disabled = true;
+  $('browseFilesBtn').disabled = false;
+  $('browseFolderBtn').disabled = false;
+  $('clearQueueBtn').disabled = false;
+  $('changeOutputBtn').disabled = false;
+  var modeInputs = document.querySelectorAll('.mode-option input');
+  for (var i = 0; i < modeInputs.length; i++) modeInputs[i].disabled = false;
+  $('deviceSelect').disabled = false;
+  $('batchSize').disabled = false;
+  $('numBeams').disabled = false;
+  $('resumeCheck').disabled = false;
+  $('statusMsg').textContent = 'Ready';
+}
+
+// ---- Summary ----
+function showSummary() {
+  var done = [];
+  for (var i = 0; i < results.length; i++) {
+    if (!results[i][1].skipped && !results[i][1].error) done.push(results[i]);
+  }
+  if (done.length === 0) return;
+
+  var html = '';
+  for (var i = 0; i < done.length; i++) {
+    var fname = done[i][0];
+    var stats = done[i][1];
+    html += '<div class="file-result"><h4>' + escapeHtml(fname.replace(/\.srt$/,'')) + '</h4>';
+    html += '<div class="modal-result-grid">';
+    var fields = [
+      ['QA Score', stats.qa_score],
+      ['Suspicious Lines', stats.suspicious || 0],
+      ['Lines', stats.lines]
+    ];
+    for (var j = 0; j < fields.length; j++) {
+      if (fields[j][1] !== undefined && fields[j][1] !== null) {
+        html += '<span class="label">' + fields[j][0] + '</span><span class="value">' + fields[j][1] + '</span>';
+      }
+    }
+    html += '</div></div>';
+  }
+
+  summaryContent.innerHTML = html;
+  summaryModal.classList.add('show');
+}
+
+$('summaryCloseBtn').addEventListener('click', function() { summaryModal.classList.remove('show'); });
+summaryModal.addEventListener('click', function(e) { if (e.target === summaryModal) summaryModal.classList.remove('show'); });
+
+// ---- Log controls ----
+$('saveLogBtn').addEventListener('click', function() {
+  var children = logView.children;
+  var parts = [];
+  for (var i = 0; i < children.length; i++) parts.push(children[i].textContent);
+  var blob = new Blob([parts.join('\n')], {type: 'text/plain;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'translation_log.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('clearLogBtn').addEventListener('click', function() { logView.innerHTML = ''; });
+
+logView.addEventListener('scroll', function() {
+  logAutoScroll = (logView.scrollTop >= logView.scrollHeight - logView.clientHeight - 20);
+});
+
+// ---- Open output ----
+$('openOutputBtn').addEventListener('click', function() {
+  var path = outputPathDisplay.textContent;
+  if (path === 'Same as input (default)') {
+    if (fileQueue.length > 0) {
+      var p = fileQueue[0].path;
+      var idx = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'));
+      path = idx >= 0 ? p.substring(0, idx) : '.';
+    } else {
+      path = '.';
+    }
+  }
+  fetch('/api/open-folder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: path})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) logLine('[ERROR] Could not open folder: ' + d.error, 'error');
+  }).catch(function() {});
+});
+
+})();
+</script>
+</body>
+</html>

@@ -49,6 +49,10 @@ python subtranslate.py --mode full --input-dir "path\to\subs"
 
 # Force re-translate (no TM reads)
 python subtranslate.py --mode fast --force --input-dir "path\to\subs"
+
+# Launch the browser-based web GUI
+python subtranslate.py --web-gui
+# Or double-click launch_web_gui.bat
 ```
 
 ## CLI Reference
@@ -66,10 +70,11 @@ Options:
   --cache               Enable Translation Memory (default: off)
   --proxy-base-url URL  OpenCode proxy URL (default: http://127.0.0.1:6446)
   --proxy-api-key KEY   OpenCode API key (default: oc-efb2bc22...)
-  --resume              Resume from checkpoint
-  --gui                 Launch GUI (experimental)
-  --test                Run internal test suite
-  --benchmark           Measure performance
+   --resume              Resume from checkpoint
+   --gui                 Launch PySide6 desktop GUI
+   --web-gui             Launch browser-based GUI (Flask + SSE)
+   --test                Run internal test suite
+   --benchmark           Measure performance
 ```
 
 Examples:
@@ -100,10 +105,16 @@ Pursuit.of.Jade.E01.srt  →  Pursuit.of.Jade.E01_ger.srt
 
 ```
 ├── subtranslate.py              CLI entry point
+├── launch_gui.bat               PySide6 GUI launcher (double-click)
+├── launch_web_gui.bat           Web GUI launcher (double-click)
 ├── translator/
 │   ├── engine.py                Core translation pipeline (~2900 lines)
 │   ├── gui.py                   PySide6 GUI
 │   └── __init__.py              Public API exports
+├── web_gui/
+│   ├── server.py                Flask app, API, SSE streaming
+│   └── static/
+│       └── index.html           Browser UI (HTML+CSS+JS)
 ├── config/
 │   ├── glossary.json            Domain terminology map
 │   ├── german_fixes.json        Known fix patterns

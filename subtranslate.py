@@ -44,11 +44,18 @@ def main():
                    help="API key for proxy. Falls back to PROXY_API_KEY env var.")
     p.add_argument("--gui", action="store_true",
                    help="Launch the PySide6 graphical interface")
+    p.add_argument("--web-gui", action="store_true",
+                   help="Launch the browser-based web GUI (Flask + SSE)")
     a = p.parse_args()
 
     if a.gui:
         from translator.gui import launch_gui
         launch_gui()
+        return
+
+    if a.web_gui:
+        from web_gui.server import launch_web_gui
+        launch_web_gui()
         return
 
     cfg = Config(
