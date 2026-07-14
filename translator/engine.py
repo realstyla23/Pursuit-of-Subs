@@ -656,6 +656,8 @@ def protect_names(texts: list[str], names: list[str]) -> tuple[list[str], dict[s
     """Replace character names with ZZZ-delimited placeholders (survive NLLB).
     Multi-word names matched first (descending length) to avoid partial overlap.
     Possessive "'s" is consumed so NLLB sees a clean noun phrase.
+    After individual name replacement, title+name combinations (e.g. "Miss Fan")
+    are merged into a single ZZZNM marker so NLLB can't split them.
     """
     name_map = {}
     counter = 0
@@ -674,6 +676,34 @@ def protect_names(texts: list[str], names: list[str]) -> tuple[list[str], dict[s
             )
             t = pattern.sub(repl, t)
         protected.append(t)
+
+    # Merge "Title + ZZZNM\d+ZZZ" into a single combined marker
+    # so NLLB never sees the title word adjacent to a placeholder.
+    _TITLE_WORDS = [
+        "miss", "mrs", "mr", "ms", "sir", "lady", "lord",
+        "king", "queen", "prince", "princess", "master",
+    ]
+    _TITLE_PAT = re.compile(
+        r'(?<!\w)(' + '|'.join(re.escape(w) + r'\.?' for w in _TITLE_WORDS)
+        + r')\s+(ZZZNM\d+ZZZ)',
+        re.IGNORECASE,
+    )
+    for i, t in enumerate(protected):
+        new_t = t
+        while True:
+            m = _TITLE_PAT.search(new_t)
+            if not m:
+                break
+            counter += 1
+            key = f"ZZZNM{counter:03d}ZZZ"
+            title_word = m.group(1)
+            name_marker = m.group(2)
+            actual_name = name_map.get(name_marker, "")
+            name_map[key] = f"{title_word} {actual_name}"
+            del name_map[name_marker]
+            new_t = new_t[:m.start()] + key + new_t[m.end():]
+        protected[i] = new_t
+
     return protected, name_map
 
 
@@ -836,6 +866,236 @@ def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -
     Supports both old (str) and new (dict with default/acceptable) formats.
     Uses word-boundary matching, avoids double commas, corrects capitalization.
     """
+    gloss_parsed = {}
+    for k, v in glossary.items():
+        default, acceptable = _resolve_glossary_entry(v)
+        if default:
+            gloss_parsed[k.lower()] = (default, [d.lower() for d in acceptable])
+
+    count = 0
+    for i in range(min(len(eng_texts), len(ger_texts))):
+        en, de = eng_texts[i], ger_texts[i]
+        en_lower = en.lower()
+        de_lower = de.lower()
+
+        for eng_term, (ger_term, acceptable) in gloss_parsed.items():
+            if not re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_lower):
+                continue
+
+            all_check = [ger_term.lower()] + acceptable
+            already_correct = any(
+                re.search(r'(?<!\w)' + re.escape(w) + r'(?!\w)', de_lower)
+                for w in all_check
+            )
+            if already_correct:
+                continue
+
+            new_de = de
+
+            for wrong_form in [eng_term.title(), eng_term, eng_term.upper()]:
+                pattern = re.compile(r'(?<!\w)' + re.escape(wrong_form) + r'(?!\w)')
+                if pattern.search(de):
+                    new_de = pattern.sub(ger_term, de)
+                    break
+
+            if new_de != de:
+                ger_texts[i] = new_de
+                count += 1
+                continue
+
+            en_stripped = en.strip()
+            en_stripped_lower = en_stripped.lower()
+            en_clean = en_stripped_lower.rstrip(" \t\n\r.!?,;:")
+            en_matches_start = (en_stripped_lower.startswith(eng_term + " ")
+                                or en_stripped_lower.startswith(eng_term + ","))
+            en_matches_end = en_clean.endswith(" " + eng_term) or en_clean == eng_term
+            en_matches_anywhere = (
+                re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_stripped_lower)
+                is not None
+            )
+            if en_matches_start or en_matches_end or en_matches_anywhere:
+                if not re.search(r'(?<!\w)' + re.escape(ger_term) + r'(?!\w)', de_lower):
+                    en_core = en_stripped.strip(" \t\n\r.!?,;:-")
+                    if en_core.lower() == eng_term:
+                        trailing = en_stripped[-1] if en_stripped[-1:] in '.!?' else ''
+                        ger_texts[i] = ger_term + trailing
+                        count += 1
+                        continue
+                    if new_de:
+                        leading = new_de[0].lower() + new_de[1:]
+                        leading = re.sub(r'^-\s*', '', leading).strip()
+                        ger_texts[i] = f"{ger_term}, {leading}"
+                    else:
+                        ger_texts[i] = f"{ger_term}."
+                    count += 1
+
+    return count
+
+
+_GLOSSARY_EXTRACTION_PROMPT = """\
+You are a terminology extraction specialist for Chinese period dramas.
+Extract recurring DOMAIN-SPECIFIC terms from the following subtitles.
+
+FOCUS TOPICS: {focus_topics}
+
+CRITICAL RULES:
+1. IGNORE all character names, place names, and proper nouns.
+2. IGNORE common nouns (e.g. "table", "house", "money") unless they carry specific cultural or technical meaning in this context.
+3. Output ONLY a valid JSON object: {{"English term": "German translation"}}.
+4. If no domain terms are found in this chunk, return {{}}.
+5. Do not include explanations or markdown.
+"""
+
+
+def generate_glossary(
+    srt_paths: list[Path],
+    cfg: Config,
+    focus_topics: str = (
+        "butchery trades and meat processing, "
+        "matrilocal marriage customs (ruzhu), "
+        "Qing-style military ranks and titles, "
+        "traditional medicine and herbal dosages, "
+        "court factions and rebellion terminology"
+    ),
+) -> dict[str, str]:
+    """Scan SRT files and extract domain-specific glossary terms via DeepSeek.
+
+    Returns a flat dict of {english_term: german_translation} from all chunks.
+    Saves the result to config/glossary_auto.json as a side effect.
+    """
+    polisher = load_polisher(cfg)
+    if polisher is None:
+        print("  [ERROR] Could not load polisher. Check proxy settings.")
+        return {}
+    session, chat_url, model_name, api_key = polisher
+
+    # Extract plain text from all SRTs
+    all_texts: list[str] = []
+    for p in srt_paths:
+        try:
+            subs = safe_open_srt(p)
+            all_texts.extend(sub.text for sub in subs)
+        except Exception as e:
+            print(f"  [WARN] Skipping {p.name}: {e}")
+
+    if not all_texts:
+        print("  [ERROR] No text found in SRT files.")
+        return {}
+
+    full_text = "\n".join(all_texts)
+    chunk_size = 12000
+    chunks = [full_text[i:i + chunk_size] for i in range(0, len(full_text), chunk_size)]
+    print(f"  Extracted {len(full_text)} chars, {len(chunks)} chunk(s)", flush=True)
+
+    combined: dict[str, str] = {}
+    system_prompt = _GLOSSARY_EXTRACTION_PROMPT.format(focus_topics=focus_topics)
+
+    for idx, chunk in enumerate(chunks):
+        print(f"  Chunk {idx + 1}/{len(chunks)}...", end=" ", flush=True)
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Extract terms from this subtitle text:\n\n{chunk}"},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 2048,
+            "response_format": {"type": "json_object"},
+        }
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        result = _ollama_chat(session, chat_url, payload, timeout=120, headers=headers)
+        if result is None:
+            print("FAILED", flush=True)
+            continue
+        try:
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+            chunk_glossary = json.loads(content)
+            if isinstance(chunk_glossary, dict):
+                combined.update(chunk_glossary)
+                print(f"{len(chunk_glossary)} terms", flush=True)
+            else:
+                print(f"unexpected type: {type(chunk_glossary).__name__}", flush=True)
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            print(f"parse error: {e}", flush=True)
+
+    # Save to glossary_auto.json
+    out_path = _config_path("glossary_auto.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(combined, f, ensure_ascii=False, indent=2)
+    print(f"  Saved {len(combined)} terms to {out_path}", flush=True)
+    return combined
+
+
+def merge_glossary_auto(
+    auto_path: Path | None = None,
+    interactive: bool = False,
+    dry_run: bool = False,
+) -> int:
+    """Merge glossary_auto.json into glossary.json. Manual entries always win.
+
+    Args:
+        auto_path: Path to auto-generated glossary. Defaults to config/glossary_auto.json.
+        interactive: If True, prompt per new entry before adding.
+        dry_run: If True, only print diff without modifying.
+
+    Returns: Number of new terms added (or would be added in dry-run mode).
+    """
+    if auto_path is None:
+        auto_path = _config_path("glossary_auto.json")
+    manual_path = _config_path("glossary.json")
+
+    if not auto_path.exists():
+        print(f"  [ERROR] {auto_path} not found. Run --generate-glossary first.")
+        return 0
+
+    with open(auto_path, encoding="utf-8") as f:
+        auto_glossary: dict = json.load(f)
+    with open(manual_path, encoding="utf-8") as f:
+        manual_glossary: dict = json.load(f)
+
+    # Find new keys (in auto but not in manual)
+    new_terms = {k: v for k, v in auto_glossary.items() if k not in manual_glossary}
+    if not new_terms:
+        print("  No new terms to merge.")
+        return 0
+
+    print(f"\n  Found {len(new_terms)} new term(s):")
+    for k, v in sorted(new_terms.items()):
+        print(f"    {k:40s} → {v}")
+
+    if dry_run:
+        print(f"\n  Dry-run: {len(new_terms)} term(s) would be added. No changes written.")
+        return len(new_terms)
+
+    if interactive:
+        accepted: dict[str, str] = {}
+        print()
+        for k, v in sorted(new_terms.items()):
+            answer = input(f"  Add '{k}' → '{v}'? [Y/n/e(dit)]: ").strip().lower()
+            if answer in ("", "y", "yes"):
+                accepted[k] = v
+            elif answer.startswith("e"):
+                new_v = input(f"    Edit translation for '{k}': ").strip()
+                if new_v:
+                    accepted[k] = new_v
+            # n/no → skip
+        new_terms = accepted
+
+    if not new_terms:
+        print("  No terms accepted.")
+        return 0
+
+    # Merge (manual wins, but these are all new so no conflicts)
+    merged = dict(manual_glossary)
+    merged.update(new_terms)
+    with open(manual_path, "w", encoding="utf-8") as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+    print(f"  Added {len(new_terms)} term(s) to {manual_path}")
+    return len(new_terms)
+    """Source-aware glossary correction. Check EN input against DE output.
+    Supports both old (str) and new (dict with default/acceptable) formats.
+    Uses word-boundary matching, avoids double commas, corrects capitalization.
+    """
     # Build flat mapping: en_term_lower -> (de_default, acceptable_list)
     gloss_parsed = {}
     for k, v in glossary.items():
@@ -919,7 +1179,7 @@ def load_names() -> list[str]:
     return load_json("names.json")
 
 def preserve_names(eng_texts: list[str] | None, ger_texts: list[str],
-                   names: list[str]) -> int:
+                   names: list[str], glossary: dict | None = None) -> int:
     """Restore character names that NLLB may have translated.
     With eng_texts, can detect names dropped entirely by NLLB and prepend them.
     Uses pre-compiled regex patterns for performance.
@@ -943,19 +1203,47 @@ def preserve_names(eng_texts: list[str] | None, ger_texts: list[str],
             ger_texts[i] = new_t
             count += 1
 
+    # Build glossary lookup: en_term_lower -> set of german_lower terms
+    gloss_en_to_de: dict[str, set[str]] = {}
+    if glossary:
+        for k, v in glossary.items():
+            default, acceptable = _resolve_glossary_entry(v)
+            terms: set[str] = set()
+            if default:
+                terms.add(default.lower())
+            terms.update(a.lower() for a in acceptable)
+            gloss_en_to_de[k.lower()] = terms
+
     # Detect names that were dropped entirely by NLLB (no parts remain)
     if eng_texts is not None:
         for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
             de_lower = de.lower()
             for name in names:
                 en_has = all(p.lower() in en.lower() for p in name.split())
+                if not en_has:
+                    continue
                 de_has = all(p.lower() in de_lower for p in name.split())
-                if en_has and not de_has:
-                    if de:
-                        ger_texts[i] = f"{name}, {de[0].lower() + de[1:]}"
-                    else:
-                        ger_texts[i] = name
-                    count += 1
+                if de_has:
+                    continue
+                # Check if glossary translated a name part (e.g. "Mr."→"Herr")
+                parts = name.split()
+                gloss_covered = True
+                for p in parts:
+                    p_lower = p.lower()
+                    if p_lower in de_lower:
+                        continue
+                    if p_lower in gloss_en_to_de:
+                        if any(gterm in de_lower for gterm in gloss_en_to_de[p_lower]):
+                            continue
+                    gloss_covered = False
+                    break
+                if gloss_covered:
+                    continue
+                if de:
+                    ger_texts[i] = f"{name}, {de[0].lower() + de[1:]}"
+                else:
+                    ger_texts[i] = name
+                count += 1
 
     return count
 
@@ -1189,6 +1477,39 @@ def score_line(en_text: str, de_text: str, glossary: dict, names: list[str],
     if de_s.startswith("- ") and not en_s.startswith("- "):
         score += 2
         reasons.append("invented_dash")
+
+    # +N English words remain in DE output (partial translation detection)
+    # Flags lines where NLLB translated some words but left others in English.
+    # Skips known loanwords, glossary DE terms, name parts, and short words.
+    _ENG_LOANWORDS = {"okay", "ok", "hi", "bye", "sorry", "wow", "cool",
+                      "yeah", "yep", "nope", "hey", "huh", "oops", "whoa"}
+    gloss_de_words = set()
+    for de_terms in glossary_defaults.values():
+        for t in de_terms:
+            if t:
+                gloss_de_words.add(t.lower())
+    name_parts = set()
+    for name in names:
+        for part in name.split():
+            name_parts.add(part.lower())
+    en_words = set(re.findall(r"[a-z]+", en_s.lower()))
+    de_words = re.findall(r"[a-z]+", de_s.lower())
+    eng_remain = []
+    seen = set()
+    for w in de_words:
+        if len(w) < 3 or w in seen:
+            continue
+        seen.add(w)
+        if w in _ENG_LOANWORDS or w in gloss_de_words or w in name_parts:
+            continue
+        if w in en_words:
+            eng_remain.append(w)
+            if len(eng_remain) >= 3:
+                break
+    if eng_remain:
+        n = len(eng_remain)
+        score += 6 if n >= 3 else 3
+        reasons.append(f"eng_remain:{' '.join(eng_remain)}")
 
     return {"score": score, "reasons": reasons}
 
@@ -1497,6 +1818,22 @@ def _segment_line(text: str, lookup: dict[str, str] | None = None
                 if after:
                     layout.append(('space', after))
             else:
+                # Strip leading non-word characters (punctuation) from content
+                # so NLLB never sees structural punctuation (comma after name, etc.)
+                punc_match = re.match(r'^([^\w\s]+)(\s*)(.*)', mid, re.DOTALL)
+                if punc_match:
+                    punct, spaces, rest = punc_match.groups()
+                    if rest and len(punct) < 5:
+                        if before:
+                            layout.append(('space', before))
+                        layout.append(('literal', punct))
+                        if spaces:
+                            layout.append(('space', spaces))
+                        layout.append(('content', len(content)))
+                        content.append(rest)
+                        if after:
+                            layout.append(('space', after))
+                        return
                 if before:
                     layout.append(('space', before))
                 layout.append(('content', len(content)))
@@ -1727,7 +2064,7 @@ def translate_fast(fpath: Path, cfg: Config,
 
     # Preserve names
     timer.start("Names")
-    nc = preserve_names(eng_texts, ger_texts, names)
+    nc = preserve_names(eng_texts, ger_texts, names, glossary)
     timer.stop("Names")
 
     # Apply German phrase fixes
@@ -2052,7 +2389,7 @@ def translate_llm(fpath: Path, cfg: Config,
     timer.stop("Glossary")
 
     timer.start("Names")
-    nc = preserve_names(eng_texts, ger_texts, names)
+    nc = preserve_names(eng_texts, ger_texts, names, glossary)
     timer.stop("Names")
 
     timer.start("Fixes")
@@ -2265,7 +2602,7 @@ def translate_polish(fpath: Path, cfg: Config,
     # Apply glossary & names first (fast, no LLM)
     timer.start("Pre-Polish")
     gc = apply_glossary(eng_texts, ger_texts, glossary)
-    nc = preserve_names(eng_texts, ger_texts, names)
+    nc = preserve_names(eng_texts, ger_texts, names, glossary)
     apply_short_exclamation_overrides(eng_texts, ger_texts)
 
     # Build conversation memory from file for context-aware polishing
@@ -2359,6 +2696,7 @@ def translate_polish(fpath: Path, cfg: Config,
             "- Preserve all [SFX] brackets exactly\n"
             "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
             "- Never merge two speakers into one line\n"
+            "- Translate any remaining English words to German\n"
             "- Produce natural spoken German\n"
             "- Keep subtitle length appropriate\n"
             + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
@@ -2604,7 +2942,7 @@ def run_test(cfg: Config):
     )
     apply_song_markers(ger_texts, all_texts)
     apply_glossary(all_texts, ger_texts, glossary)
-    preserve_names(all_texts, ger_texts, names)
+    preserve_names(all_texts, ger_texts, names, glossary)
     ger_fixes = load_german_fixes()
     apply_german_fixes(ger_texts, ger_fixes)
     titles = load_titles()
@@ -2934,7 +3272,7 @@ def translate_fast_to_texts(fpath: Path, cfg: Config) -> list[str] | None:
     )
     apply_song_markers(ger_texts, eng_texts)
     apply_glossary(eng_texts, ger_texts, glossary)
-    preserve_names(eng_texts, ger_texts, names)
+    preserve_names(eng_texts, ger_texts, names, glossary)
     apply_german_fixes(ger_texts, load_german_fixes())
     preserve_titles(eng_texts, ger_texts, load_titles())
     cleanup_subtitles(ger_texts)

@@ -9,6 +9,7 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 - **Full** — Both passes combined for highest quality
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
 - **Glossary** — Domain-specific terminology enforcement
+- **Glossary Automation** — Extract domain terms from source SRTs via DeepSeek, then merge into glossary with dry-run preview
 - **Translation Memory** — Caches approved translations per line (opt-in, off by default)
 - **QA scoring** — Detects untranslated lines, missing glossary/names, length anomalies, invented content
 - **Checkpoints** — Resume interrupted translations without data loss
@@ -70,11 +71,16 @@ Options:
   --cache               Enable Translation Memory (default: off)
   --proxy-base-url URL  OpenCode proxy URL (default: http://127.0.0.1:6446)
   --proxy-api-key KEY   OpenCode API key (default: oc-efb2bc22...)
-   --resume              Resume from checkpoint
-   --gui                 Launch PySide6 desktop GUI
-   --web-gui             Launch browser-based GUI (Flask + SSE)
-   --test                Run internal test suite
-   --benchmark           Measure performance
+  --resume              Resume from checkpoint
+  --gui                 Launch PySide6 desktop GUI
+  --web-gui             Launch browser-based GUI (Flask + SSE)
+  --generate-glossary   Extract domain terms via DeepSeek → config/glossary_auto.json
+  --merge-glossary      Auto-merge glossary_auto.json into glossary.json
+  --glossary-focus TOPICS  Comma-separated domain topics (overrides default)
+  --interactive         Prompt per new entry when merging
+  --dry-run             With merge: show diff, no write
+  --test                Run internal test suite
+  --benchmark           Measure performance
 ```
 
 Examples:
@@ -85,6 +91,15 @@ python subtranslate.py --mode fast --input-dir "D:\Shows\Season 1"
 
 # Full pipeline: NLLB + Deepseek proxy polish
 python subtranslate.py --mode full --force
+
+# Extract domain glossary from source SRTs
+python subtranslate.py --generate-glossary --input-dir "D:\Shows\Season 1"
+
+# Preview what would be merged
+python subtranslate.py --merge-glossary --dry-run
+
+# Merge into glossary.json
+python subtranslate.py --merge-glossary
 
 # Benchmark
 python subtranslate.py --mode benchmark
@@ -223,6 +238,16 @@ Domain-specific term mappings applied after translation:
   "Captain": { "default": "Hauptmann", "acceptable": ["Kapitän"] }
 }
 ```
+
+### Glossary Automation (`--generate-glossary` / `--merge-glossary`)
+
+Two-step extraction from source SRTs:
+
+1. **`--generate-glossary`** — Scans all SRTs in `--input-dir`, sends text chunks to DeepSeek with a narrow domain prompt (butchery, marriage customs, military ranks, medicine, court/rebels), saves to `config/glossary_auto.json`. Character names and common nouns are excluded.
+2. **`--merge-glossary`** — Batches new entries from `glossary_auto.json` into `glossary.json`. Manual entries always win. Use `--dry-run` to preview. Use `--interactive` to approve per entry.
+3. **`--glossary-focus`** — Override the default domain topics with a custom comma-separated string.
+
+The auto file is regenerated each run; the manual `glossary.json` is never overwritten.
 
 ### Short Fragments (`config/short_fragments.json`)
 Fragments that NLLB hallucinates on. Protected before NLLB and replaced with correct German:

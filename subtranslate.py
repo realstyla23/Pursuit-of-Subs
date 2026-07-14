@@ -15,6 +15,7 @@ from translator import (
     translate_fast, translate_polish, translate_llm,
     run_test, run_benchmark, run_regression,
     _checkpoint_path,
+    generate_glossary, merge_glossary_auto,
 )
 
 
@@ -46,6 +47,22 @@ def main():
                    help="Launch the PySide6 graphical interface")
     p.add_argument("--web-gui", action="store_true",
                    help="Launch the browser-based web GUI (Flask + SSE)")
+
+    # Glossary automation flags
+    p.add_argument("--generate-glossary", action="store_true",
+                   help="Extract domain-specific glossary terms from input SRTs via DeepSeek, "
+                        "save to config/glossary_auto.json, and exit.")
+    p.add_argument("--merge-glossary", action="store_true",
+                   help="Interactively merge glossary_auto.json into glossary.json. "
+                        "Manual entries always win.")
+    p.add_argument("--glossary-focus", type=str, default=None,
+                   help="Comma-separated domain topics for glossary extraction "
+                        "(overrides the default period-drama topics).")
+    p.add_argument("--interactive", action="store_true",
+                   help="With --merge-glossary: prompt per new entry (default: auto-merge all).")
+    p.add_argument("--dry-run", action="store_true",
+                   help="With --merge-glossary: show diff without writing.")
+
     a = p.parse_args()
 
     if a.gui:
@@ -56,6 +73,36 @@ def main():
     if a.web_gui:
         from web_gui.server import launch_web_gui
         launch_web_gui()
+        return
+
+    # --merge-glossary: standalone merge step
+    if a.merge_glossary:
+        added = merge_glossary_auto(interactive=a.interactive, dry_run=a.dry_run)
+        if added:
+            print(f"  Glossary updated: {added} new term(s)")
+        return
+
+    # --generate-glossary: standalone extraction step
+    if a.generate_glossary:
+        cfg = Config(
+            proxy_base_url=a.proxy_base_url or "",
+            proxy_api_key=a.proxy_api_key or "",
+        )
+        files = find_srt_files(a.input_dir)
+        if not files:
+            print(f"No files in '{a.input_dir}'")
+            return
+        focus = a.glossary_focus or (
+            "butchery trades and meat processing, "
+            "matrilocal marriage customs (ruzhu), "
+            "Qing-style military ranks and titles, "
+            "traditional medicine and herbal dosages, "
+            "court factions and rebellion terminology"
+        )
+        print(f"Generating glossary from {len(files)} file(s)...", flush=True)
+        result = generate_glossary(files, cfg, focus_topics=focus)
+        print(f"Done. {len(result)} terms extracted to config/glossary_auto.json")
+        print("Review then run: subtranslate --merge-glossary")
         return
 
     cfg = Config(
