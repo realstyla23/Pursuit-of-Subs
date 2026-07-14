@@ -5,9 +5,9 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 ## Features
 
 - **Fast** — Batch NLLB-600M translation at ~30 lines/second on an RTX 4060 Ti
-- **Polish** — LLM quality pass on suspicious lines (Gemma 4 / Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
+- **Polish** — LLM quality pass on suspicious lines (Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
 - **Full** — Both passes combined for highest quality
-- **Local models** — Gemma 4 E4B (9.6 GB) or Qwen 2.5 7B (4.7 GB) via Ollama, no internet needed
+- **English filter** — Catches and translates English words that NLLB missed, without false positives
 - **Parallel batches** — Suspicious lines grouped into batches of 10, sent concurrently (2 by default)
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
 - **Glossary** — Domain-specific terminology enforcement
@@ -221,9 +221,10 @@ Source SRT (*.srt)
 │ 5. POLISH (LLM — local or proxy) [optional]│
 │    Only suspicious lines sent to LLM        │
 │    Parallel batches (10 lines, 2 workers)   │
-│    Local: Gemma4 / Qwen via Ollama          │
-│    Proxy: DeepSeek via OpenCode proxy       │
+│    Local: Qwen2.5 7B via Ollama             │
+│    Proxy: DeepSeek via proxy                │
 │    Hallucination safeguard filters bad      │
+│    English word filter catches leakage      │
 │    Re-glossary after correction             │
 └──────────────────────┬──────────────────────┘
                        ▼
@@ -323,23 +324,20 @@ Measured on RTX 4060 Ti 16GB (CUDA 12.4), Ryzen 7 5800X, 16GB RAM:
 | 763-line episode (fast) | ~27s |
 | DeepSeek proxy batch (5 lines) | ~13s per batch |
 | Qwen 2.5 7B polish (10 lines, parallel=2) | ~1.2s per batch |
-| Gemma 4 E4B polish (10 lines, parallel=2) | ~2–3s per batch |
 | Full pipeline (fast + DeepSeek polish) | ~72s–2min total |
 | Full pipeline (fast + Qwen polish) | ~35–45s total |
-| Full pipeline (fast + Gemma 4 polish) | ~40–55s total |
 | NLLB model | NLLB-200-distilled-600M |
-| Ollama models | qwen2.5:7b (4.7 GB) / gemma4:e4b (9.6 GB) |
+| Ollama model | qwen2.5:7b (4.7 GB) |
 | NLLB batch size | 64 |
 | Beam width | 4 |
 | NLLB VRAM usage | ~2–3 GB |
-| Ollama VRAM (one model at a time) | ~5–10 GB |
+| Ollama VRAM | ~5 GB |
 
 ## Known Limitations
 
 - **EN → DE only** — Hardcoded language pair (NLLB supports 200+ languages, easily configurable)
 - **NLLB short-line hallucination** — Very short lines like "Mom." or "But..." can produce wrong output. Mitigated via `config/short_fragments.json` dictionary
 - **Proxy polish latency** — Each DeepSeek proxy request has ~10-15s overhead regardless of batch size
-- **Gemma 4 VRAM** — Uses ~9.6 GB VRAM; may not fit alongside NLLB on 8 GB GPUs. Qwen 2.5 7B is recommended for 8 GB cards
 - **SRT only** — No ASS/SSA/VTT support
 
 ## Tests
