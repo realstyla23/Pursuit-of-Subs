@@ -8,6 +8,7 @@ import time
 import threading
 import traceback
 import webbrowser
+import uuid
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -364,6 +365,28 @@ def api_open_folder():
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+_UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
+
+
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    body = request.get_json(force=True)
+    name = body.get("name", "")
+    content = body.get("content", "")
+    if not name or not content:
+        return jsonify({"error": "name and content required"}), 400
+    if not name.lower().endswith(".srt"):
+        return jsonify({"error": "only .srt files accepted"}), 400
+
+    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    # Keep original name but ensure uniqueness
+    stem = Path(name).stem
+    safe_name = f"{stem}_{uuid.uuid4().hex[:8]}.srt"
+    dest = _UPLOAD_DIR / safe_name
+    dest.write_text(content, encoding="utf-8")
+    return jsonify({"path": str(dest.resolve()), "size": len(content.encode("utf-8"))})
 
 
 # ---------------------------------------------------------------------------

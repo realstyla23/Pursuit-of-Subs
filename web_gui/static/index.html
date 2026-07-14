@@ -414,11 +414,7 @@ dropZone.addEventListener('drop', function(e) {
   for (var i = 0; i < e.dataTransfer.files.length; i++) {
     var f = e.dataTransfer.files[i];
     if (f.name.toLowerCase().endsWith('.srt')) {
-      if (f.path && /^[a-zA-Z]:\\/.test(f.path)) {
-        addFile(f.path, f.size);
-      } else {
-        logLine('[WARN] Drop only works on Chromium-based browsers (full path unavailable). Use "Browse Folder" instead.', 'warn');
-      }
+      uploadFile(f);
     }
   }
 });
@@ -431,11 +427,7 @@ fileInput.addEventListener('change', function() {
   for (var i = 0; i < fileInput.files.length; i++) {
     var f = fileInput.files[i];
     if (f.name.toLowerCase().endsWith('.srt')) {
-      if (f.path && /^[a-zA-Z]:\\/.test(f.path)) {
-        addFile(f.path, f.size);
-      } else {
-        logLine('[WARN] Native file picker full path unavailable on this browser. Use "Browse Folder" or paste the path below.', 'warn');
-      }
+      uploadFile(f);
     }
   }
   fileInput.value = '';
@@ -462,6 +454,33 @@ $('browseFolderBtn').addEventListener('click', function() {
   browseDir('');
   dirBrowserModal.classList.add('show');
 });
+
+function uploadFile(fileObj) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var content = e.target.result;
+    fetch('/api/upload', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: fileObj.name, content: content})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.path) {
+        addFile(d.path, d.size || fileObj.size);
+      } else {
+        logLine('[ERROR] Upload failed: ' + (d.error || 'unknown'), 'error');
+      }
+    })
+    .catch(function(err) {
+      logLine('[ERROR] Upload error: ' + err.message, 'error');
+    });
+  };
+  reader.onerror = function() {
+    logLine('[ERROR] Failed to read file: ' + fileObj.name, 'error');
+  };
+  reader.readAsText(fileObj, 'UTF-8');
+}
 
 function addFile(path, size) {
   var name = path.split(/[\\/]/).pop();
