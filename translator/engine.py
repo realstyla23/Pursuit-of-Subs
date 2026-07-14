@@ -1330,6 +1330,33 @@ def apply_german_fixes(ger_texts: list[str], fixes: list[dict]) -> int:
     return count
 
 
+_ENG_MAP = {
+    "escort": "Eskorte",
+    "escorts": "Eskorten",
+}
+
+
+def _filter_english_words(eng_texts: list[str], ger_texts: list[str]) -> int:
+    """Replace common English words that NLLB failed to translate.
+    Only replaces when the English source actually contains the trigger word,
+    to avoid false positives on shared vocabulary.
+    """
+    count = 0
+    for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
+        en_lower = en.lower()
+        de_lower = de.lower()
+        for eng_word, ger_word in _ENG_MAP.items():
+            if eng_word in de_lower and eng_word in en_lower:
+                ger_texts[i] = re.sub(
+                    r'(?<!\w)' + re.escape(eng_word) + r'(?!\w)',
+                    ger_word, ger_texts[i], flags=re.IGNORECASE
+                )
+                count += 1
+    if count:
+        print(f"    english filter: {count} fix(es)", flush=True)
+    return count
+
+
 def cleanup_subtitles(ger_texts: list[str]) -> int:
     """Normalize subtitle typography (space before punct, duplicates, etc.)."""
     count = 0
@@ -2765,8 +2792,8 @@ def translate_polish(fpath: Path, cfg: Config,
             "- Preserve all [SFX] brackets exactly\n"
             "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
             "- Never merge two speakers into one line\n"
-            "- Translate any remaining English words to German\n"
-            "- Produce natural spoken German\n"
+            "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
+            "- Produce natural spoken German, as if written by a native speaker\n"
             "- Keep subtitle length appropriate\n"
             + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
             + "\n" + xml_input
@@ -2870,6 +2897,11 @@ def translate_polish(fpath: Path, cfg: Config,
     timer.start("German Fixes")
     gfc = apply_german_fixes(ger_texts, load_german_fixes())
     timer.stop("German Fixes")
+
+    # Catch remaining English words that NLLB missed
+    timer.start("English Filter")
+    _eng_fixes = _filter_english_words(eng_texts, ger_texts)
+    timer.stop("English Filter")
 
     # Save persistent Ollama cache to disk
     try:
