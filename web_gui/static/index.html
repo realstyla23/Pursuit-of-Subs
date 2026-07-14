@@ -34,6 +34,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-cancel:hover{background:#7d1f1f}
 .btn-cancel:disabled{background:#3b1a1a;border-color:#4b2a2a;color:#555}
 .btn-small{font-size:11px;padding:4px 10px}
+.path-input-row{display:flex;gap:6px;align-items:center;margin-top:6px}
+.path-input-row .path-input-icon{font-size:11px;color:var(--fg3);white-space:nowrap}
+.path-input-row input[type=text]{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:4px 8px;color:var(--fg);font-size:12px;min-height:26px}
+.path-input-row input[type=text]:focus{outline:none;border-color:var(--accent)}
 .queue-section{border:1px solid var(--border);border-radius:6px;padding:0;overflow:hidden;min-height:0}
 .queue-section h3{font-size:12px;font-weight:700;color:var(--fg2);padding:8px 12px 0;text-transform:uppercase;letter-spacing:.5px}
 .queue-table-wrap{overflow-x:auto}
@@ -156,6 +160,11 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <button class="btn" id="browseFolderBtn">Browse Folder&hellip;</button>
         <button class="btn" id="clearQueueBtn">Clear Queue</button>
         <input type="file" id="fileInput" multiple accept=".srt" hidden>
+      </div>
+      <div class="path-input-row">
+        <span class="path-input-icon">or paste path:</span>
+        <input type="text" id="manualPathInput" placeholder="D:\Shows\file.srt">
+        <button class="btn btn-small" id="addPathBtn">Add</button>
       </div>
     </div>
     <div class="output-section section-box">
@@ -350,6 +359,7 @@ var dirBrowserList = $('dirBrowserList');
 var dirBrowserSelectBtn = $('dirBrowserSelectBtn');
 
 function formatSize(bytes) {
+  if (!bytes || bytes <= 0) return '\u2014';
   if (bytes < 1024) return bytes + ' bytes';
   if (bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
   return (bytes/1024/1024).toFixed(1) + ' MB';
@@ -404,7 +414,11 @@ dropZone.addEventListener('drop', function(e) {
   for (var i = 0; i < e.dataTransfer.files.length; i++) {
     var f = e.dataTransfer.files[i];
     if (f.name.toLowerCase().endsWith('.srt')) {
-      addFile(f.path || f.name, f.size);
+      if (f.path && /^[a-zA-Z]:\\/.test(f.path)) {
+        addFile(f.path, f.size);
+      } else {
+        logLine('[WARN] Drop only works on Chromium-based browsers (full path unavailable). Use "Browse Folder" instead.', 'warn');
+      }
     }
   }
 });
@@ -417,10 +431,29 @@ fileInput.addEventListener('change', function() {
   for (var i = 0; i < fileInput.files.length; i++) {
     var f = fileInput.files[i];
     if (f.name.toLowerCase().endsWith('.srt')) {
-      addFile(f.path || f.name, f.size);
+      if (f.path && /^[a-zA-Z]:\\/.test(f.path)) {
+        addFile(f.path, f.size);
+      } else {
+        logLine('[WARN] Native file picker full path unavailable on this browser. Use "Browse Folder" or paste the path below.', 'warn');
+      }
     }
   }
   fileInput.value = '';
+});
+
+$('addPathBtn').addEventListener('click', function() {
+  var val = $('manualPathInput').value.trim();
+  if (!val) return;
+  if (!val.toLowerCase().endsWith('.srt')) {
+    logLine('[WARN] Path must point to a .srt file.', 'warn');
+    return;
+  }
+  addFile(val, 0);
+  $('manualPathInput').value = '';
+});
+
+$('manualPathInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { $('addPathBtn').click(); }
 });
 
 $('browseFolderBtn').addEventListener('click', function() {
