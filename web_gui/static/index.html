@@ -231,8 +231,8 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <input type="number" id="numBeams" value="4" min="1" max="8" title="NLLB beam search width">
         <label>Model:</label>
         <select id="polishModelSelect">
-          <option value="gemma4:e4b">gemma4 (quality, 9.6 GB)</option>
-          <option value="qwen2.5:7b">qwen2.5 (fast, 4.7 GB)</option>
+          <option value="qwen2.5:7b" selected>qwen2.5:7b (recommended, 4.7 GB)</option>
+          <option value="gemma4:e4b">gemma4:e4b (thinking model, may not work)</option>
           <option value="deepseek-v4-flash-free">DeepSeek (proxy)</option>
         </select>
         <label>Parallel:</label>

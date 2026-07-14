@@ -2786,7 +2786,7 @@ def translate_polish(fpath: Path, cfg: Config,
                 "model": polish_model_name,
                 "messages": [{"role": "user", "content": user_msg}],
                 "stream": False,
-                "options": {"temperature": 0, "num_ctx": 6144,
+                "options": {"temperature": 0, "num_ctx": 8192,
                             "num_predict": len(batch_ids) * 300, "keep_alive": "30m"},
             }
             result = _ollama_chat(session, chat_url, payload, timeout=120)
