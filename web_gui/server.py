@@ -269,7 +269,7 @@ def api_start():
     )
 
     polish_model = body.get("polish_model", "gemma4:e4b")
-    polish_parallel = body.get("polish_parallel", 2)
+    polish_parallel = body.get("polish_parallel", 1)
     ollama_host = body.get("ollama_host", "http://127.0.0.1:11434")
 
     _worker_thread = threading.Thread(

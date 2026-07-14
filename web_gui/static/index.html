@@ -237,9 +237,9 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         </select>
         <label>Parallel:</label>
         <select id="polishParallelSelect">
-          <option value="1">1 (sequential)</option>
-          <option value="2" selected>2 (balanced)</option>
-          <option value="3">3 (fast)</option>
+          <option value="1" selected>1 (safe)</option>
+          <option value="2">2 (if VRAM permits)</option>
+          <option value="3">3 (aggressive)</option>
         </select>
         <div class="full-row checkbox-row">
           <input type="checkbox" id="resumeCheck">
@@ -773,7 +773,7 @@ startBtn.addEventListener('click', function() {
     resume: resume,
     output_dir: outputDir,
     polish_model: $('polishModelSelect').value,
-    polish_parallel: parseInt($('polishParallelSelect').value) || 2
+    polish_parallel: parseInt($('polishParallelSelect').value) || 1
   });
 
   results = [];

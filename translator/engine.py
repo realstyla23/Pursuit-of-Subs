@@ -81,7 +81,7 @@ class Config:
     llm_batch_size: int = 30
     proxy_base_url: str = ""
     proxy_api_key: str = ""
-    polish_parallel: int = 2
+    polish_parallel: int = 1
 
     def __post_init__(self):
         if not self.proxy_base_url:
