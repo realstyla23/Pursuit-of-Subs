@@ -1128,6 +1128,106 @@ def seconv_fix_timing(srt_path: Path, aggressive: bool = False) -> bool:
     return True
 
 
+def qa_report(
+    srt_path: Path,
+    eng_srt_path: Path,
+    glossary: dict,
+    names: dict,
+    spotcheck_lines: int = 50,
+) -> dict:
+    """Scan the first spotcheck_lines of German output and flag issues.
+
+    Checks performed:
+    1. Glossary coverage — glossary terms present in EN source missing from DE output
+    2. Name preservation — names from names.json that appear untranslated in DE
+    3. Line length — flag lines over 42 visible characters
+    4. Reading speed — flag lines with CPS > 25 (error) or > 22 (warning)
+
+    Returns a dict: {"errors": int, "warnings": int, "status": "PASS"|"FAIL", "details": [...]}
+    """
+    try:
+        ger_subs = pysrt.open(str(srt_path), encoding="utf-8")
+    except Exception as e:
+        return {"errors": 0, "warnings": 0, "status": "FAIL", "details": [f"Can't open {srt_path.name}: {e}"]}
+
+    try:
+        eng_subs = pysrt.open(str(eng_srt_path), encoding="utf-8")
+    except Exception:
+        eng_subs = None
+
+    gloss_lookup: dict[str, str] = {}
+    for k, v in glossary.items():
+        default, acceptable = _resolve_glossary_entry(v)
+        if default:
+            gloss_lookup[k.lower()] = (default.lower(), [a.lower() for a in acceptable])
+
+    name_set = set()
+    for k, v in names.items():
+        if isinstance(v, str):
+            name_set.add(v.lower())
+        elif isinstance(v, list):
+            name_set.update(x.lower() for x in v)
+
+    errors = 0
+    warnings = 0
+    details: list[str] = []
+
+    max_lines = min(spotcheck_lines, len(ger_subs))
+    for i in range(max_lines):
+        ger_sub = ger_subs[i]
+        ger_text = ger_sub.text.strip()
+        ger_text_no_tags = re.sub(r'<[^>]+>', '', ger_text)
+        visible_chars = len(ger_text_no_tags)
+
+        start_ms = ger_sub.start.ordinal
+        end_ms = ger_sub.end.ordinal
+        duration_s = (end_ms - start_ms) / 1000.0
+
+        # 1. Glossary coverage
+        eng_text = ""
+        if eng_subs and i < len(eng_subs):
+            eng_text = eng_subs[i].text.strip().lower()
+        if eng_text:
+            for eng_term, (ger_term, acceptable) in gloss_lookup.items():
+                if re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', eng_text):
+                    all_ok = [ger_term] + acceptable
+                    if not any(
+                        re.search(r'(?<!\w)' + re.escape(w) + r'(?!\w)', ger_text.lower())
+                        for w in all_ok
+                    ):
+                        errors += 1
+                        details.append(
+                            f"  Line {i+1}: '{eng_term}' -> '{ger_term}' missing in German output"
+                        )
+
+        # 2. Name preservation
+        ger_lower = ger_text.lower()
+        for name in name_set:
+            if re.search(r'(?<!\w)' + re.escape(name) + r'(?!\w)', ger_lower):
+                warnings += 1
+                details.append(
+                    f"  Line {i+1}: Name '{name}' appears untranslated in German"
+                )
+
+        # 3. Line length
+        if visible_chars > 42:
+            warnings += 1
+            details.append(f"  Line {i+1}: {visible_chars} chars exceeds 42")
+
+        # 4. Reading speed (CPS)
+        if duration_s > 0:
+            cps = visible_chars / duration_s
+            if cps > 25:
+                errors += 1
+                details.append(f"  Line {i+1}: CPS={cps:.1f} exceeds 25 (error)")
+            elif cps > 22:
+                warnings += 1
+                details.append(f"  Line {i+1}: CPS={cps:.1f} exceeds 22 (warning)")
+
+    status = "FAIL" if errors > 0 else "PASS"
+    return {"errors": errors, "warnings": warnings, "status": status, "details": details}
+
+
 # ---------------------------------------------------------------------------
 # 3. Name preservation
 # ---------------------------------------------------------------------------
