@@ -197,21 +197,21 @@ def main():
                 translate_llm(f, cfg)
                 translate_polish(f, cfg, polish_model=cfg.polish_model)
 
-        # Post-processing: timing fix + QA report
-        if a.fix_timing or a.fix_aggressive:
-            seconv_fix_timing(out, aggressive=a.fix_aggressive)
+            # Post-processing: timing fix + QA report
+            if a.fix_timing or a.fix_aggressive:
+                seconv_fix_timing(out, aggressive=a.fix_aggressive)
 
-        if a.qa_report:
-            result = qa_report(
-                out, f,
-                glossary=load_glossary(),
-                names=load_names(),
-                spotcheck_lines=a.qa_spotcheck_lines,
-            )
-            print(f"  [QA] {f.name} -> {result['status']} "
-                  f"({result['errors']} err, {result['warnings']} warn)")
-            for d in result["details"]:
-                print(d)
+            if a.qa_report:
+                result = qa_report(
+                    out, f,
+                    glossary=load_glossary(),
+                    names=load_names(),
+                    spotcheck_lines=a.qa_spotcheck_lines,
+                )
+                print(f"  [QA] {f.name} -> {result['status']} "
+                      f"({result['errors']} err, {result['warnings']} warn)")
+                for d in result["details"]:
+                    print(d)
 
     except KeyboardInterrupt:
         print("\nInterrupted by user.", flush=True)
