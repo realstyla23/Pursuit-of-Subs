@@ -32,5 +32,17 @@
   { "find": "Metzlermesser", "replace": "Schlachtmesser" },
   { "find": "Sagen Sie mir Frau Zhao", "replace": "Sagen Sie Frau Zhao" },
   { "find": "Schlachtmesser, metzger, ♪", "replace": "♪" },
-  { "find": "Es wird kosten", "replace": "es wird kosten" }
+  { "find": "Es wird kosten", "replace": "es wird kosten" },
+  { "find": "Frau. ", "replace": "Frau " },
+  { "find": "Herr. ", "replace": "Herr " },
+  { "find": "Die Fan Das Paar", "replace": "Das Ehepaar Fan" },
+  { "find": "Das Fan Das Paar", "replace": "Das Ehepaar Fan" },
+  { "find": "Generalfeind", "replace": "General des Feindes" },
+  { "find": "Meister-Aktie", "replace": "Meisterbrühe" },
+  { "find": "Meister Grundbrühe", "replace": "Meisterbrühe" },
+  { "find": "leuchtende Augen und kirschrote Lippen", "replace": "leuchtenden Augen und kirschroten Lippen" },
+  { "find": "um es zu fangen", "replace": "um es aufzufangen" },
+  { "find": "Stammsud", "replace": "Meisterbrühe" },
+  { "find": "stammsud", "replace": "Meisterbrühe" },
+  { "find": "Meister, stammsud", "replace": "Meisterbrühe" }
 ]

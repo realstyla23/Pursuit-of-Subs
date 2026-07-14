@@ -1316,17 +1316,19 @@ def load_short_fragments() -> dict[str, str]:
     return load_json("short_fragments.json")
 
 def apply_german_fixes(ger_texts: list[str], fixes: list[dict]) -> int:
-    """Fix known awkward German translations."""
+    """Fix known awkward German translations. Case-insensitive matching, case-insensitive replacement."""
     count = 0
     for i, t in enumerate(ger_texts):
         for fix in fixes:
             f = fix["find"]
             r = fix["replace"]
-            if f.lower() in t.lower():
-                new_t = t.replace(f, r)
-                if new_t != t:
-                    ger_texts[i] = new_t
-                    count += 1
+            if f.lower() not in t.lower():
+                continue
+            # Case-insensitive replacement: find all occurrences preserving case
+            new_t = re.sub(re.escape(f), r, t, flags=re.IGNORECASE)
+            if new_t != t:
+                ger_texts[i] = new_t
+                count += 1
     return count
 
 
