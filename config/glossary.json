@@ -76,7 +76,7 @@
   "mace": "Qian (Mace)",
   "cleaver": "Fleischerbeil",
   "long-handled blade techniques": "Langstielklingen-Techniken",
-  "butcher": "Metzger",
+  "butcher": { "default": "Metzger", "acceptable": ["Metzgers", "Metzgern"] },
   "title deed": "Eigentumsurkunde",
   "male heir": "Männlicher Erbe",
   "closest kin": "Nächste Verwandte",

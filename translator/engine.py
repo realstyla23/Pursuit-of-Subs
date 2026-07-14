@@ -872,19 +872,21 @@ def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -
         if default:
             gloss_parsed[k.lower()] = (default, [d.lower() for d in acceptable])
 
+    gloss_sorted = sorted(gloss_parsed.items(), key=lambda x: len(x[0]), reverse=True)
+
     count = 0
     for i in range(min(len(eng_texts), len(ger_texts))):
         en, de = eng_texts[i], ger_texts[i]
         en_lower = en.lower()
         de_lower = de.lower()
 
-        for eng_term, (ger_term, acceptable) in gloss_parsed.items():
-            if not re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_lower):
+        for eng_term, (ger_term, acceptable) in gloss_sorted:
+            if not re.search(r'(?<!\w)' + re.escape(eng_term) + r"(?!'s)(?!\w)", en_lower):
                 continue
 
             all_check = [ger_term.lower()] + acceptable
             already_correct = any(
-                re.search(r'(?<!\w)' + re.escape(w) + r'(?!\w)', de_lower)
+                re.search(r'(?<!\w)' + re.escape(w) + r"(?!'s)(?!\w)", de_lower)
                 for w in all_check
             )
             if already_correct:
@@ -893,7 +895,7 @@ def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -
             new_de = de
 
             for wrong_form in [eng_term.title(), eng_term, eng_term.upper()]:
-                pattern = re.compile(r'(?<!\w)' + re.escape(wrong_form) + r'(?!\w)')
+                pattern = re.compile(r'(?<!\w)' + re.escape(wrong_form) + r"(?!'s)(?!\w)")
                 if pattern.search(de):
                     new_de = pattern.sub(ger_term, de)
                     break
@@ -910,11 +912,11 @@ def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -
                                 or en_stripped_lower.startswith(eng_term + ","))
             en_matches_end = en_clean.endswith(" " + eng_term) or en_clean == eng_term
             en_matches_anywhere = (
-                re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_stripped_lower)
+                re.search(r'(?<!\w)' + re.escape(eng_term) + r"(?!'s)(?!\w)", en_stripped_lower)
                 is not None
             )
             if en_matches_start or en_matches_end or en_matches_anywhere:
-                if not re.search(r'(?<!\w)' + re.escape(ger_term) + r'(?!\w)', de_lower):
+                if not re.search(r'(?<!\w)' + re.escape(ger_term) + r"(?!'s)(?!\w)", de_lower):
                     en_core = en_stripped.strip(" \t\n\r.!?,;:-")
                     if en_core.lower() == eng_term:
                         trailing = en_stripped[-1] if en_stripped[-1:] in '.!?' else ''

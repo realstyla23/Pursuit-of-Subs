@@ -27,5 +27,10 @@
   { "find": "weiblicher General", "replace": "Generalin" },
   { "find": "Wer wagt es, eine Frau zu sagen?\nKann nicht mit einem Mann konkurrieren?", "replace": "Wer wagt es, einer Frau zu sagen,\nsie könne nicht mit einem Mann konkurrieren?" },
   { "find": "die Fan der Haushalt", "replace": "der Haushalt von Fan" },
-  { "find": "Darmzüge", "replace": "Innereien" }
+  { "find": "Darmzüge", "replace": "Innereien" },
+  { "find": "Metzers", "replace": "Metzgers" },
+  { "find": "Metzlermesser", "replace": "Schlachtmesser" },
+  { "find": "Sagen Sie mir Frau Zhao", "replace": "Sagen Sie Frau Zhao" },
+  { "find": "Schlachtmesser, metzger, ♪", "replace": "♪" },
+  { "find": "Es wird kosten", "replace": "es wird kosten" }
 ]
