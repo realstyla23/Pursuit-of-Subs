@@ -11,7 +11,7 @@ Modes:
 
 __version__ = "4.3.0"
 
-import argparse, json, os, re, sys, time, warnings
+import argparse, json, os, re, sys, time, warnings, subprocess, shutil
 from dataclasses import dataclass
 from pathlib import Path
 import pysrt
@@ -1092,84 +1092,41 @@ def merge_glossary_auto(
         json.dump(merged, f, ensure_ascii=False, indent=2)
     print(f"  Added {len(new_terms)} term(s) to {manual_path}")
     return len(new_terms)
-    """Source-aware glossary correction. Check EN input against DE output.
-    Supports both old (str) and new (dict with default/acceptable) formats.
-    Uses word-boundary matching, avoids double commas, corrects capitalization.
+
+
+def seconv_fix_timing(srt_path: Path, aggressive: bool = False) -> bool:
+    """Fix common subtitle timing errors via seconv (Subtitle Edit CLI).
+
+    Returns True if seconv ran successfully, False if not found/failed.
+    With aggressive=True, runs the fix pass twice to catch secondary issues.
     """
-    # Build flat mapping: en_term_lower -> (de_default, acceptable_list)
-    gloss_parsed = {}
-    for k, v in glossary.items():
-        default, acceptable = _resolve_glossary_entry(v)
-        if default:
-            gloss_parsed[k.lower()] = (default, [d.lower() for d in acceptable])
+    seconv = shutil.which("seconv")
+    if seconv is None:
+        print(f"  [WARN] seconv not found in PATH. Skipping timing fix for {srt_path.name}")
+        return False
 
-    count = 0
-    for i in range(min(len(eng_texts), len(ger_texts))):
-        en, de = eng_texts[i], ger_texts[i]
-        en_lower = en.lower()
-        de_lower = de.lower()
-
-        for eng_term, (ger_term, acceptable) in gloss_parsed.items():
-            # Does English contain this glossary term (word boundary)?
-            if not re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_lower):
-                continue
-
-            # Check if acceptable term(s) already present in German (word boundary)
-            all_check = [ger_term.lower()] + acceptable
-            already_correct = any(
-                re.search(r'(?<!\w)' + re.escape(w) + r'(?!\w)', de_lower)
-                for w in all_check
+    passes = 2 if aggressive else 1
+    for i in range(passes):
+        label = f"  seconv pass {i+1}/{passes}" if aggressive else "  seconv"
+        print(f"{label} {srt_path.name}...", end=" ", flush=True)
+        try:
+            result = subprocess.run(
+                [seconv, str(srt_path), "--fix-common-errors"],
+                capture_output=True, text=True, timeout=60,
             )
-            if already_correct:
-                continue
+            if result.returncode == 0:
+                print("OK", flush=True)
+            else:
+                print(f"exit {result.returncode}: {result.stderr.strip()[:120]}", flush=True)
+                return False
+        except FileNotFoundError:
+            print("seconv not found", flush=True)
+            return False
+        except subprocess.TimeoutExpired:
+            print("timed out", flush=True)
+            return False
+    return True
 
-            new_de = de
-
-            # Try 1: English word still in German output → replace it
-            for wrong_form in [eng_term.title(), eng_term, eng_term.upper()]:
-                pattern = re.compile(r'(?<!\w)' + re.escape(wrong_form) + r'(?!\w)')
-                if pattern.search(de):
-                    new_de = pattern.sub(ger_term, de)
-                    break
-
-            if new_de != de:
-                ger_texts[i] = new_de
-                count += 1
-                continue
-
-            # Try 2: Term was dropped entirely (e.g. "Captain" → "...")
-            # Prepend glossary term, preserve German translation but lowercase its first letter
-            en_stripped = en.strip()
-            en_stripped_lower = en_stripped.lower()
-            # Clean English: strip trailing punctuation/whitespace, then check endswith
-            en_clean = en_stripped_lower.rstrip(" \t\n\r.!?,;:")
-            en_matches_start = (en_stripped_lower.startswith(eng_term + " ")
-                                or en_stripped_lower.startswith(eng_term + ","))
-            en_matches_end = en_clean.endswith(" " + eng_term) or en_clean == eng_term
-            en_matches_anywhere = (
-                re.search(r'(?<!\w)' + re.escape(eng_term) + r'(?!\w)', en_stripped_lower)
-                is not None
-            )
-            if en_matches_start or en_matches_end or en_matches_anywhere:
-                if not re.search(r'(?<!\w)' + re.escape(ger_term) + r'(?!\w)', de_lower):
-                    # Try 3: EN is essentially just the glossary term (single word ± punct)
-                    en_core = en_stripped.strip(" \t\n\r.!?,;:-")
-                    if en_core.lower() == eng_term:
-                        # Preserve EN ending punctuation style
-                        trailing = en_stripped[-1] if en_stripped[-1:] in '.!?' else ''
-                        ger_texts[i] = ger_term + trailing
-                        count += 1
-                        continue
-                    # Try 2: Prepend glossary term
-                    if new_de:
-                        leading = new_de[0].lower() + new_de[1:]
-                        leading = re.sub(r'^-\s*', '', leading).strip()
-                        ger_texts[i] = f"{ger_term}, {leading}"
-                    else:
-                        ger_texts[i] = f"{ger_term}."
-                    count += 1
-
-    return count
 
 # ---------------------------------------------------------------------------
 # 3. Name preservation
