@@ -10,6 +10,9 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
 - **Glossary** — Domain-specific terminology enforcement
 - **Glossary Automation** — Extract domain terms from source SRTs via DeepSeek, then merge into glossary with dry-run preview
+- **Auto-Glossary mode** — `--auto-glossary` learns new terms from each episode and applies them immediately, improving translation quality over time without manual intervention
+- **Post-translation QA** — `--qa-report` scans output for missing glossary terms, lost character names, line length violations, and reading speed (CPS) issues
+- **Timing fix** — `--fix-timing` runs Subtitle Edit CLI (`seconv`) to fix common subtitle timing errors
 - **Translation Memory** — Caches approved translations per line (opt-in, off by default)
 - **QA scoring** — Detects untranslated lines, missing glossary/names, length anomalies, invented content
 - **Checkpoints** — Resume interrupted translations without data loss
@@ -79,6 +82,11 @@ Options:
   --glossary-focus TOPICS  Comma-separated domain topics (overrides default)
   --interactive         Prompt per new entry when merging
   --dry-run             With merge: show diff, no write
+  --auto-glossary       Per-file: extract terms → auto-merge → translate (self-improving)
+  --fix-timing          Post-translation: run seconv --fix-common-errors
+  --fix-aggressive      Run seconv twice for stubborn overlaps
+  --qa-report           Post-translation: print QA summary (glossary, names, CPS, line length)
+  --qa-spotcheck-lines N  Leading lines to scan for QA (default: 50)
   --test                Run internal test suite
   --benchmark           Measure performance
 ```
@@ -100,6 +108,12 @@ python subtranslate.py --merge-glossary --dry-run
 
 # Merge into glossary.json
 python subtranslate.py --merge-glossary
+
+# Full auto-pipeline: glossary learning + NLLB + DeepSeek polish + QA
+python subtranslate.py --mode full --auto-glossary --qa-report --input-dir "D:\Shows\E06"
+
+# Fast pipeline with timing fix and QA
+python subtranslate.py --mode fast --fix-timing --qa-report --input-dir "D:\Shows\E06"
 
 # Benchmark
 python subtranslate.py --mode benchmark
@@ -239,15 +253,31 @@ Domain-specific term mappings applied after translation:
 }
 ```
 
-### Glossary Automation (`--generate-glossary` / `--merge-glossary`)
+### Glossary Automation
 
-Two-step extraction from source SRTs:
-
+**Two-step extraction (`--generate-glossary` / `--merge-glossary`):**
 1. **`--generate-glossary`** — Scans all SRTs in `--input-dir`, sends text chunks to DeepSeek with a narrow domain prompt (butchery, marriage customs, military ranks, medicine, court/rebels), saves to `config/glossary_auto.json`. Character names and common nouns are excluded.
 2. **`--merge-glossary`** — Batches new entries from `glossary_auto.json` into `glossary.json`. Manual entries always win. Use `--dry-run` to preview. Use `--interactive` to approve per entry.
-3. **`--glossary-focus`** — Override the default domain topics with a custom comma-separated string.
 
-The auto file is regenerated each run; the manual `glossary.json` is never overwritten.
+**Self-improving mode (`--auto-glossary`):**
+Before each file, the pipeline automatically:
+1. Extracts domain terms from the source SRT via DeepSeek
+2. Auto-merges new terms into `glossary.json` (manual entries always win)
+3. Translates with the now-updated glossary
+
+Each episode makes the glossary slightly better. Over a full season, the glossary saturates and translation quality improves without any manual intervention.
+
+### Post-Translation QA (`--qa-report`)
+
+Scans the first N lines (default 50) of each output file and flags:
+- **Glossary coverage** — glossary terms present in English source but missing from German output
+- **Name preservation** — character names from `names.json` that were lost during translation
+- **Line length** — lines exceeding 42 visible characters (warning)
+- **Reading speed** — CPS (characters per second) > 22 (warning) or > 25 (error)
+
+### Timing Fix (`--fix-timing` / `--fix-aggressive`)
+
+Runs `seconv --fix-common-errors` (Subtitle Edit CLI) on the output SRT to fix common subtitle timing issues. `--fix-aggressive` runs the fix pass twice to catch secondary issues. Gracefully warns if `seconv` is not installed.
 
 ### Short Fragments (`config/short_fragments.json`)
 Fragments that NLLB hallucinates on. Protected before NLLB and replaced with correct German:
