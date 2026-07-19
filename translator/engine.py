@@ -3476,17 +3476,19 @@ LEARN_SCAN_PROMPT = (
 
 
 def learn_scan(eng_texts: list[str], ger_texts: list[str],
-               polisher: tuple) -> list[dict]:
+               polisher: tuple,
+               progress_callback: callable | None = None) -> list[dict]:
     """Scan every line for errors using LLM. Returns list of {find, replace}."""
     session, chat_url, model_name, api_key = polisher
     candidates = []
     seen_pairs: set[tuple[str, str]] = set()
-    engine_url = chat_url  # may be overridden for proxy vs ollama
 
     n_total = len(eng_texts)
     for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
         if i > 0 and i % 50 == 0:
             print(f"    scan: {i}/{n_total} lines, {len(candidates)} candidate(s)", flush=True)
+            if progress_callback:
+                progress_callback(i, n_total)
         if not de.strip():
             continue
         prompt = LEARN_SCAN_PROMPT.format(eng=en, ger=de)
@@ -3594,7 +3596,8 @@ def learn_persist(fixes: list[dict]) -> int:
 
 def translate_learn(fpath: Path, cfg: Config,
                     nllb_path: Path | None = None,
-                    polish_model: str | None = None) -> bool:
+                    polish_model: str | None = None,
+                    progress_callback: callable | None = None) -> bool:
     """Learn mode: full pipeline + Pass 2 + error scan + auto-fix persist."""
     timer = _Timer()
     out = nllb_path or output_path_for(fpath)
@@ -3639,6 +3642,7 @@ def translate_learn(fpath: Path, cfg: Config,
         from concurrent.futures import ThreadPoolExecutor, as_completed
         fixes_lock = threading.Lock()
         pass2_fixes = {}
+        pass2_batch_starts = list(range(0, len(suspicious), batch_size))
 
         def _submit_pass2(s):
             batch_ids = suspicious[s:s + batch_size]
@@ -3681,15 +3685,19 @@ def translate_learn(fpath: Path, cfg: Config,
                 for idx, corr in local_fixes:
                     pass2_fixes[idx] = corr
 
-        batch_starts = list(range(0, len(suspicious), batch_size))
-        parallel = getattr(cfg, "polish_parallel", 2) if len(batch_starts) > 1 else 1
+        parallel = getattr(cfg, "polish_parallel", 2) if len(pass2_batch_starts) > 1 else 1
+        pass2_done = 0
         with ThreadPoolExecutor(max_workers=parallel) as executor:
-            futures = {executor.submit(_submit_pass2, s): s for s in batch_starts}
+            futures = {executor.submit(_submit_pass2, s): s for s in pass2_batch_starts}
             for future in as_completed(futures):
                 try:
                     future.result()
                 except Exception as exc:
                     print(f"  [WARN] Pass 2 batch failed: {exc}", flush=True)
+                pass2_done += 1
+                if progress_callback and pass2_batch_starts and len(pass2_batch_starts) > 1:
+                    pct = pass2_done / len(pass2_batch_starts)
+                    progress_callback(int(pct * len(suspicious)), len(suspicious))
 
         for idx, new_text in pass2_fixes.items():
             ger_texts[idx] = new_text.replace(" // ", "\n")
@@ -3703,7 +3711,8 @@ def translate_learn(fpath: Path, cfg: Config,
 
     # Error scan — check every line
     timer.start("Error Scan")
-    candidates = learn_scan(eng_texts, ger_texts, polisher)
+    candidates = learn_scan(eng_texts, ger_texts, polisher,
+                            progress_callback=progress_callback)
     timer.stop("Error Scan")
 
     # Verify and persist

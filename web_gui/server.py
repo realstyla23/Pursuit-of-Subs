@@ -182,9 +182,24 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
             if mode == "learn":
                 model_label = polish_model.split(":")[0] if polish_model else "qwen"
                 push_event("step_changed", {"step": f"Learn mode ({model_label})"})
+
+                def learn_progress(done, total):
+                    if _cancel_event.is_set():
+                        raise KeyboardInterrupt()
+                    push_event("progress", {"done": done, "total": total})
+                    if done > 0 and done - 1 < len(eng_texts):
+                        push_event("current_en", {"text": eng_texts[done - 1]})
+                    try:
+                        ger_subs = pysrt.open(str(out), encoding="utf-8")
+                        if done <= len(ger_subs):
+                            push_event("current_de", {"text": ger_subs[done - 1].text})
+                    except Exception:
+                        pass
+
                 try:
                     translate_learn(fpath, file_cfg, nllb_path=out,
-                                   polish_model=polish_model or None)
+                                   polish_model=polish_model or None,
+                                   progress_callback=learn_progress)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Learn error (non-fatal): {e}",
                                        "level": "warn"})
