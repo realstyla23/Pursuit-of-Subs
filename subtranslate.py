@@ -12,7 +12,7 @@ import sys
 from translator import (
     __version__, Config, _auto_device,
     find_srt_files, output_path_for,
-    translate_fast, translate_polish, translate_llm,
+    translate_fast, translate_polish, translate_learn, translate_llm,
     run_test, run_benchmark, run_regression,
     _checkpoint_path,
     generate_glossary, merge_glossary_auto,
@@ -25,7 +25,7 @@ def main():
     p = argparse.ArgumentParser(
         description=f"Subtitle Translator v{__version__} — NLLB-600M GPU batch translator"
     )
-    p.add_argument("--mode", choices=["fast", "polish", "full", "test", "benchmark", "regression", "llm"],
+    p.add_argument("--mode", choices=["fast", "polish", "full", "test", "benchmark", "regression", "llm", "learn"],
                    default="fast")
     p.add_argument("--input-dir", default=".")
     p.add_argument("--force", action="store_true")
@@ -202,6 +202,14 @@ def main():
                     continue
                 translate_llm(f, cfg)
                 translate_polish(f, cfg, polish_model=cfg.polish_model)
+
+            elif cfg.mode == "learn":
+                if out.exists() and not cfg.force:
+                    print(f"  Skip {f.name}")
+                    continue
+                translate_fast(f, cfg)
+                translate_polish(f, cfg, polish_model=cfg.polish_model)
+                translate_learn(f, cfg, polish_model=cfg.polish_model)
 
             # Post-processing: timing fix + QA report
             if a.fix_timing or a.fix_aggressive:

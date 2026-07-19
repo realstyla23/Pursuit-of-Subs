@@ -7,6 +7,7 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 - **Fast** — Batch NLLB-600M translation at ~30 lines/second on an RTX 4060 Ti
 - **Polish** — LLM quality pass on suspicious lines (Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
 - **Full** — Both passes combined for highest quality
+- **Learn** — Self-improving mode: full pipeline + automatic error detection + fix persistence to `german_fixes.json`. Each run makes the next run better. Takes ~15min/episode but requires zero manual intervention.
 - **English filter** — Catches and translates English words that NLLB missed, without false positives
 - **Parallel batches** — Suspicious lines grouped into batches of 10, sent concurrently (2 by default)
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
@@ -73,7 +74,7 @@ python subtranslate.py --web-gui
 python subtranslate.py [OPTIONS]
 
 Options:
-  --mode MODE           fast, polish, full, test, benchmark, regression, llm
+  --mode MODE           fast, polish, full, test, benchmark, regression, llm, learn
   --input-dir DIR       Directory containing .srt files (default: .)
   --device DEV          cuda or cpu (default: cuda)
   --batch-size N        NLLB batch size (default: 64)
@@ -115,6 +116,9 @@ python subtranslate.py --mode polish --polish-model qwen2.5:7b
 
 # Fastest polish: Gemma 4 with 3 parallel batches
 python subtranslate.py --mode polish --polish-model gemma4:e4b --polish-parallel 3
+
+# Learn mode: full pipeline + auto-error-detection + fix persistence
+python subtranslate.py --mode learn --input-dir "D:\Shows\E06"
 
 # Extract domain glossary from source SRTs
 python subtranslate.py --generate-glossary --input-dir "D:\Shows\Season 1"

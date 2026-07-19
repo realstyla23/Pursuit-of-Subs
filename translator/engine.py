@@ -3437,4 +3437,305 @@ def translate_polish_multi(files: list[Path], cfg: Config,
     return results
 
 
-# (CLI lives in subtranslate.py — this module is import-only)
+# ---------------------------------------------------------------------------
+# Learn mode — self-improving error detection and fix persistence
+# ---------------------------------------------------------------------------
+
+POLISH_PASS2_PROMPT = (
+    "You are a German proofreader. Your ONLY job: find and eliminate any English "
+    "words that remain in this German subtitle.\n"
+    "Rules:\n"
+    "- EVERY word must be German\n"
+    "- If you see an English word, replace it with the correct German word\n"
+    "- If you see a made-up word that isn't real German (like \"panizierte\"), "
+    "replace it with proper German (\"geriet in Panik\")\n"
+    "- Fix adjective declensions: \"leuchtende Augen\" -> \"leuchtenden Augen\"\n"
+    "- Fix wrong noun compounds\n"
+    "Return ONLY the corrected text. If unchanged, return the original."
+)
+
+LEARN_SCAN_PROMPT = (
+    "You are a quality inspector for German subtitles. Compare this English source "
+    "line with its German translation.\n\n"
+    "English: {eng}\n"
+    "German: {ger}\n\n"
+    "Does the German contain ANY error?\n\n"
+    "Error categories (return the FIRST matching category):\n"
+    "1. ENGLISH_WORD — any English word left untranslated\n"
+    "2. MADE_UP — word that isn't real German (e.g. \"Gefühlungen\", \"panizierte\")\n"
+    "3. WRONG_WORD — real German word but wrong meaning (e.g. \"gierig\" for \"stingy\")\n"
+    "4. GRAMMAR — wrong declension, word order, separable verb placement\n"
+    "5. FORMAT — missing space, wrong capitalization, missing punctuation\n\n"
+    "Respond in EXACTLY this format. One line per error found:\n"
+    "FIX|exact text from German|correct replacement\n\n"
+    "Example:\n"
+    "FIX|Gefühlungen|Gefühlen\n"
+    "FIX|Schweineinnereien, innereien|Innereien\n\n"
+    "If NO errors, respond only: OK"
+)
+
+
+def learn_scan(eng_texts: list[str], ger_texts: list[str],
+               polisher: tuple) -> list[dict]:
+    """Scan every line for errors using LLM. Returns list of {find, replace}."""
+    session, chat_url, model_name, api_key = polisher
+    candidates = []
+    seen_pairs: set[tuple[str, str]] = set()
+    engine_url = chat_url  # may be overridden for proxy vs ollama
+
+    for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
+        if not de.strip():
+            continue
+        prompt = LEARN_SCAN_PROMPT.format(eng=en, ger=de)
+        if api_key:
+            payload = {
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0,
+                "max_tokens": 256,
+            }
+            headers = {"Authorization": f"Bearer {api_key}"}
+            result = _ollama_chat(session, chat_url, payload, headers=headers, timeout=60)
+        else:
+            payload = {
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 256, "keep_alive": "30m"},
+            }
+            result = _ollama_chat(session, chat_url, payload, timeout=60)
+        if result is None:
+            continue
+        if api_key:
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+        else:
+            content = result.get("message", {}).get("content", "")
+        for line in content.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("FIX|"):
+                parts = line.split("|", 2)
+                if len(parts) == 3:
+                    f_text = parts[1].strip()
+                    r_text = parts[2].strip()
+                    if f_text and r_text and f_text != r_text:
+                        key = (f_text.lower(), r_text.lower())
+                        if key not in seen_pairs:
+                            seen_pairs.add(key)
+                            candidates.append({"find": f_text, "replace": r_text})
+    print(f"    learn scan: {len(candidates)} candidate(s)", flush=True)
+    return candidates
+
+
+def _is_format_fix(find: str, replace: str) -> bool:
+    """Determine if a fix is purely formatting (no semantic change)."""
+    f_lower = find.lower()
+    r_lower = replace.lower()
+    # Capitalization-only fix
+    if f_lower == r_lower:
+        return True
+    # Space/punctuation fix
+    if find.replace(" ", "") == replace.replace(" ", ""):
+        return True
+    # Duplicate removal (e.g. "word word" -> "word")
+    if replace == find.replace(find.split()[0] + " " + find.split()[0], find.split()[0]) if len(find.split()) >= 2 else False:
+        pass  # fall through to heuristics
+    # Heuristic: if the difference is only spaces, punctuation, or capitalization
+    import unicodedata
+    f_clean = unicodedata.normalize("NFD", f_lower)
+    r_clean = unicodedata.normalize("NFD", r_lower)
+    f_alnum = re.sub(r'[^a-zäöüß0-9]', '', f_clean)
+    r_alnum = re.sub(r'[^a-zäöüß0-9]', '', r_clean)
+    return f_alnum == r_alnum
+
+
+def learn_verify(candidates: list[dict], ger_texts: list[str]) -> list[dict]:
+    """Verify candidates against current output and existing fixes."""
+    existing_fixes = load_json("german_fixes.json")
+    existing_finds = {f["find"].lower() for f in existing_fixes}
+    all_text = "\n".join(ger_texts).lower()
+
+    verified = []
+    for fix in candidates:
+        find = fix["find"]
+        replace = fix["replace"]
+        # Exists check
+        if find.lower() not in all_text:
+            continue
+        # Duplicate check
+        if find.lower() in existing_finds:
+            continue
+        # Add to verified
+        verified.append(fix)
+    print(f"    learn verify: {len(verified)} passed (of {len(candidates)})", flush=True)
+    return verified
+
+
+def learn_persist(fixes: list[dict]) -> int:
+    """Append new fixes to german_fixes.json. Returns count added."""
+    existing = load_json("german_fixes.json")
+    existing_finds = {f["find"].lower() for f in existing}
+    added = 0
+    for fix in fixes:
+        if fix["find"].lower() not in existing_finds:
+            existing.append(fix)
+            existing_finds.add(fix["find"].lower())
+            added += 1
+    if added:
+        filepath = CONFIG_DIR / "german_fixes.json"
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"    learn persist: {added} fix(es) added to german_fixes.json", flush=True)
+    return added
+
+
+def translate_learn(fpath: Path, cfg: Config,
+                    nllb_path: Path | None = None,
+                    polish_model: str | None = None) -> bool:
+    """Learn mode: full pipeline + Pass 2 + error scan + auto-fix persist."""
+    timer = _Timer()
+    out = nllb_path or output_path_for(fpath)
+    if not out.exists():
+        print(f"  [SKIP] No output found: {out.name}")
+        return False
+
+    timer.start("Load")
+    eng = safe_open_srt(fpath)
+    ger = safe_open_srt(out)
+    eng_texts = [sub.text for sub in eng]
+    ger_texts = [sub.text for sub in ger]
+    n = len(ger_texts)
+    timer.stop("Load")
+
+    glossary = load_glossary()
+    auto_glossary = _load_auto_glossary()
+    if auto_glossary:
+        merged = dict(glossary)
+        for k, v in auto_glossary.items():
+            if k not in merged:
+                merged[k] = v
+        glossary = merged
+    names = load_names()
+
+    # Find suspicious lines for Pass 2
+    timer.start("QA")
+    suspicious = find_suspicious_lines(eng_texts, ger_texts, glossary, names)
+    timer.stop("QA")
+
+    polisher = load_polisher(cfg, polish_model)
+    if polisher is None:
+        print(f"  [WARN] Polisher unavailable, skipping learn for {fpath.name}")
+        return False
+
+    session, chat_url, polish_model_name, proxy_api_key = polisher
+
+    # Polish Pass 2 — English killer
+    if suspicious:
+        timer.start("Polish Pass 2")
+        batch_size = 10
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        fixes_lock = threading.Lock()
+        pass2_fixes = {}
+
+        def _submit_pass2(s):
+            batch_ids = suspicious[s:s + batch_size]
+            xml_input = build_contextual_xml(batch_ids, eng_texts, ger_texts)
+            user_msg = POLISH_PASS2_PROMPT + "\n\n" + xml_input
+            if proxy_api_key:
+                payload = {
+                    "model": polish_model_name,
+                    "messages": [{"role": "user", "content": user_msg}],
+                    "temperature": 0,
+                    "max_tokens": len(batch_ids) * 200,
+                }
+                headers = {"Authorization": f"Bearer {proxy_api_key}"}
+                result = _ollama_chat(session, chat_url, payload, headers=headers, timeout=120)
+            else:
+                payload = {
+                    "model": polish_model_name,
+                    "messages": [{"role": "user", "content": user_msg}],
+                    "stream": False,
+                    "options": {"temperature": 0, "num_ctx": 8192,
+                                "num_predict": len(batch_ids) * 200, "keep_alive": "30m"},
+                }
+                result = _ollama_chat(session, chat_url, payload, timeout=120)
+            if result is None:
+                return
+            if proxy_api_key:
+                content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            else:
+                content = result.get("message", {}).get("content", "")
+            parsed = parse_xml(content)
+            local_fixes = []
+            for idx in batch_ids:
+                sid = idx + 1
+                if sid in parsed and parsed[sid]:
+                    corr = parsed[sid]
+                    if corr != ger_texts[idx] and not _rejects_content_addition(
+                            eng_texts[idx], ger_texts[idx], corr):
+                        local_fixes.append((idx, corr))
+            with fixes_lock:
+                for idx, corr in local_fixes:
+                    pass2_fixes[idx] = corr
+
+        batch_starts = list(range(0, len(suspicious), batch_size))
+        parallel = getattr(cfg, "polish_parallel", 2) if len(batch_starts) > 1 else 1
+        with ThreadPoolExecutor(max_workers=parallel) as executor:
+            futures = {executor.submit(_submit_pass2, s): s for s in batch_starts}
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as exc:
+                    print(f"  [WARN] Pass 2 batch failed: {exc}", flush=True)
+
+        for idx, new_text in pass2_fixes.items():
+            ger_texts[idx] = new_text.replace(" // ", "\n")
+        print(f"    pass 2: {len(pass2_fixes)} fix(es)", flush=True)
+        timer.stop("Polish Pass 2")
+
+    # Re-apply German fixes after Pass 2
+    timer.start("German Fixes")
+    gfc = apply_german_fixes(ger_texts, load_german_fixes())
+    timer.stop("German Fixes")
+
+    # Error scan — check every line
+    timer.start("Error Scan")
+    candidates = learn_scan(eng_texts, ger_texts, polisher)
+    timer.stop("Error Scan")
+
+    # Verify and persist
+    timer.start("Verify")
+    verified = learn_verify(candidates, ger_texts)
+    timer.stop("Verify")
+
+    timer.start("Persist")
+    added = learn_persist(verified)
+    timer.stop("Persist")
+
+    # Re-apply fixes (including newly learned ones)
+    if added:
+        timer.start("Final Fixes")
+        apply_german_fixes(ger_texts, load_german_fixes())
+        timer.stop("Final Fixes")
+
+    # Save
+    timer.start("Save")
+    for i, sub in enumerate(ger):
+        sub.text = ger_texts[i]
+    for i, t in enumerate(ger_texts):
+        if _PLACEHOLDER_RE.search(t):
+            raise RuntimeError(
+                f"Placeholder leak in {out.name} line {i+1}: "
+                f"{_PLACEHOLDER_RE.search(t).group()} — aborting save"
+            )
+    try:
+        atomic_save(ger, out)
+        timer.stop("Save")
+    except Exception as e:
+        print(f"  [ERROR] Save failed: {e}", flush=True)
+        return False
+
+    print(f"  {fpath.name}  QA: {n} lines, Pass 2: {len(suspicious)} suspicious/{len(pass2_fixes)} fixes, "
+          f"scan: {len(candidates)} candidates, {added} learned")
+    print(f"  {timer.report()}")
+    return True

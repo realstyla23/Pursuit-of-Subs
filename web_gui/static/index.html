@@ -214,6 +214,12 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
           <span class="mode-desc">LLM on existing</span>
         </label>
         <label class="mode-option">
+          <input type="radio" name="mode" value="learn">
+          <span class="mode-label">Learn</span>
+          <span class="mode-badge">&#9733; Self-improving</span>
+          <span class="mode-desc">NLLB + polish + auto-fix</span>
+        </label>
+        <label class="mode-option">
           <input type="radio" name="mode" value="regression">
           <span class="mode-label">Regression</span>
           <span class="mode-desc">Developer testing</span>
@@ -232,6 +238,7 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <label>Model:</label>
         <select id="polishModelSelect">
           <option value="qwen2.5:7b" selected>qwen2.5:7b (recommended, 4.7 GB)</option>
+          <option value="thinkverse/towerinstruct">TowerInstruct 7B (translation-specialized, 3.8 GB)</option>
           <option value="gemma4:e4b">gemma4:e4b (thinking model, may not work)</option>
           <option value="deepseek-v4-flash-free">DeepSeek (proxy)</option>
         </select>

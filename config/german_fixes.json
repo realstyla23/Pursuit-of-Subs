@@ -44,5 +44,22 @@
   { "find": "um es zu fangen", "replace": "um es aufzufangen" },
   { "find": "Stammsud", "replace": "Meisterbrühe" },
   { "find": "stammsud", "replace": "Meisterbrühe" },
-  { "find": "Meister, stammsud", "replace": "Meisterbrühe" }
+  { "find": "Meister, stammsud", "replace": "Meisterbrühe" },
+  { "find": "panizierte", "replace": "geriet in Panik" },
+  { "find": "Fan Die Familie", "replace": "die Familie Fan" },
+  { "find": "die Fan Familie", "replace": "die Familie Fan" },
+  { "find": "Frau Chen Sagte er", "replace": "Frau Chen sagte" },
+  { "find": "meister, dein Vater machte", "replace": "Meister, dein Vater machte" },
+  { "find": "Haarspinn", "replace": "Haarspange" },
+  { "find": "Haarspin", "replace": "Haarspange" },
+  { "find": "Haarspiegel", "replace": "Haarspange" },
+  { "find": "Gefühlungen", "replace": "Gefühlen" },
+  { "find": "Gedächtnistablette", "replace": "Gedenktafel" },
+  { "find": "Gruben Sie eine Grube", "replace": "eine Grube graben" },
+  { "find": "Stammbrühe, meister", "replace": "Meisterbrühe, Meister" },
+  { "find": "Sieh mal.Yan Zheng.", "replace": "Sieh mal. Yan Zheng." },
+  { "find": "Meine Schwester ist gierig", "replace": "Meine Schwester ist geizig" },
+  { "find": "gemeindeleiter", "replace": "Gemeindeleiter" },
+  { "find": "nicht verbundener Partner", "replace": "ungeratener Sohn" },
+  { "find": "Schweineinnereien, innereien", "replace": "Innereien" }
 ]

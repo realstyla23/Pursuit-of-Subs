@@ -16,7 +16,7 @@ from flask import Flask, Response, jsonify, request, send_from_directory
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from translator import (
     __version__, Config, _auto_device, find_srt_files, output_path_for,
-    translate_fast, translate_polish,
+    translate_fast, translate_polish, translate_learn,
     _checkpoint_path,
 )
 
@@ -168,7 +168,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 continue
 
             # Polish pass
-            if mode in ("polish", "full"):
+            if mode in ("polish", "full", "learn"):
                 model_label = polish_model.split(":")[0] if polish_model else "qwen"
                 push_event("step_changed", {"step": f"Polishing ({model_label})"})
                 try:
@@ -176,6 +176,17 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                                     polish_model=polish_model or None)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Polish error (non-fatal): {e}",
+                                       "level": "warn"})
+
+            # Learn mode: Pass 2 + error scan + auto-fix
+            if mode == "learn":
+                model_label = polish_model.split(":")[0] if polish_model else "qwen"
+                push_event("step_changed", {"step": f"Learn mode ({model_label})"})
+                try:
+                    translate_learn(fpath, file_cfg, nllb_path=out,
+                                   polish_model=polish_model or None)
+                except Exception as e:
+                    push_event("log", {"message": f"  [WARN] Learn error (non-fatal): {e}",
                                        "level": "warn"})
 
             # QA report
