@@ -3483,7 +3483,10 @@ def learn_scan(eng_texts: list[str], ger_texts: list[str],
     seen_pairs: set[tuple[str, str]] = set()
     engine_url = chat_url  # may be overridden for proxy vs ollama
 
+    n_total = len(eng_texts)
     for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
+        if i > 0 and i % 50 == 0:
+            print(f"    scan: {i}/{n_total} lines, {len(candidates)} candidate(s)", flush=True)
         if not de.strip():
             continue
         prompt = LEARN_SCAN_PROMPT.format(eng=en, ger=de)
