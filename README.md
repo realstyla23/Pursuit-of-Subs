@@ -35,7 +35,7 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 ### 1. Install
 
 ```bash
-git clone <repo>
+git clone https://github.com/realstyla23/Pursuit-of-Subs.git
 cd Pursuit-of-Subs
 
 python -m venv venv
@@ -82,7 +82,7 @@ Options:
   --force               Re-translate existing output, skip TM reads
   --cache               Enable Translation Memory (default: off)
   --proxy-base-url URL  OpenCode proxy URL (default: http://127.0.0.1:6446)
-  --proxy-api-key KEY   OpenCode API key (default: oc-efb2bc22...)
+  --proxy-api-key KEY   OpenCode API key (set via PROXY_API_KEY env var or this flag)
   --polish-model MODEL  Ollama model for polish (default: qwen2.5:7b, or gemma4:e4b)
   --polish-parallel N   Parallel polish batches (default: 2, max: 3)
   --resume              Resume from checkpoint

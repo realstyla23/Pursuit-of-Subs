@@ -11,8 +11,9 @@ Modes:
 
 __version__ = "4.3.0"
 
-import argparse, json, os, re, sys, time, warnings, subprocess, shutil, threading
+import argparse, json, os, re, sys, time, subprocess, shutil, threading, unicodedata
 from dataclasses import dataclass
+from typing import Callable
 from pathlib import Path
 import pysrt
 import requests
@@ -191,13 +192,13 @@ def build_contextual_xml(batch_ids: list[int], eng_texts: list[str],
                 tag = "previous"
             elif j == local_pos:
                 en_speakers = ctx_en[j].count("\n") + 1
-                de_speakers = ctx_de[j].count("\n") + 1
-                tag = f'current speakers="{en_speakers}"'
+                tag = "current"
             else:
                 tag = "next"
             en_esc = _xml_escape(ctx_en[j].replace("\n", " // "))
             de_esc = _xml_escape(ctx_de[j].replace("\n", " // "))
-            xml += f"  <{tag}><en>{en_esc}</en><de>{de_esc}</de></{tag}>\n"
+            speakers_attr = f' speakers="{en_speakers}"' if tag == "current" else ""
+            xml += f"  <{tag}{speakers_attr}><en>{en_esc}</en><de>{de_esc}</de></{tag}>\n"
         xml += "</CONTEXT>"
         blocks.append(xml)
     return "\n".join(blocks)
@@ -1975,7 +1976,7 @@ def _reconstruct_line(layout: list, translated: list[str]) -> str:
 
 @torch.inference_mode()
 def translate_fast(fpath: Path, cfg: Config,
-                   progress_callback: callable = None,
+                   progress_callback: Callable = None,
                    output_path: Path | None = None) -> bool:
     """Translate an SRT file. Calls progress_callback(done, total) after each batch."""
     timer = _Timer()
@@ -3477,7 +3478,7 @@ LEARN_SCAN_PROMPT = (
 
 def learn_scan(eng_texts: list[str], ger_texts: list[str],
                polisher: tuple,
-               progress_callback: callable | None = None) -> list[dict]:
+               progress_callback: Callable | None = None) -> list[dict]:
     """Scan every line for errors using LLM. Returns list of {find, replace}."""
     session, chat_url, model_name, api_key = polisher
     candidates = []
@@ -3545,7 +3546,6 @@ def _is_format_fix(find: str, replace: str) -> bool:
     if replace == find.replace(find.split()[0] + " " + find.split()[0], find.split()[0]) if len(find.split()) >= 2 else False:
         pass  # fall through to heuristics
     # Heuristic: if the difference is only spaces, punctuation, or capitalization
-    import unicodedata
     f_clean = unicodedata.normalize("NFD", f_lower)
     r_clean = unicodedata.normalize("NFD", r_lower)
     f_alnum = re.sub(r'[^a-zäöüß0-9]', '', f_clean)
@@ -3597,7 +3597,7 @@ def learn_persist(fixes: list[dict]) -> int:
 def translate_learn(fpath: Path, cfg: Config,
                     nllb_path: Path | None = None,
                     polish_model: str | None = None,
-                    progress_callback: callable | None = None) -> bool:
+                    progress_callback: Callable | None = None) -> bool:
     """Learn mode: full pipeline + Pass 2 + error scan + auto-fix persist."""
     timer = _Timer()
     out = nllb_path or output_path_for(fpath)
@@ -3636,12 +3636,12 @@ def translate_learn(fpath: Path, cfg: Config,
     session, chat_url, polish_model_name, proxy_api_key = polisher
 
     # Polish Pass 2 — English killer
+    pass2_fixes = {}
     if suspicious:
         timer.start("Polish Pass 2")
         batch_size = 10
         from concurrent.futures import ThreadPoolExecutor, as_completed
         fixes_lock = threading.Lock()
-        pass2_fixes = {}
         pass2_batch_starts = list(range(0, len(suspicious), batch_size))
 
         def _submit_pass2(s):

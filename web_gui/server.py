@@ -11,7 +11,7 @@ import webbrowser
 import uuid
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory, abort
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from translator import (
@@ -21,6 +21,7 @@ from translator import (
 )
 
 app = Flask(__name__, static_folder=None)
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
 
 # ---------------------------------------------------------------------------
 # Global state — thread-safe with locks
@@ -28,6 +29,7 @@ app = Flask(__name__, static_folder=None)
 
 _events: list[dict] = []
 _events_lock = threading.Lock()
+_MAX_EVENTS = 10000
 _worker_thread: threading.Thread | None = None
 _cancel_event = threading.Event()
 _job_running = False
@@ -47,6 +49,8 @@ except Exception:
 def push_event(event: str, data: dict):
     with _events_lock:
         _events.append({"event": event, "data": data})
+        if len(_events) > _MAX_EVENTS:
+            _events[:1000] = []
 
 
 def pending_events(since: int) -> list[dict]:
@@ -149,10 +153,17 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
             t0 = time.time()
 
             try:
-                push_event("step_changed", {"step": "Protecting placeholders"})
-                success = translate_fast(fpath, file_cfg,
-                                         progress_callback=timed_progress,
-                                         output_path=out)
+                if _cancel_event.is_set():
+                    raise KeyboardInterrupt()
+                # If mode is "polish", output already exists — skip NLLB
+                if mode == "polish" and out.exists():
+                    push_event("step_changed", {"step": "Polishing existing output"})
+                    success = True
+                else:
+                    push_event("step_changed", {"step": "Protecting placeholders"})
+                    success = translate_fast(fpath, file_cfg,
+                                             progress_callback=timed_progress,
+                                             output_path=out)
             except KeyboardInterrupt:
                 push_event("log", {"message": "  Cancelled by user", "level": "warn"})
                 break
@@ -168,6 +179,9 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 continue
 
             # Polish pass
+            if _cancel_event.is_set():
+                push_event("log", {"message": "Cancelled before polish", "level": "warn"})
+                break
             if mode in ("polish", "full", "learn"):
                 model_label = polish_model.split(":")[0] if polish_model else "qwen"
                 push_event("step_changed", {"step": f"Polishing ({model_label})"})
@@ -179,6 +193,9 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                                        "level": "warn"})
 
             # Learn mode: Pass 2 + error scan + auto-fix
+            if _cancel_event.is_set():
+                push_event("log", {"message": "Cancelled before learn", "level": "warn"})
+                break
             if mode == "learn":
                 model_label = polish_model.split(":")[0] if polish_model else "qwen"
                 push_event("step_changed", {"step": f"Learn mode ({model_label})"})
@@ -321,6 +338,7 @@ def api_events():
 
     def generate():
         nonlocal since
+        _keepalive_counter = 0
         try:
             while True:
                 evts = pending_events(since)
@@ -331,6 +349,10 @@ def api_events():
                             return
                     since = evts[-1][0] + 1
                 else:
+                    _keepalive_counter += 1
+                    if _keepalive_counter >= 75:  # ~15s at 0.2s intervals
+                        yield ": heartbeat\n\n"
+                        _keepalive_counter = 0
                     time.sleep(0.2)
         except GeneratorExit:
             pass
@@ -430,11 +452,14 @@ _UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 
 
 def _save_upload(name: str, content: str | bytes, is_bytes: bool = False) -> tuple[Path, int]:
-    """Save an uploaded file preserving the original name, inside a unique batch subdirectory."""
+    """Save an uploaded file. Uses basename only to prevent path traversal."""
+    safe_name = Path(name).name
+    if not safe_name:
+        raise ValueError("Empty filename after sanitization")
     _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     batch_dir = _UPLOAD_DIR / uuid.uuid4().hex[:8]
     batch_dir.mkdir(exist_ok=True)
-    dest = batch_dir / name
+    dest = batch_dir / safe_name
     if is_bytes:
         dest.write_bytes(content)
     else:

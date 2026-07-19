@@ -1,5 +1,4 @@
 @echo off
 cd /d "%~dp0"
-call venv\Scripts\activate
-python subtranslate.py --web-gui
+".\venv\Scripts\python.exe" subtranslate.py --web-gui
 pause

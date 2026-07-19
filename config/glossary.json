@@ -53,8 +53,8 @@
     }
   },
   "New Year pig": "Neujahrsschwein",
-  "Master stock": "Stammsud",
-  "Betrothal letter": "Verlobungsurkunde",
+  "Master stock": "Meisterbrühe",
+  "Betrothal letter": "Verlobungsbrief",
   "Birth chart matching": "Acht-Zeichen-Lesung",
   "hemostatic decoction": "Blutstillungsdekokt",
   "vanguard battalion": "Vorhutbataillon",
@@ -63,7 +63,7 @@
   "refugee": "Flüchtling",
   "community head": "Gemeindevorsteher",
   "pig offal": "Schweineinnereien",
-  "master sauce": "Stammbrühe",
+  "master sauce": "Meisterbrühe",
   "pig-selecting method": "Schweineauswahlmethode",
   "clotted blood": "Blutgerinnsel",
   "pork intestines": "Schweinedärme",
@@ -134,6 +134,5 @@
   "wound healing elixir": "Wundheilungselixier",
   "butcher girl": "Metzgerin",
   "surname change": "Nachnamensänderung",
-  "betrothal letter": "Verlobungsbrief",
   "bridal chamber": "Brautgemach"
 }

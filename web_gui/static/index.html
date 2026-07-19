@@ -347,9 +347,11 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
 var fileQueue = [];   // [{path, name, size, status:'waiting'|'running'|'done'|'skipped'|'error', progress:0, stats:null}]
 var results = [];     // [[name, stats], ...]
 var jobRunning = false;
+var jobEnded = false;
 var startTime = null;
 var elapsedTimer = null;
 var eventSource = null;
+var currentFileIndex = -1;
 var logAutoScroll = true;
 
 var $ = function(id) { return document.getElementById(id); };
@@ -475,6 +477,14 @@ $('browseFolderBtn').addEventListener('click', function() {
 });
 
 function uploadFile(fileObj) {
+  var name = fileObj.name || fileObj.path.split(/[\\/]/).pop();
+  if (!name) return;
+  for (var i = 0; i < fileQueue.length; i++) {
+    if (fileQueue[i].name === name) {
+      logLine('[WARN] "' + name + '" already in queue, skipped.', 'warn');
+      return;
+    }
+  }
   var fd = new FormData();
   fd.append('file', fileObj);
   fetch('/api/upload', {
@@ -643,7 +653,8 @@ function connectSSE() {
   eventSource = new EventSource('/api/events');
 
   eventSource.addEventListener('progress', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad progress event', 'warn'); return; }
     var pct = d.total > 0 ? Math.round(d.done / d.total * 100) : 0;
     mainProgressFill.style.width = pct + '%';
     mainProgressText.textContent = pct + '%';
@@ -659,12 +670,14 @@ function connectSSE() {
   });
 
   eventSource.addEventListener('file_progress', function(e) {
-    var d = JSON.parse(e.data);
-    for (var i = 0; i < fileQueue.length; i++) {
-      if (fileQueue[i].status === 'running') fileQueue[i].status = 'done';
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad file_progress event', 'warn'); return; }
+    if (currentFileIndex >= 0 && currentFileIndex < fileQueue.length) {
+      fileQueue[currentFileIndex].status = 'done';
     }
     var idx = d.index - 1;
     if (idx >= 0 && idx < fileQueue.length) {
+      currentFileIndex = idx;
       fileQueue[idx].status = 'running';
       fileQueue[idx].progress = 0;
     }
@@ -677,21 +690,23 @@ function connectSSE() {
   });
 
   eventSource.addEventListener('current_file', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad current_file event', 'warn'); return; }
     var ep = d.total > 1 ? 'Episode ' + d.episode + ' of ' + d.total + '\n' : '';
     curFileLabel.textContent = ep + d.name;
   });
 
   eventSource.addEventListener('current_en', function(e) {
-    enPreview.textContent = JSON.parse(e.data).text;
+    try { enPreview.textContent = JSON.parse(e.data).text; } catch(ex) {}
   });
 
   eventSource.addEventListener('current_de', function(e) {
-    dePreview.textContent = JSON.parse(e.data).text;
+    try { dePreview.textContent = JSON.parse(e.data).text; } catch(ex) {}
   });
 
   eventSource.addEventListener('step_changed', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad step_changed event', 'warn'); return; }
     curStepLabel.textContent = d.step;
     var s = d.step.toLowerCase();
     if (s.indexOf('polishing') >= 0) {
@@ -704,7 +719,8 @@ function connectSSE() {
   });
 
   eventSource.addEventListener('speed_eta', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad speed_eta event', 'warn'); return; }
     speedLabel.textContent = d.speed > 0 ? 'Speed: ' + d.speed + ' l/s' : 'Speed: --';
     if (d.eta > 0) {
       var m = Math.floor(d.eta / 60);
@@ -716,12 +732,14 @@ function connectSSE() {
   });
 
   eventSource.addEventListener('log', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad log event', 'warn'); return; }
     logLine(d.message, d.level || 'info');
   });
 
   eventSource.addEventListener('file_done', function(e) {
-    var d = JSON.parse(e.data);
+    var d;
+    try { d = JSON.parse(e.data); } catch(ex) { logLine('[WARN] Bad file_done event', 'warn'); return; }
     var st = d.stats || {};
     for (var i = 0; i < fileQueue.length; i++) {
       if (fileQueue[i].name === d.name) {
@@ -736,6 +754,7 @@ function connectSSE() {
   });
 
   eventSource.addEventListener('all_done', function() {
+    jobEnded = true;
     onJobEnd();
     showSummary();
     curStepLabel.textContent = 'Complete';
@@ -811,6 +830,8 @@ startBtn.addEventListener('click', function() {
   $('numBeams').disabled = true;
   $('resumeCheck').disabled = true;
   jobRunning = true;
+  jobEnded = false;
+  currentFileIndex = -1;
 
   if (elapsedTimer) clearInterval(elapsedTimer);
   elapsedTimer = setInterval(function() {
@@ -853,6 +874,8 @@ cancelBtn.addEventListener('click', function() {
 });
 
 function onJobEnd() {
+  if (jobEnded) return;
+  jobEnded = true;
   jobRunning = false;
   if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
   if (eventSource) { eventSource.close(); eventSource = null; }

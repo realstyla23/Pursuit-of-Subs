@@ -48,10 +48,6 @@
     "replace": "Sektenführer"
   },
   {
-    "find": "- Das ist nicht wahr.",
-    "replace": "=Folge 9="
-  },
-  {
     "find": "nimmt gerne Kredite",
     "replace": "streicht gerne die Lorbeeren ein"
   },
@@ -172,18 +168,6 @@
     "replace": "um es aufzufangen"
   },
   {
-    "find": "Stammsud",
-    "replace": "Meisterbrühe"
-  },
-  {
-    "find": "stammsud",
-    "replace": "Meisterbrühe"
-  },
-  {
-    "find": "Meister, stammsud",
-    "replace": "Meisterbrühe"
-  },
-  {
     "find": "panizierte",
     "replace": "geriet in Panik"
   },
@@ -232,10 +216,6 @@
     "replace": "eine Grube graben"
   },
   {
-    "find": "Stammbrühe, meister",
-    "replace": "Meisterbrühe, Meister"
-  },
-  {
     "find": "Sieh mal.Yan Zheng.",
     "replace": "Sieh mal. Yan Zheng."
   },
@@ -256,10 +236,6 @@
     "replace": "Innereien"
   },
   {
-    "find": "Krieg",
-    "replace": "Ruf"
-  },
-  {
     "find": "nächsten Leben ein guter Mensch sein\\.",
     "replace": "nächsten Leben ein guter Mensch."
   },
@@ -278,14 +254,6 @@
   {
     "find": "Es schneit einen Tag und eine Nacht.",
     "replace": "Es schneite einen Tag und eine Nacht."
-  },
-  {
-    "find": "Beamter",
-    "replace": "Sie"
-  },
-  {
-    "find": "Sie wollen",
-    "replace": "dich zu"
   },
   {
     "find": "Ich gräbe eine Grube",
