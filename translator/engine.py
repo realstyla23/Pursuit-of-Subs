@@ -1380,6 +1380,34 @@ def cleanup_subtitles(ger_texts: list[str]) -> int:
     return count
 
 # ---------------------------------------------------------------------------
+# 4c. NLLB hallucination fix — "rum" prefix corruption
+# ---------------------------------------------------------------------------
+
+_NLLB_CORRUPTIONS = [
+    (re.compile(r'\bvrum'), 'ver'),
+    (re.compile(r'\bVrum'), 'Ver'),
+    (re.compile(r'\bwrum'), 'wür'),
+    (re.compile(r'\bWrum'), 'Wür'),
+    (re.compile(r'\büb[e]?rum'), 'über'),
+    (re.compile(r'\babrum\b'), 'aber'),
+    (re.compile(r'\bhirum\b'), 'hier'),
+    (re.compile(r'\bwiedrum\b'), 'wieder'),
+    (re.compile(r'\bodrum\b'), 'oder'),
+    (re.compile(r'\bodrum'), 'oder'),
+]
+
+def fix_nllb_hallucinations(ger_texts: list[str]) -> int:
+    count = 0
+    for i, t in enumerate(ger_texts):
+        new_t = t
+        for pattern, replacement in _NLLB_CORRUPTIONS:
+            new_t = pattern.sub(replacement, new_t)
+        if new_t != t:
+            ger_texts[i] = new_t
+            count += 1
+    return count
+
+# ---------------------------------------------------------------------------
 # 4b. Title preservation
 # ---------------------------------------------------------------------------
 
@@ -1565,6 +1593,18 @@ def score_line(en_text: str, de_text: str, glossary: dict, names: list[str],
     if de_s.startswith("- ") and not en_s.startswith("- "):
         score += 2
         reasons.append("invented_dash")
+
+    # +N fabricated German word detection (catches ANY hallucination pattern)
+    # NLLB often produces words that violate basic German word structure
+    de_words = re.findall(r"[a-zäöüß]+", de_s.lower())
+    for w in de_words:
+        if len(w) < 4:
+            continue
+        # German words always contain a vowel
+        if not re.search(r'[aeiouäöü]', w):
+            score += 4
+            reasons.append(f"no_vowel:{w}")
+            break
 
     # +N English words remain in DE output (partial translation detection)
     # Flags lines where NLLB translated some words but left others in English.
@@ -2167,6 +2207,11 @@ def translate_fast(fpath: Path, cfg: Config,
     tc = preserve_titles(eng_texts, ger_texts, titles)
     timer.stop("Titles")
 
+    # Fix NLLB "rum" hallucination (systematic prefix corruption)
+    timer.start("NLLB Rum Fix")
+    rfc = fix_nllb_hallucinations(ger_texts)
+    timer.stop("NLLB Rum Fix")
+
     # Cleanup subtitle typography
     timer.start("Cleanup")
     cc = cleanup_subtitles(ger_texts)
@@ -2495,6 +2540,11 @@ def translate_llm(fpath: Path, cfg: Config,
     titles = load_titles()
     tc = preserve_titles(eng_texts, ger_texts, titles)
     timer.stop("Titles")
+
+    # Fix NLLB "rum" hallucination
+    timer.start("NLLB Rum Fix")
+    rfc = fix_nllb_hallucinations(ger_texts)
+    timer.stop("NLLB Rum Fix")
 
     timer.start("Cleanup")
     cc = cleanup_subtitles(ger_texts)
@@ -3443,14 +3493,14 @@ def translate_polish_multi(files: list[Path], cfg: Config,
 # ---------------------------------------------------------------------------
 
 POLISH_PASS2_PROMPT = (
-    "You are a German proofreader. Your ONLY job: find and eliminate any English "
-    "words that remain in this German subtitle.\n"
+    "You are a German proofreader. Your ONLY job: fix errors in this German subtitle.\n"
     "Rules:\n"
-    "- EVERY word must be German\n"
+    "- EVERY word must be real German\n"
+    "- If you see a non-German word (e.g. \"vrumheiratet\" → \"verheiratet\"), fix it\n"
     "- If you see an English word, replace it with the correct German word\n"
     "- If you see a made-up word that isn't real German (like \"panizierte\"), "
     "replace it with proper German (\"geriet in Panik\")\n"
-    "- Fix adjective declensions: \"leuchtende Augen\" -> \"leuchtenden Augen\"\n"
+    "- Fix adjective declensions: \"leuchtende Augen\" → \"leuchtenden Augen\"\n"
     "- Fix wrong noun compounds\n"
     "Return ONLY the corrected text. If unchanged, return the original."
 )
@@ -3462,37 +3512,59 @@ LEARN_SCAN_PROMPT = (
     "German: {ger}\n\n"
     "Does the German contain ANY error?\n\n"
     "Error categories (return the FIRST matching category):\n"
-    "1. ENGLISH_WORD — any English word left untranslated\n"
-    "2. MADE_UP — word that isn't real German (e.g. \"Gefühlungen\", \"panizierte\")\n"
-    "3. WRONG_WORD — real German word but wrong meaning (e.g. \"gierig\" for \"stingy\")\n"
+    "1. NON_GERMAN_WORD — word that isn't real German. NLLB often invents fake words "
+    "by corrupting prefixes: e.g. 'vrumheiratet' (not 'verheiratet'), 'wrumden' (not 'würden'), "
+    "'übrumtragen' (not 'übertragen'), 'panizierte' (not 'geriet in Panik'), 'Gefühlungen' (not 'Gefühle')\n"
+    "2. ENGLISH_WORD — any English word left untranslated\n"
+    "3. WRONG_WORD — real German word but wrong meaning\n"
     "4. GRAMMAR — wrong declension, word order, separable verb placement\n"
     "5. FORMAT — missing space, wrong capitalization, missing punctuation\n\n"
     "Respond in EXACTLY this format. One line per error found:\n"
     "FIX|exact text from German|correct replacement\n\n"
     "Example:\n"
+    "FIX|vrumheiratet|verheiratet\n"
+    "FIX|wrumden|würden\n"
     "FIX|Gefühlungen|Gefühlen\n"
     "FIX|Schweineinnereien, innereien|Innereien\n\n"
+    "If NO errors, respond only: OK"
+)
+
+LEARN_SCAN_PROMPT_B = (
+    "You are a German grammar and vocabulary inspector. Compare this English source "
+    "line with its German translation.\n\n"
+    "English: {eng}\n"
+    "German: {ger}\n\n"
+    "Check for these specific error types:\n"
+    "1. WRONG_WORD — real German word but wrong meaning for this context\n"
+    "2. GRAMMAR — wrong declension/case, wrong separable verb placement, wrong word order\n"
+    "3. FORMAT — wrong capitalization (nouns always capitalized), missing punctuation, "
+    "missing space after comma, missing opening/closing quotes\n\n"
+    "Respond in EXACTLY this format. One line per error found:\n"
+    "FIX|exact text from German|correct replacement\n\n"
+    "Example:\n"
+    "FIX|leuchtende Augen|leuchtenden Augen\n"
+    "FIX|er hat das gefunden|er hat das gefunden\n"
+    "FIX|der Mann,der|der Mann, der\n\n"
     "If NO errors, respond only: OK"
 )
 
 
 def learn_scan(eng_texts: list[str], ger_texts: list[str],
                polisher: tuple,
-               progress_callback: Callable | None = None) -> list[dict]:
+               progress_callback: Callable | None = None,
+               prompt_template: str = LEARN_SCAN_PROMPT,
+               scan_label: str = "scan") -> list[dict]:
     """Scan every line for errors using LLM. Returns list of {find, replace}."""
     session, chat_url, model_name, api_key = polisher
-    candidates = []
     seen_pairs: set[tuple[str, str]] = set()
-
+    candidates: list[dict] = []
     n_total = len(eng_texts)
-    for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
-        if i > 0 and i % 50 == 0:
-            print(f"    scan: {i}/{n_total} lines, {len(candidates)} candidate(s)", flush=True)
-            if progress_callback:
-                progress_callback(i, n_total)
+    lock = threading.Lock()
+
+    def _scan_line(i: int, en: str, de: str) -> list[dict]:
         if not de.strip():
-            continue
-        prompt = LEARN_SCAN_PROMPT.format(eng=en, ger=de)
+            return []
+        prompt = prompt_template.format(eng=en, ger=de)
         if api_key:
             payload = {
                 "model": model_name,
@@ -3511,11 +3583,12 @@ def learn_scan(eng_texts: list[str], ger_texts: list[str],
             }
             result = _ollama_chat(session, chat_url, payload, timeout=60)
         if result is None:
-            continue
+            return []
         if api_key:
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
         else:
             content = result.get("message", {}).get("content", "")
+        found = []
         for line in content.strip().split("\n"):
             line = line.strip()
             if line.startswith("FIX|"):
@@ -3525,10 +3598,30 @@ def learn_scan(eng_texts: list[str], ger_texts: list[str],
                     r_text = parts[2].strip()
                     if f_text and r_text and f_text != r_text:
                         key = (f_text.lower(), r_text.lower())
-                        if key not in seen_pairs:
-                            seen_pairs.add(key)
-                            candidates.append({"find": f_text, "replace": r_text})
-    print(f"    learn scan: {len(candidates)} candidate(s)", flush=True)
+                        with lock:
+                            if key not in seen_pairs:
+                                seen_pairs.add(key)
+                                found.append({"find": f_text, "replace": r_text})
+        return found
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    parallel = 4  # use up to 4 concurrent LLM calls
+    done_count = 0
+    with ThreadPoolExecutor(max_workers=parallel) as executor:
+        futures = {}
+        for i, (en, de) in enumerate(zip(eng_texts, ger_texts)):
+            futures[executor.submit(_scan_line, i, en, de)] = i
+
+        for future in as_completed(futures):
+            result = future.result()
+            candidates.extend(result)
+            done_count += 1
+            if done_count % 50 == 0:
+                print(f"    {scan_label}: {done_count}/{n_total} lines, {len(candidates)} candidate(s)", flush=True)
+            if progress_callback and done_count % 10 == 0:
+                progress_callback(done_count, n_total)
+
+    print(f"    {scan_label}: {len(candidates)} candidate(s)", flush=True)
     return candidates
 
 
@@ -3563,6 +3656,9 @@ def learn_verify(candidates: list[dict], ger_texts: list[str]) -> list[dict]:
     for fix in candidates:
         find = fix["find"]
         replace = fix["replace"]
+        # Too short — risk of global corruption
+        if len(find.strip()) < 3:
+            continue
         # Exists check
         if find.lower() not in all_text:
             continue
@@ -3613,6 +3709,16 @@ def translate_learn(fpath: Path, cfg: Config,
     n = len(ger_texts)
     timer.stop("Load")
 
+    # Fix known NLLB hallucinations in existing output
+    rfc = fix_nllb_hallucinations(ger_texts)
+    if rfc:
+        print(f"  NLLB hallucination fix: {rfc} line(s) corrected", flush=True)
+        # Persist fixes to disk immediately
+        for i, sub in enumerate(ger):
+            sub.text = ger_texts[i]
+        with open(out, "w", encoding="utf-8") as f:
+            f.write(ger.to_string())
+
     glossary = load_glossary()
     auto_glossary = _load_auto_glossary()
     if auto_glossary:
@@ -3635,12 +3741,13 @@ def translate_learn(fpath: Path, cfg: Config,
 
     session, chat_url, polish_model_name, proxy_api_key = polisher
 
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     # Polish Pass 2 — English killer
     pass2_fixes = {}
     if suspicious:
         timer.start("Polish Pass 2")
         batch_size = 10
-        from concurrent.futures import ThreadPoolExecutor, as_completed
         fixes_lock = threading.Lock()
         pass2_batch_starts = list(range(0, len(suspicious), batch_size))
 
@@ -3696,8 +3803,7 @@ def translate_learn(fpath: Path, cfg: Config,
                     print(f"  [WARN] Pass 2 batch failed: {exc}", flush=True)
                 pass2_done += 1
                 if progress_callback and pass2_batch_starts and len(pass2_batch_starts) > 1:
-                    pct = pass2_done / len(pass2_batch_starts)
-                    progress_callback(int(pct * len(suspicious)), len(suspicious))
+                    progress_callback(pass2_done * batch_size, n)
 
         for idx, new_text in pass2_fixes.items():
             ger_texts[idx] = new_text.replace(" // ", "\n")
@@ -3709,10 +3815,29 @@ def translate_learn(fpath: Path, cfg: Config,
     gfc = apply_german_fixes(ger_texts, load_german_fixes())
     timer.stop("German Fixes")
 
-    # Error scan — check every line
+    # Error scan — two passes with different prompts for thorough coverage
     timer.start("Error Scan")
-    candidates = learn_scan(eng_texts, ger_texts, polisher,
-                            progress_callback=progress_callback)
+    scan_futures = {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        scan_futures[pool.submit(
+            learn_scan, eng_texts, ger_texts, polisher,
+            progress_callback=progress_callback,
+            prompt_template=LEARN_SCAN_PROMPT,
+            scan_label="scan-pass1")] = "pass1"
+        scan_futures[pool.submit(
+            learn_scan, eng_texts, ger_texts, polisher,
+            progress_callback=None,  # only pass1 reports progress
+            prompt_template=LEARN_SCAN_PROMPT_B,
+            scan_label="scan-pass2")] = "pass2"
+        all_candidates = []
+        seen_dup: set[tuple[str, str]] = set()
+        for future in as_completed(scan_futures):
+            for c in future.result():
+                key = (c["find"].lower(), c["replace"].lower())
+                if key not in seen_dup:
+                    seen_dup.add(key)
+                    all_candidates.append(c)
+    candidates = all_candidates
     timer.stop("Error Scan")
 
     # Verify and persist

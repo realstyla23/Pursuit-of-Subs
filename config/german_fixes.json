@@ -24,8 +24,8 @@
     "replace": "Sonst zwinge ich dich"
   },
   {
-    "find": "Ich flehe in Tränen",
-    "replace": "Ich flehe dich unter Tränen an"
+    "find": "Ich flehe in TrÃ¤nen",
+    "replace": "Ich flehe dich unter TrÃ¤nen an"
   },
   {
     "find": "Sie sagten ,",
@@ -41,11 +41,11 @@
   },
   {
     "find": "Sekteleiter",
-    "replace": "Sektenführer"
+    "replace": "SektenfÃ¼hrer"
   },
   {
     "find": "Sectleiter",
-    "replace": "Sektenführer"
+    "replace": "SektenfÃ¼hrer"
   },
   {
     "find": "nimmt gerne Kredite",
@@ -53,23 +53,23 @@
   },
   {
     "find": "ohne Brave",
-    "replace": "ohne Draufgängertum"
+    "replace": "ohne DraufgÃ¤ngertum"
   },
   {
     "find": "Krankheitserregerung",
-    "replace": "schwere Erkältung"
+    "replace": "schwere ErkÃ¤ltung"
   },
   {
     "find": "rasenden Schnitt",
     "replace": "Beinahe-Tod"
   },
   {
-    "find": "Das ist doch doch lächerlich",
-    "replace": "Das ist doch lächerlich"
+    "find": "Das ist doch doch lÃ¤cherlich",
+    "replace": "Das ist doch lÃ¤cherlich"
   },
   {
-    "find": "Es ist glücklich",
-    "replace": "Es ist ein Glück"
+    "find": "Es ist glÃ¼cklich",
+    "replace": "Es ist ein GlÃ¼ck"
   },
   {
     "find": "Blades",
@@ -80,7 +80,7 @@
     "replace": "Klinge"
   },
   {
-    "find": "Stirnbrühen",
+    "find": "StirnbrÃ¼hen",
     "replace": "Augenbrauen"
   },
   {
@@ -101,14 +101,14 @@
   },
   {
     "find": "Wer wagt es, eine Frau zu sagen?\nKann nicht mit einem Mann konkurrieren?",
-    "replace": "Wer wagt es, einer Frau zu sagen,\nsie könne nicht mit einem Mann konkurrieren?"
+    "replace": "Wer wagt es, einer Frau zu sagen,\nsie kÃ¶nne nicht mit einem Mann konkurrieren?"
   },
   {
     "find": "die Fan der Haushalt",
     "replace": "der Haushalt von Fan"
   },
   {
-    "find": "Darmzüge",
+    "find": "DarmzÃ¼ge",
     "replace": "Innereien"
   },
   {
@@ -124,8 +124,8 @@
     "replace": "Sagen Sie Frau Zhao"
   },
   {
-    "find": "Schlachtmesser, metzger, ♪",
-    "replace": "♪"
+    "find": "Schlachtmesser, metzger, â™ª",
+    "replace": "â™ª"
   },
   {
     "find": "Es wird kosten",
@@ -153,11 +153,11 @@
   },
   {
     "find": "Meister-Aktie",
-    "replace": "Meisterbrühe"
+    "replace": "MeisterbrÃ¼he"
   },
   {
-    "find": "Meister Grundbrühe",
-    "replace": "Meisterbrühe"
+    "find": "Meister GrundbrÃ¼he",
+    "replace": "MeisterbrÃ¼he"
   },
   {
     "find": "leuchtende Augen und kirschrote Lippen",
@@ -204,11 +204,11 @@
     "replace": "Haarspange"
   },
   {
-    "find": "Gefühlungen",
-    "replace": "Gefühlen"
+    "find": "GefÃ¼hlungen",
+    "replace": "GefÃ¼hlen"
   },
   {
-    "find": "Gedächtnistablette",
+    "find": "GedÃ¤chtnistablette",
     "replace": "Gedenktafel"
   },
   {
@@ -236,8 +236,8 @@
     "replace": "Innereien"
   },
   {
-    "find": "nächsten Leben ein guter Mensch sein\\.",
-    "replace": "nächsten Leben ein guter Mensch."
+    "find": "nÃ¤chsten Leben ein guter Mensch sein\\.",
+    "replace": "nÃ¤chsten Leben ein guter Mensch."
   },
   {
     "find": "Das war meine Frau.",
@@ -248,7 +248,7 @@
     "replace": "Changning wartet auf mich zu Hause"
   },
   {
-    "find": "Sie füttert sich",
+    "find": "Sie fÃ¼ttert sich",
     "replace": "sie selbst"
   },
   {
@@ -256,12 +256,12 @@
     "replace": "Es schneite einen Tag und eine Nacht."
   },
   {
-    "find": "Ich gräbe eine Grube",
+    "find": "Ich grÃ¤be eine Grube",
     "replace": "sie grabe eine Grube"
   },
   {
-    "find": "Das Landregierungsbüro?",
-    "replace": "das Landesregierungsbüro?"
+    "find": "Das LandregierungsbÃ¼ro?",
+    "replace": "das LandesregierungsbÃ¼ro?"
   },
   {
     "find": "Sie ist jetzt der Chef.",
@@ -273,6 +273,170 @@
   },
   {
     "find": "gefunden hat",
-    "replace": "sich geschützt"
+    "replace": "sich geschÃ¼tzt"
+  },
+  {
+    "find": "Schauspielschule",
+    "replace": "Xiangsheng Troupe"
+  },
+  {
+    "find": "Haben Sie nicht? die Familie Fan hat gerade eine Beerdigung?",
+    "replace": "Haben Sie nicht die Familie Fan gerade eine Beerdigung gehabt?"
+  },
+  {
+    "find": "Fan Erniu seine Frau",
+    "replace": "Fan Erniu seine Frau ist"
+  },
+  {
+    "find": "MeisterbrÃ¼he",
+    "replace": "Stock"
+  },
+  {
+    "find": "Sie wollen",
+    "replace": "dich zu"
+  },
+  {
+    "find": "das LandesregierungsbÃ¼ro?",
+    "replace": "das LandesregierungsbÃ¼ro!"
+  },
+  {
+    "find": "Komm schon.",
+    "replace": "Danke, Herr Li!"
+  },
+  {
+    "find": "sich geschÃ¼tzt",
+    "replace": "geshieldet"
+  },
+  {
+    "find": "indem ich gegangen bin",
+    "replace": "wenn ich gehe"
+  },
+  {
+    "find": "Das Hochzeitskleid eines BrÃ¤utigams?",
+    "replace": "Ein Brautkleid fÃ¼r den BrÃ¤utigam?"
+  },
+  {
+    "find": "HochzeitsbrÃ¼che",
+    "replace": "Hochzeitsfieber"
+  },
+  {
+    "find": "der BrÃ¤utigam",
+    "replace": "dem BrÃ¤utigam"
+  },
+  {
+    "find": "sagen die Leute nicht das?",
+    "replace": "ist das nicht was die Leute sagen?"
+  },
+  {
+    "find": "Ist seit Jahren mit Beijue im Ruf.",
+    "replace": "hat been at war with Beijue"
+  },
+  {
+    "find": "tausend Schwanz von Gold",
+    "replace": "tausend TALEN von Gold"
+  },
+  {
+    "find": "inrichten",
+    "replace": "verbergen"
+  },
+  {
+    "find": "Sie denken",
+    "replace": "Sie denken gut"
+  },
+  {
+    "find": "Gericht",
+    "replace": "Kammer"
+  },
+  {
+    "find": "Hof",
+    "replace": "Saal"
+  },
+  {
+    "find": "inname",
+    "replace": "Namen"
+  },
+  {
+    "find": "in drauÃŸen",
+    "replace": "drauÃŸen"
+  },
+  {
+    "find": "trinken",
+    "replace": "atmen"
+  },
+  {
+    "find": "Du hast mich zurÃ¼ckgebracht.",
+    "replace": "Dank dieser beiden Herren bin ich wieder da.|OK"
+  },
+  {
+    "find": "lassen FrÃ¤ulein Fan Erst wechselt sie ihre Schuhe.",
+    "replace": "FrÃ¤ulein Fan erst wechselt bitte ihre Schuhe."
+  },
+  {
+    "find": "Leisten",
+    "replace": "Sollte \"Seiten\" lauten|"
+  },
+  {
+    "find": "2,1 Chi.",
+    "replace": "1,8 Chi.|"
+  },
+  {
+    "find": "Sieh dich hin.",
+    "replace": "Setz dich."
+  },
+  {
+    "find": "Magistrat, fragen Sie den lokalen Richter von Lin'an?",
+    "replace": "Frage den lokalen Magistraten in Lin'an?"
+  },
+  {
+    "find": "Das ist... Changyu Er ist mein Ehemann.",
+    "replace": "Das ist Changyus Ehemann."
+  },
+  {
+    "find": "der Nordwesten ist gerade im Ruf.",
+    "replace": "der Nordwesten ist gerade im Krieg."
+  },
+  {
+    "find": "Das ist FrÃ¤ulein Fan Ehemann",
+    "replace": "Ist das FrÃ¤ulein Fans Ehemann?"
+  },
+  {
+    "find": "Er ist in deine Familie geheiratet?",
+    "replace": "Hast du dich mit ihm verheiratet, damit er in unsere Familie eintritt?"
+  },
+  {
+    "find": "Ich habe noch kein inruf verÃ¶ffentlicht.",
+    "replace": "Ich habe noch keinen Obituary verÃ¶ffentlicht."
+  },
+  {
+    "find": "Du hast Blut gehasst.",
+    "replace": "Du hast Blut erbrochen."
+  },
+  {
+    "find": "abzusehen",
+    "replace": "zu sehen"
+  },
+  {
+    "find": "Eine int mit Fisch- und Drachen-TÃ¤nzen",
+    "replace": "Eine Nacht mit Fisch- und Drachen-TÃ¤nzen"
+  },
+  {
+    "find": "MÃ¶ge der Nebel bald frei sein.",
+    "replace": "MÃ¶glicherweise wird der Nebel bald aufhÃ¶ren zu regnen."
+  },
+  {
+    "find": "kaufen Sie Fleisch und Rufen Sie kostenlos gebratene SchlachtkÃ¶rper!",
+    "replace": "kaufen Sie Fleisch und erhalten Sie gratis geschmorte Innereien!"
+  },
+  {
+    "find": "Im Landkreis-RegierungsbÃ¼ro.",
+    "replace": "bei der Landkreis-Regierungseinrichtung."
+  },
+  {
+    "find": "hungernden",
+    "replace": "hungernder"
+  },
+  {
+    "find": "Kommen Sie in oben.",
+    "replace": "Kommen Sie hoch."
   }
 ]
