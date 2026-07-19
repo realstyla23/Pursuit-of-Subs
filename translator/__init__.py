@@ -1,4 +1,4 @@
-"""Subtitle Translator v4 — NLLB-600M GPU batch translator with quality pipeline."""
+"""Pursuit of Subs - translation pipeline."""
 
 from translator.engine import (
     __version__,

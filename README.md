@@ -1,4 +1,4 @@
-# Subtitle Translator v4
+# Pursuit of Subs
 
 GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with optional LLM polishing (local via Ollama or proxy via DeepSeek).
 
@@ -36,7 +36,7 @@ GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600
 
 ```bash
 git clone <repo>
-cd SubtitleTranslator
+cd Pursuit-of-Subs
 
 python -m venv venv
 venv\Scripts\activate     # Windows

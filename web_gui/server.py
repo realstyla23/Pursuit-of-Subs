@@ -1,4 +1,4 @@
-"""Flask-based local web GUI for Subtitle Translator."""
+"""Flask-based local web GUI for Pursuit of Subs."""
 
 import io
 import json

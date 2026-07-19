@@ -1,4 +1,4 @@
-"""Subtitle Translator v4 — CLI entry point.
+"""Pursuit of Subs - CLI entry point.
 
 Usage:
     python subtranslate.py --mode fast --input-dir .
@@ -23,7 +23,7 @@ from translator import (
 
 def main():
     p = argparse.ArgumentParser(
-        description=f"Subtitle Translator v{__version__} — NLLB-600M GPU batch translator"
+        description=f"Pursuit of Subs v{__version__} - NLLB-600M GPU batch subtitle translation"
     )
     p.add_argument("--mode", choices=["fast", "polish", "full", "test", "benchmark", "regression", "llm", "learn"],
                    default="fast")

@@ -1,4 +1,4 @@
-"""Subtitle Translator v4 — PySide6 GUI."""
+"""Pursuit of Subs - PySide6 GUI."""
 
 import io, json, os, sys, time, traceback
 from pathlib import Path
@@ -768,7 +768,7 @@ class SettingsDialog(QDialog):
 class TranslatorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"Subtitle Translator v{__version__}")
+        self.setWindowTitle(f"Pursuit of Subs v{__version__}")
         self.setMinimumSize(960, 680)
         self.resize(1100, 760)
 
@@ -780,7 +780,7 @@ class TranslatorWindow(QMainWindow):
         self._dark_mode = True
         self._log_auto_scroll = True
 
-        self.settings = QSettings("SubtitleTranslator", "v4")
+        self.settings = QSettings("Pursuit-of-Subs", "v4")
         self.polish_model = self.settings.value("ollama/model", "subtitle-translator")
         self.ollama_host = self.settings.value("ollama/host", "http://127.0.0.1:11434")
         self.log_signal = LogSignal()

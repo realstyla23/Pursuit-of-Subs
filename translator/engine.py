@@ -1,4 +1,4 @@
-"""subtranslate v4.3 — LLM-powered subtitle translator with quality pipeline.
+"""engine - NLLB-600M subtitle translation pipeline.
 
 Modes:
   --fast       NLLB + SFX/glossary/validation       ~30s for 4000 lines
@@ -1778,7 +1778,7 @@ _TM_CONN: sqlite3.Connection | None = None
 
 def _tm_db_path() -> str:
     if getattr(sys, 'frozen', False):
-        base = Path(os.environ.get('LOCALAPPDATA', Path.home())) / "SubtitleTranslator"
+        base = Path(os.environ.get('LOCALAPPDATA', Path.home())) / "Pursuit-of-Subs"
     else:
         base = CONFIG_DIR.parent
     tm_dir = base / "tm"

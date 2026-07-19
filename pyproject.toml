@@ -1,7 +1,7 @@
 [project]
-name = "subtitle-translator"
+name = "pursuit-of-subs"
 version = "4.3.0"
-description = "NLLB-600M GPU batch subtitle translator for English→German"
+description = "Self-improving Chinese→German subtitle translation pipeline"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
