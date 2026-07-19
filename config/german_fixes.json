@@ -188,6 +188,10 @@
     "replace": "geriet in Panik"
   },
   {
+    "find": "Haben Sie nicht\\? Fan Die Familie hat gerade eine Beerdigung\\?",
+    "replace": "Hat die Familie Fan nicht gerade eine Beerdigung gehabt?"
+  },
+  {
     "find": "Fan Die Familie",
     "replace": "die Familie Fan"
   },
@@ -256,8 +260,8 @@
     "replace": "Ruf"
   },
   {
-    "find": "Haben Sie nicht? die Familie Fan hat gerade eine Beerdigung?",
-    "replace": "Haben Sie nicht die Familie Fan gerade eine Beerdigung gehabt?"
+    "find": "nächsten Leben ein guter Mensch sein\\.",
+    "replace": "nächsten Leben ein guter Mensch."
   },
   {
     "find": "Das war meine Frau.",
