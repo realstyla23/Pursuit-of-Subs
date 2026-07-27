@@ -2338,10 +2338,10 @@ def merge_sentence_blocks(subs, merge_gap_ms=500, max_block_tokens=96):
                 current = None
             continue
 
-        dur = max(1, int((sub.end.ordinal - sub.start.ordinal) / 1000))
+        dur = max(1, sub.end.ordinal - sub.start.ordinal)
         gap = 999999
         if current and i > 0:
-            gap = int((sub.start.ordinal - subs[i-1].end.ordinal) / 1000)
+            gap = sub.start.ordinal - subs[i-1].end.ordinal
 
         if current and not _end_punct.search(current["text"]) and gap < merge_gap_ms:
             if not _sfx_bracket.match(text) and not _ep_marker.match(text):
