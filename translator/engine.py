@@ -86,7 +86,9 @@ class Config:
     polish_passes: int = 1
     polish_parallel: int = 2
     openrouter_api_key: str = ""
-    openrouter_model: str = "google/gemma-4-31b-it:free"
+    openrouter_model: str = "openrouter/free"
+    nvidia_api_key: str = ""
+    nvidia_model: str = "nvidia/nemotron-3-nano-30b-a3b"
     sentence_aware: bool = True
     merge_gap_ms: int = 500
 
@@ -97,6 +99,8 @@ class Config:
             self.proxy_api_key = os.environ.get("PROXY_API_KEY", "")
         if not self.openrouter_api_key:
             self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        if not self.nvidia_api_key:
+            self.nvidia_api_key = os.environ.get("NVAPI_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Filesystem helpers
@@ -3098,14 +3102,13 @@ def load_polisher(cfg: Config, model_override: str | None = None):
             return session, chat_url, model, key, "openrouter"
         return None
 
-    def _try_proxy():
-        if not cfg.proxy_base_url:
+    def _try_nvidia():
+        if not cfg.nvidia_api_key:
             return None
-        chat_url = cfg.proxy_base_url.rstrip("/") + "/v1/chat/completions"
-        m = "deepseek-v4-flash-free"
-        key = cfg.proxy_api_key
-        if _test_openai_provider(session, chat_url, m, key, "Proxy"):
-            return session, chat_url, m, key, "proxy"
+        chat_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+        model = cfg.nvidia_model
+        if _test_openai_provider(session, chat_url, model, cfg.nvidia_api_key, "NVIDIA"):
+            return session, chat_url, model, cfg.nvidia_api_key, "nvidia"
         return None
 
     def _try_ollama():
@@ -3126,7 +3129,7 @@ def load_polisher(cfg: Config, model_override: str | None = None):
         return session, chat_url, m, None, "ollama"
 
     all_providers = []
-    for attempt in [_try_openrouter, _try_proxy, _try_ollama]:
+    for attempt in [_try_openrouter, _try_nvidia, _try_ollama]:
         p = attempt()
         if p:
             all_providers.append(p)
