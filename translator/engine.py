@@ -66,7 +66,7 @@ def atomic_save(subs, path: Path, encoding: str = "utf-8"):
 class Config:
     src_lang: str = "eng_Latn"
     tgt_lang: str = "deu_Latn"
-    model_id: str = "facebook/nllb-200-distilled-600M"
+    model_id: str = "Helsinki-NLP/opus-mt-en-de"
     device: str = "cuda"
     batch_size: int = 64
     num_beams: int = 4
@@ -1662,7 +1662,8 @@ def fix_mojibake(ger_texts: list[str]) -> int:
 def fix_nllb_duplicates(eng_texts: list[str], ger_texts: list[str]) -> int:
     """Clear duplicate consecutive identical German translations
     where the English source differs (NLLB repeats blocks).
-    Keeps the first occurrence, empties the rest for the polish pass.
+    Keeps the first occurrence, replaces the rest with English source
+    so the polish pass can translate them.
     """
     n = min(len(eng_texts), len(ger_texts))
     count = 0
@@ -1670,12 +1671,14 @@ def fix_nllb_duplicates(eng_texts: list[str], ger_texts: list[str]) -> int:
         if not (ger_texts[i] == ger_texts[i+1] == ger_texts[i+2]
                 and ger_texts[i].strip()):
             continue
+        # Skip triplets where all 3 English sources are identical
+        # (intentional dramatic repetition in source material)
         en_norms = {_normalize_line(eng_texts[j]) for j in range(i, i + 3)}
         if len(en_norms) == 1 and all(en_norms):
             continue
         for j in range(i + 1, i + 3):
             if ger_texts[j]:
-                ger_texts[j] = ""
+                ger_texts[j] = eng_texts[j]
                 count += 1
     return count
 
@@ -3085,22 +3088,13 @@ def _test_openai_provider(session, chat_url, model, api_key, label):
 
 
 def load_polisher(cfg: Config, model_override: str | None = None):
-    """Try providers in order: OpenRouter → Proxy → Ollama.
-    Returns (session, chat_url, model, api_key, all_providers) or None.
+    """Returns (session, chat_url, model, api_key, all_providers) or None.
+    When model_override is set (user picked a specific model), Ollama-only mode.
+    When model_override is None, fallback chain: NVIDIA → Ollama.
     all_providers is a list of (session, chat_url, model, api_key, label) for fallback.
     """
     session = requests.Session()
     model_name = model_override or cfg.ollama_model
-
-    def _try_openrouter():
-        key = cfg.openrouter_api_key
-        if not key:
-            return None
-        chat_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = cfg.openrouter_model
-        if _test_openai_provider(session, chat_url, model, key, "OpenRouter"):
-            return session, chat_url, model, key, "openrouter"
-        return None
 
     def _try_nvidia():
         if not cfg.nvidia_api_key:
@@ -3129,7 +3123,12 @@ def load_polisher(cfg: Config, model_override: str | None = None):
         return session, chat_url, m, None, "ollama"
 
     all_providers = []
-    for attempt in [_try_openrouter, _try_nvidia, _try_ollama]:
+    # model_override set → user selected a specific Ollama model → skip NVIDIA
+    if model_override:
+        attempts = [_try_ollama]
+    else:
+        attempts = [_try_nvidia, _try_ollama]
+    for attempt in attempts:
         p = attempt()
         if p:
             all_providers.append(p)
@@ -3161,6 +3160,13 @@ def find_suspicious_lines(eng_texts: list[str], ger_texts: list[str],
             suspicious.add(i)
 
     return sorted(suspicious)
+
+
+_JUNK_PREFIX_RE = re.compile(r'^(weißt|weißte|ich\s+|es\s+|nicht\s+|-\s*|so\s+|ja\s+|und\s+|aber\s+|denn\s+|mal\s+|doch\s+|halt\s+|eben\s+|einfach\s+|vielleicht\s+|natürlich\s+|tut mir leid,\s*)+', re.IGNORECASE)
+
+def _strip_junk_prefix(text: str) -> str:
+    """Strip conversational junk prefixes hallucinated by some LLM providers."""
+    return _JUNK_PREFIX_RE.sub('', text).lstrip(',;: ')
 
 
 def _rejects_content_addition(en_text: str, nllb_text: str, corr_text: str) -> bool:
@@ -3371,7 +3377,7 @@ def translate_polish(fpath: Path, cfg: Config,
                 "- Preserve all [SFX] brackets exactly\n"
                 "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
                 "- Never merge two speakers into one line\n"
-                "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
+                "- Translate ALL remaining English words to natural German. NO English words allowed in output. This is critical: check every word.\n"
                 "- Fix German grammar specifically:\n"
                 "  * Fix wrong pronoun gender (es→sie/er) for named characters\n"
                 "  * Fix adjective declension to match article/preposition (e.g. 'mit feine Augen' -> 'mit feinen Augen')\n"
@@ -3379,6 +3385,11 @@ def translate_polish(fpath: Path, cfg: Config,
                 "  * Fix compound word errors (e.g. 'Generalfeind' -> 'General des Feindes')\n"
                 "  * Fix word order: verb must be second position in main clauses\n"
                 "  * Fix garbled constructions (e.g. 'Die Fan Das Paar' -> 'Das Ehepaar Fan')\n"
+                "- NLLB often outputs variant lists or doubled fragments. NEVER keep these:\n"
+                "  NEVER output 'Wort, wort' patterns — use only the correct single form\n"
+                "  NEVER prepend stray words or song fragments before the actual line content\n"
+                "  NEVER leave 'war, ♪', 'Laterne, ♪', 'Feind, ♪' style prefixes on song lines\n"
+                "- If the <de> text is empty or contains only the English source, translate entirely from English\n"
                 "- NLLB often invents fake German by corrupting or concatenating words:\n"
                 "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
                 "  * Fake compounds: 'Reisebewilligung'→'Reiseerlaubnis' (if EN has no 'travel permit'), 'Eigentumsurkunde'→correct document name\n"
@@ -3424,9 +3435,9 @@ def translate_polish(fpath: Path, cfg: Config,
                 raise ConnectionError("Rate limited (429)")
 
             if _label == "ollama":
-                content = result.get("message", {}).get("content", "")
+                content = result.get("message", {}).get("content") or ""
             else:
-                content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                content = result.get("choices", [{}])[0].get("message", {}).get("content") or ""
             parsed = parse_xml(content)
             return parsed, local_rejected, local_cache_hits, True
 
@@ -3460,6 +3471,9 @@ def translate_polish(fpath: Path, cfg: Config,
             parsed = None
             succeeded = False
             max_attempts = len(_all_providers)
+            first_provider = _get_current_provider()
+            if first_provider:
+                print(f"  [Polish] Provider: {first_provider[4]}", flush=True)
             for attempt in range(max_attempts):
                 try:
                     parsed, local_rejected, local_cache_hits, succeeded = _call_provider(
@@ -3482,7 +3496,7 @@ def translate_polish(fpath: Path, cfg: Config,
             for idx in uncached_ids:
                 sid = idx + 1
                 if sid in parsed and parsed[sid]:
-                    corr = parsed[sid]
+                    corr = _strip_junk_prefix(parsed[sid])
                     with _cache_lock:
                         _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
                     if corr != ger_texts[idx]:
@@ -3492,6 +3506,7 @@ def translate_polish(fpath: Path, cfg: Config,
                             local_fixes.append((idx, corr))
 
             for idx, corr in cached_results.items():
+                corr = _strip_junk_prefix(corr)
                 if corr != ger_texts[idx]:
                     if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
                         local_rejected += 1
@@ -3530,6 +3545,10 @@ def translate_polish(fpath: Path, cfg: Config,
                     progress_callback(done, len(suspicious))
 
         timer.stop("Ollama Batches")
+
+        # Save original ger_texts before applying fixes (auto-learn needs original NLLB output)
+        _pre_fix_ger = list(ger_texts)
+
         for idx, new_text in ollama_fixes.items():
             ger_texts[idx] = new_text.replace(" // ", "\n")
 
@@ -3538,9 +3557,10 @@ def translate_polish(fpath: Path, cfg: Config,
         all_passes_cache_hits += n_cache_hits
 
         # Learn term corrections from Ollama fixes (auto-glossary)
+        # Use pre-fix ger_texts so we can compare original NLLB output vs corrected
         timer.start("Auto-Learn")
         auto_glossary = _load_auto_glossary()
-        learned = _learn_from_fixes(eng_texts, ger_texts, ollama_fixes, auto_glossary)
+        learned = _learn_from_fixes(eng_texts, _pre_fix_ger, ollama_fixes, auto_glossary)
         if learned:
             print(f"  auto-glossary: {learned} new term(s) learned", flush=True)
         timer.stop("Auto-Learn")

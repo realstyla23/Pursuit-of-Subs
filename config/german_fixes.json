@@ -5558,5 +5558,53 @@
   {
     "find": "Dschink",
     "replace": "Unglücksbringer"
+  },
+  {
+    "find": "Granny Kang",
+    "replace": "Oma Kang"
+  },
+  {
+    "find": "Shoo, shoo",
+    "replace": "Hüsch, hüsch"
+  },
+  {
+    "find": "Bossin",
+    "replace": "Chefin"
+  },
+  {
+    "find": "Xiangsheng Troupe",
+    "replace": "Xiangsheng-Truppe"
+  },
+  {
+    "find": "war, ♪ ",
+    "replace": "♪ "
+  },
+  {
+    "find": "Laterne, ♪ ",
+    "replace": "♪ "
+  },
+  {
+    "find": "Feind, ♪ ",
+    "replace": "♪ "
+  },
+  {
+    "find": "All Solus",
+    "replace": "ganz allein"
+  },
+  {
+    "find": "Vorhutbataillon, ",
+    "replace": ""
+  },
+  {
+    "find": "said",
+    "replace": "sagte"
+  },
+  {
+    "find": "unmarried",
+    "replace": "unverheiratet"
+  },
+  {
+    "find": "shouldn't",
+    "replace": "sollte nicht"
   }
 ]
