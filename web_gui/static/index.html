@@ -235,12 +235,17 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <input type="number" id="batchSize" value="64" min="1" max="512" title="Lines per NLLB batch">
         <label>Beams:</label>
         <input type="number" id="numBeams" value="4" min="1" max="8" title="NLLB beam search width">
-        <label>Model:</label>
+        <label>Translate:</label>
+        <select id="modelIdSelect">
+          <option value="facebook/nllb-200-distilled-600M" selected>NLLB-600M (default)</option>
+          <option value="Helsinki-NLP/opus-mt-en-de">Opus-MT EN-DE</option>
+        </select>
+        <label>Polish:</label>
         <select id="polishModelSelect">
-          <option value="qwen2.5:7b" selected>qwen2.5:7b (recommended, 4.7 GB)</option>
+          <option value="auto" selected>AUTO (OpenRouter → NVIDIA → Ollama)</option>
+          <option value="qwen2.5:7b">qwen2.5:7b (Ollama, 4.7 GB)</option>
           <option value="thinkverse/towerinstruct">TowerInstruct 7B (translation-specialized, 3.8 GB)</option>
           <option value="gemma4:e4b">gemma4:e4b (thinking model, may not work)</option>
-          <option value="deepseek-v4-flash-free">DeepSeek (proxy)</option>
         </select>
         <label>Parallel:</label>
         <select id="polishParallelSelect">
@@ -798,6 +803,7 @@ startBtn.addEventListener('click', function() {
     num_beams: numBeams,
     resume: resume,
     output_dir: outputDir,
+    model_id: $('modelIdSelect').value,
     polish_model: $('polishModelSelect').value,
     polish_parallel: parseInt($('polishParallelSelect').value) || 1
   });

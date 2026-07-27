@@ -337,7 +337,9 @@ def api_start():
         proxy_api_key=body.get("proxy_api_key", ""),
     )
 
-    polish_model = body.get("polish_model", "gemma4:e4b")
+    polish_model = body.get("polish_model", "auto")
+    if polish_model == "auto":
+        polish_model = "qwen2.5:7b"
     polish_parallel = body.get("polish_parallel", 2)
     ollama_host = body.get("ollama_host", "http://127.0.0.1:11434")
 
