@@ -310,7 +310,9 @@ def api_start():
 
     with _job_lock:
         if _job_running:
-            return jsonify({"error": "Job already running"}), 409
+            if _worker_thread and _worker_thread.is_alive():
+                return jsonify({"error": "Job already running"}), 409
+            _job_running = False  # stale flag, dead thread
         _job_running = True
         _cancel_event.clear()
         with _events_lock:
@@ -355,8 +357,10 @@ def api_start():
 
 @app.route("/api/cancel", methods=["POST"])
 def api_cancel():
+    global _job_running
     _cancel_event.set()
-    return jsonify({"status": "cancelling"})
+    _job_running = False
+    return jsonify({"status": "cancelled"})
 
 
 @app.route("/api/events")
