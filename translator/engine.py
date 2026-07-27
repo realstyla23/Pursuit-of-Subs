@@ -83,6 +83,8 @@ class Config:
     proxy_base_url: str = ""
     proxy_api_key: str = ""
     polish_parallel: int = 2
+    sentence_aware: bool = False
+    merge_gap_ms: int = 500
 
     def __post_init__(self):
         if not self.proxy_base_url:
@@ -2053,6 +2055,13 @@ def translate_fast(fpath: Path, cfg: Config,
         glossary = merged
     names = load_names()
 
+    merge_blocks = None
+    if cfg.sentence_aware:
+        merge_blocks = merge_sentence_blocks(subs, cfg.merge_gap_ms)
+        eng_texts = [b["text"] for b in merge_blocks]
+        n = len(eng_texts)
+        print(f"  merged into {n} block(s)", flush=True)
+
     # Protection layers (order: SFX → short excl → song markers → episode markers → names → numbers → multispeaker)
     timer.start("Protect")
     protected, sfx_map = protect_sfx(eng_texts)
@@ -2269,6 +2278,10 @@ def translate_fast(fpath: Path, cfg: Config,
                 ger_texts[i] = '[' + ger_texts[i].strip() + ']'
 
     apply_short_exclamation_overrides(eng_texts, ger_texts)
+
+    if cfg.sentence_aware and merge_blocks:
+        ger_texts = split_sentence_blocks(ger_texts, merge_blocks, subs)
+        n = len(ger_texts)
 
     # Write output (atomic) — assign AFTER final restore
     for i, sub in enumerate(subs):

@@ -1,0 +1,31 @@
+﻿git : warning: in the working copy of 'subtranslate.py', LF will be replaced by CRLF the next time Git touches it
+In Zeile:1 Zeichen:26
++ cd "C:\Pursuit of Subs"; git diff subtranslate.py 2>&1 | Out-File -Fi ...
++                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+diff --git a/subtranslate.py b/subtranslate.py
+index 6f2dd95..d0fb5cf 100644
+--- a/subtranslate.py
++++ b/subtranslate.py
+@@ -49,6 +49,10 @@ def main():
+                    help="Ollama model used for polish mode (default: qwen2.5:7b)")
+     p.add_argument("--polish-parallel", type=int, default=2,
+                    help="Number of polish batches to run in parallel (default: 2)")
++    p.add_argument("--sentence-aware", action="store_true",
++                   help="Merge captions at sentence boundaries before translation")
++    p.add_argument("--merge-gap-ms", type=int, default=500,
++                   help="Max gap (ms) between captions to merge (default: 500)")
+     p.add_argument("--gui", action="store_true",
+                    help="Launch the PySide6 graphical interface")
+     p.add_argument("--web-gui", action="store_true",
+@@ -137,6 +141,8 @@ def main():
+         proxy_api_key=a.proxy_api_key or "",
+         polish_model=a.polish_model,
+         polish_parallel=a.polish_parallel,
++        sentence_aware=a.sentence_aware,
++        merge_gap_ms=a.merge_gap_ms,
+     )
+ 
+     try:
