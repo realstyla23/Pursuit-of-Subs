@@ -9,7 +9,7 @@ Modes:
   --benchmark  Measure performance metrics
 """
 
-__version__ = "4.4.0"
+__version__ = "4.5.0"
 
 import argparse, json, os, re, sys, time, subprocess, shutil, threading, unicodedata
 from dataclasses import dataclass
@@ -83,7 +83,10 @@ class Config:
     llm_batch_size: int = 30
     proxy_base_url: str = ""
     proxy_api_key: str = ""
+    polish_passes: int = 1
     polish_parallel: int = 2
+    openrouter_api_key: str = ""
+    openrouter_model: str = "google/gemma-4-31b-it:free"
     sentence_aware: bool = True
     merge_gap_ms: int = 500
 
@@ -92,6 +95,8 @@ class Config:
             self.proxy_base_url = os.environ.get("PROXY_BASE_URL", "")
         if not self.proxy_api_key:
             self.proxy_api_key = os.environ.get("PROXY_API_KEY", "")
+        if not self.openrouter_api_key:
+            self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Filesystem helpers
@@ -1176,7 +1181,7 @@ def generate_glossary(
     if polisher is None:
         print("  [ERROR] Could not load polisher. Check proxy settings.")
         return {}
-    session, chat_url, model_name, api_key = polisher
+    session, chat_url, model_name, api_key, _all_providers = polisher
 
     # Extract plain text from all SRTs
     all_texts: list[str] = []
@@ -2862,7 +2867,7 @@ def translate_llm(fpath: Path, cfg: Config,
     if polisher is None:
         print(f"  [FAIL] No LLM available (Ollama or proxy)")
         return False
-    session, chat_url, llm_model_name, proxy_api_key = polisher
+    session, chat_url, llm_model_name, proxy_api_key, _all_providers = polisher
     is_proxy = proxy_api_key is not None
 
     timer.start("LLM Translate")
@@ -3031,13 +3036,20 @@ POLISH_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+class _RateLimitError(Exception):
+    """Raised when an LLM provider returns HTTP 429 (rate limited)."""
+
 def _ollama_chat(session, url: str, payload: dict, timeout: int = 120, headers: dict | None = None) -> dict | None:
     """Call LLM API with retry logic. Returns parsed JSON or None."""
     for attempt in range(2):
         try:
             resp = session.post(url, json=payload, headers=headers or {}, timeout=timeout)
+            if resp.status_code == 429:
+                raise _RateLimitError(f"Rate limited (429): {resp.text[:200]}")
             resp.raise_for_status()
             return resp.json()
+        except _RateLimitError:
+            raise
         except (requests.ConnectionError, requests.Timeout,
                 requests.HTTPError) as e:
             if attempt == 0:
@@ -3049,46 +3061,81 @@ def _ollama_chat(session, url: str, payload: dict, timeout: int = 120, headers: 
     return None
 
 
+def _test_openai_provider(session, chat_url, model, api_key, label):
+    """Test an OpenAI-compatible provider. Returns True if reachable."""
+    print(f"  [{label}] Testing {model}...", end=" ", flush=True)
+    payload = {"model": model, "messages": [{"role": "user", "content": "test"}], "temperature": 0, "max_tokens": 4}
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    try:
+        resp = session.post(chat_url, json=payload, headers=headers, timeout=30)
+        resp.raise_for_status()
+        print("OK", flush=True)
+        return True
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 429:
+            print("429 (rate limited, skipped)", flush=True)
+            return False
+    except Exception as e:
+        print(f"FAILED: {e}", flush=True)
+    return False
+
+
 def load_polisher(cfg: Config, model_override: str | None = None):
+    """Try providers in order: OpenRouter → Proxy → Ollama.
+    Returns (session, chat_url, model, api_key, all_providers) or None.
+    all_providers is a list of (session, chat_url, model, api_key, label) for fallback.
+    """
     session = requests.Session()
     model_name = model_override or cfg.ollama_model
 
-    if cfg.proxy_base_url:
-        chat_url = cfg.proxy_base_url.rstrip("/") + "/v1/chat/completions"
-        model = model_name
-        api_key = cfg.proxy_api_key
-        print(f"  Loading proxy polisher ({model})...", end=" ", flush=True)
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": "test"}],
-            "temperature": 0,
-            "max_tokens": 4,
-        }
-        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        try:
-            resp = session.post(chat_url, json=payload, headers=headers, timeout=30)
-            resp.raise_for_status()
-            print("OK", flush=True)
-            return session, chat_url, model, api_key
-        except Exception as e:
-            print(f"FAILED: {e}", flush=True)
+    def _try_openrouter():
+        key = cfg.openrouter_api_key
+        if not key:
             return None
-
-    chat_url = f"{cfg.ollama_host}/api/chat"
-    model = model_name
-    print(f"  Loading Ollama polisher ({model})...", end=" ", flush=True)
-    payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": '<LINE id="1">Hello.</LINE>'}],
-        "stream": False,
-        "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 16, "keep_alive": "30m"},
-    }
-    result = _ollama_chat(session, chat_url, payload, timeout=120)
-    if result is None:
-        print("FAILED", flush=True)
+        chat_url = "https://openrouter.ai/api/v1/chat/completions"
+        model = cfg.openrouter_model
+        if _test_openai_provider(session, chat_url, model, key, "OpenRouter"):
+            return session, chat_url, model, key, "openrouter"
         return None
-    print("OK", flush=True)
-    return session, chat_url, model, None
+
+    def _try_proxy():
+        if not cfg.proxy_base_url:
+            return None
+        chat_url = cfg.proxy_base_url.rstrip("/") + "/v1/chat/completions"
+        m = "deepseek-v4-flash-free"
+        key = cfg.proxy_api_key
+        if _test_openai_provider(session, chat_url, m, key, "Proxy"):
+            return session, chat_url, m, key, "proxy"
+        return None
+
+    def _try_ollama():
+        chat_url = f"{cfg.ollama_host}/api/chat"
+        m = model_name
+        print(f"  [Ollama] Testing {m}...", end=" ", flush=True)
+        payload = {
+            "model": m,
+            "messages": [{"role": "user", "content": '<LINE id="1">Hello.</LINE>'}],
+            "stream": False,
+            "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 16, "keep_alive": "30m"},
+        }
+        result = _ollama_chat(session, chat_url, payload, timeout=120)
+        if result is None:
+            print("FAILED", flush=True)
+            return None
+        print("OK", flush=True)
+        return session, chat_url, m, None, "ollama"
+
+    all_providers = []
+    for attempt in [_try_openrouter, _try_proxy, _try_ollama]:
+        p = attempt()
+        if p:
+            all_providers.append(p)
+
+    if not all_providers:
+        return None
+
+    first = all_providers[0]
+    return *first[:4], all_providers
 
 SUSPICIOUS_THRESHOLD = 2
 
@@ -3200,248 +3247,337 @@ def translate_polish(fpath: Path, cfg: Config,
         print(f"  [Show context] {show_ctx.get('show_name', '')} loaded ({len(show_ctx.get('characters', {}))} characters)", flush=True)
     timer.stop("Pre-Polish")
 
-    timer.start("QA")
-    suspicious = find_suspicious_lines(eng_texts, ger_texts, glossary, names)
-    timer.stop("QA")
-    if not suspicious:
-        for i, sub in enumerate(ger):
-            sub.text = ger_texts[i]
-        for i, t in enumerate(ger_texts):
-            if _PLACEHOLDER_RE.search(t):
-                raise RuntimeError(
-                    f"Placeholder leak in {out.name} line {i+1}: "
-                    f"{_PLACEHOLDER_RE.search(t).group()} — aborting save"
-                )
-        atomic_save(ger, out)
-        print(f"  {fpath.name}  no suspicious lines, {gc} glossary + {nc} name fixes")
-        return True
-
-    print(f"  {fpath.name}  {n} lines, {len(suspicious)} suspicious", flush=True)
-
-    timer.start("Ollama Start")
-    polisher = load_polisher(cfg, polish_model)
-    timer.stop("Ollama Start")
-    if polisher is None:
-        print(f"  [WARN] Polisher unavailable, skipping polish for {fpath.name}")
-        for i, sub in enumerate(ger):
-            sub.text = ger_texts[i]
-        atomic_save(ger, out)
-        print(f"  SKIPPED: {out.name}  ({gc} glossary + {nc} name fixes)")
-        return False
-
-    session, chat_url, polish_model_name, proxy_api_key = polisher
+    # Polish pass loop (supports dual-pass for higher quality)
+    polish_passes = max(cfg.polish_passes, 1)
+    polisher = None
+    all_passes_suspicious = []
+    all_passes_fixes = []
+    all_passes_rejected = 0
+    all_passes_cache_hits = 0
+    total_ollama_fixes: dict[int, str] = {}
     t_start = time.time()
 
-    batch_size = 10
-    ollama_fixes = {}
-    n_rejected = 0
-    n_cache_hits = 0
-    # Load persistent Ollama cache from disk
-    _ollama_cache: dict[tuple[str, str], str] = {}
-    if _OLLAMA_CACHE_PATH.exists():
-        try:
-            with open(_OLLAMA_CACHE_PATH, encoding="utf-8") as f:
-                raw = json.load(f)
-            for eng, de_map in raw.items():
-                for de_text, corr in de_map.items():
-                    _ollama_cache[(eng, de_text)] = corr
-        except Exception as e:
-            print(f"  [WARN] Failed to load Ollama cache: {e}", flush=True)
-    timer.start("Ollama Batches")
-    total_batches = (len(suspicious) + batch_size - 1) // batch_size
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    import threading
-    _cache_lock = threading.Lock()
-    _fixes_lock = threading.Lock()
+    for polish_pass in range(polish_passes):
+        if polish_pass > 0:
+            print(f"  [Pass {polish_pass+1}/{polish_passes}]", flush=True)
 
-    def _submit_batch(s):
-        """Send one batch to the LLM, return (fixes, rejected, cache_hits, all_cached) or (None, ...)."""
-        batch_ids = suspicious[s : s + batch_size]
-        local_fixes = []
-        local_rejected = 0
-        local_cache_hits = 0
+        timer.start("QA")
+        suspicious = find_suspicious_lines(eng_texts, ger_texts, glossary, names)
+        timer.stop("QA")
 
-        cached_results = {}
-        uncached_ids = []
-        for idx in batch_ids:
-            with _cache_lock:
-                key = (eng_texts[idx], ger_texts[idx])
-                if key in _ollama_cache:
-                    cached_results[idx] = _ollama_cache[key]
-                    local_cache_hits += 1
-                else:
-                    uncached_ids.append(idx)
+        if not suspicious:
+            if polish_pass == 0:
+                for i, sub in enumerate(ger):
+                    sub.text = ger_texts[i]
+                for i, t in enumerate(ger_texts):
+                    if _PLACEHOLDER_RE.search(t):
+                        raise RuntimeError(
+                            f"Placeholder leak in {out.name} line {i+1}: "
+                            f"{_PLACEHOLDER_RE.search(t).group()} — aborting save"
+                        )
+                atomic_save(ger, out)
+                print(f"  {fpath.name}  no suspicious lines, {gc} glossary + {nc} name fixes")
+                return True
+            print(f"  Pass {polish_pass+1}: no suspicious lines remaining")
+            break
 
-        if not uncached_ids:
+        if polish_pass == 0:
+            print(f"  {fpath.name}  {n} lines, {len(suspicious)} suspicious", flush=True)
+        else:
+            print(f"  Pass {polish_pass+1}: {len(suspicious)} remaining suspicious", flush=True)
+
+        all_passes_suspicious.append(len(suspicious))
+
+        if polisher is None:
+            timer.start("Ollama Start")
+            polisher = load_polisher(cfg, polish_model)
+            timer.stop("Ollama Start")
+            if polisher is None:
+                print(f"  [WARN] Polisher unavailable, skipping polish for {fpath.name}")
+                for i, sub in enumerate(ger):
+                    sub.text = ger_texts[i]
+                atomic_save(ger, out)
+                print(f"  SKIPPED: {out.name}  ({gc} glossary + {nc} name fixes)")
+                return False
+
+        _, _, _, _, _all_providers = polisher
+
+        batch_size = 10
+        ollama_fixes = {}
+        n_rejected = 0
+        n_cache_hits = 0
+        _ollama_cache: dict[tuple[str, str], str] = {}
+        if _OLLAMA_CACHE_PATH.exists():
+            try:
+                with open(_OLLAMA_CACHE_PATH, encoding="utf-8") as f:
+                    raw = json.load(f)
+                for eng, de_map in raw.items():
+                    for de_text, corr in de_map.items():
+                        _ollama_cache[(eng, de_text)] = corr
+            except Exception as e:
+                print(f"  [WARN] Failed to load Ollama cache: {e}", flush=True)
+        timer.start("Ollama Batches")
+        total_batches = (len(suspicious) + batch_size - 1) // batch_size
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import threading
+        _cache_lock = threading.Lock()
+        _fixes_lock = threading.Lock()
+
+        # Provider fallback state
+        _provider_lock = threading.Lock()
+        _provider_idx = [0]  # list for mutability in closures
+
+        def _get_current_provider():
+            with _provider_lock:
+                if _provider_idx[0] < len(_all_providers):
+                    return _all_providers[_provider_idx[0]]
+                return None
+
+        def _switch_provider():
+            with _provider_lock:
+                _provider_idx[0] += 1
+                if _provider_idx[0] < len(_all_providers):
+                    p = _all_providers[_provider_idx[0]]
+                    print(f"  [FALLBACK] Switching to {p[4]}...", flush=True)
+                    return p
+                return None
+
+        def _call_provider(uncached_ids, local_rejected, local_cache_hits):
+            """Try current provider. Returns (fixes, rejected, cache_hits, succeeded) or raises on 429."""
+            provider = _get_current_provider()
+            if provider is None:
+                return None, local_rejected, local_cache_hits, False
+
+            _session, _chat_url, _model, _api_key, _label = provider
+
+            xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
+            mem_ctx = ConversationMemory.get_context_text()
+            pass2_header = ""
+            if polish_pass > 0:
+                pass2_header = (
+                    "REVIEW PASS — This text was already polished once. "
+                    "Focus on remaining subtle errors the first pass may have missed.\n\n"
+                )
+            user_msg = (
+                pass2_header
+                + "Improve each German <de> translation inside <current> using context.\n"
+                "Rules:\n"
+                "- ONLY rewrite the <de> text within <current>, never <previous> or <next>\n"
+                "- Use surrounding context to ensure consistent character voices\n"
+                "- Use correct German pronouns: Fan Changyu (female) → 'sie', not 'es'; Xie Zheng (male) → 'er', not 'es'\n"
+                "- Preserve all [SFX] brackets exactly\n"
+                "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
+                "- Never merge two speakers into one line\n"
+                "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
+                "- Fix German grammar specifically:\n"
+                "  * Fix wrong pronoun gender (es→sie/er) for named characters\n"
+                "  * Fix adjective declension to match article/preposition (e.g. 'mit feine Augen' -> 'mit feinen Augen')\n"
+                "  * Fix separable verb prefixes in zu-infinitives (e.g. 'um es zu fangen' -> 'um es aufzufangen')\n"
+                "  * Fix compound word errors (e.g. 'Generalfeind' -> 'General des Feindes')\n"
+                "  * Fix word order: verb must be second position in main clauses\n"
+                "  * Fix garbled constructions (e.g. 'Die Fan Das Paar' -> 'Das Ehepaar Fan')\n"
+                "- NLLB often invents fake German by corrupting or concatenating words:\n"
+                "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
+                "  * Fake compounds: 'Reisebewilligung'→'Reiseerlaubnis' (if EN has no 'travel permit'), 'Eigentumsurkunde'→correct document name\n"
+                "  * Wrong legal terms: 'Rechtsfall'→'Gerichtsverhandlung'/'Urteil' (never use 'Rechtsfall' for 'trial' or 'case')\n"
+                "  * Wrong context words: 'matrilokaler'→check EN source, use proper German\n"
+                "  * Hallucinated titles: 'Mylord'→'mein Herr', 'Euer Hoheit'→'mein Herr'\n"
+                "  * Wrong address: 'Geistesgestörter' or 'gesperrter' used as address → remove entirely\n"
+                "- Fix 'Schweinschlachter'→'Metzger'/'Metzgerin' when EN has 'butcher'\n"
+                "- Fix 'Dschinx'/'Dschink'→'Unglücksbringer'\n"
+                "- Produce natural spoken German, as if written by a native speaker\n"
+                "- Keep subtitle length appropriate\n"
+                + (f"\nShow context:\n{_show_context_str}\n" if _show_context_str else "")
+                + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
+                + "\n" + xml_input
+            )
+
+            if _label == "ollama":
+                payload = {
+                    "model": _model,
+                    "messages": [{"role": "user", "content": user_msg}],
+                    "stream": False,
+                    "options": {"temperature": 0, "num_ctx": 8192,
+                                "num_predict": len(uncached_ids) * 300, "keep_alive": "30m"},
+                }
+                result = _ollama_chat(_session, _chat_url, payload, timeout=120)
+            else:
+                payload = {
+                    "model": _model,
+                    "messages": [{"role": "user", "content": user_msg}],
+                    "temperature": 0,
+                    "stream": False,
+                    "max_tokens": len(uncached_ids) * 300,
+                }
+                headers = {"Authorization": f"Bearer {_api_key}"}
+                result = _ollama_chat(_session, _chat_url, payload, timeout=120, headers=headers)
+
+            if result is None:
+                raise ConnectionError("Provider returned None")
+
+            # Detect rate limit
+            err_msg = result.get("error", {})
+            if err_msg and ("rate_limit" in str(err_msg).lower() or "429" in str(err_msg)):
+                raise ConnectionError("Rate limited (429)")
+
+            if _label == "ollama":
+                content = result.get("message", {}).get("content", "")
+            else:
+                content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            parsed = parse_xml(content)
+            return parsed, local_rejected, local_cache_hits, True
+
+        def _submit_batch(s):
+            batch_ids = suspicious[s : s + batch_size]
+            local_fixes = []
+            local_rejected = 0
+            local_cache_hits = 0
+
+            cached_results = {}
+            uncached_ids = []
+            for idx in batch_ids:
+                with _cache_lock:
+                    key = (eng_texts[idx], ger_texts[idx])
+                    if key in _ollama_cache:
+                        cached_results[idx] = _ollama_cache[key]
+                        local_cache_hits += 1
+                    else:
+                        uncached_ids.append(idx)
+
+            if not uncached_ids:
+                for idx, corr in cached_results.items():
+                    if corr != ger_texts[idx]:
+                        if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
+                            local_rejected += 1
+                        else:
+                            local_fixes.append((idx, corr))
+                return local_fixes, local_rejected, local_cache_hits, True
+
+            # Try providers in order with fallback
+            parsed = None
+            succeeded = False
+            max_attempts = len(_all_providers)
+            for attempt in range(max_attempts):
+                try:
+                    parsed, local_rejected, local_cache_hits, succeeded = _call_provider(
+                        uncached_ids, local_rejected, local_cache_hits)
+                    if succeeded:
+                        break
+                except (ConnectionError, Exception) as exc:
+                    is_429 = "429" in str(exc) or "rate_limit" in str(exc).lower()
+                    if is_429 and attempt + 1 < max_attempts:
+                        _switch_provider()
+                        print(f"  [FALLBACK] Retrying batch with next provider...", flush=True)
+                        continue
+                    else:
+                        print(f"  [WARN] Batch failed: {exc}", flush=True)
+                        return None, local_rejected, local_cache_hits, False
+
+            if not succeeded or parsed is None:
+                return None, local_rejected, local_cache_hits, False
+
+            for idx in uncached_ids:
+                sid = idx + 1
+                if sid in parsed and parsed[sid]:
+                    corr = parsed[sid]
+                    with _cache_lock:
+                        _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
+                    if corr != ger_texts[idx]:
+                        if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
+                            local_rejected += 1
+                        else:
+                            local_fixes.append((idx, corr))
+
             for idx, corr in cached_results.items():
                 if corr != ger_texts[idx]:
                     if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
                         local_rejected += 1
                     else:
                         local_fixes.append((idx, corr))
-            return local_fixes, local_rejected, local_cache_hits, True
 
-        xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
-        mem_ctx = ConversationMemory.get_context_text()
-        user_msg = (
-            "Improve each German <de> translation inside <current> using context.\n"
-            "Rules:\n"
-            "- ONLY rewrite the <de> text within <current>, never <previous> or <next>\n"
-            "- Use surrounding context to ensure consistent character voices\n"
-            "- Use correct German pronouns: Fan Changyu (female) → 'sie', not 'es'; Xie Zheng (male) → 'er', not 'es'\n"
-            "- Preserve all [SFX] brackets exactly\n"
-            "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
-            "- Never merge two speakers into one line\n"
-            "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
-            "- Fix German grammar specifically:\n"
-            "  * Fix wrong pronoun gender (es→sie/er) for named characters\n"
-            "  * Fix adjective declension to match article/preposition (e.g. 'mit feine Augen' -> 'mit feinen Augen')\n"
-            "  * Fix separable verb prefixes in zu-infinitives (e.g. 'um es zu fangen' -> 'um es aufzufangen')\n"
-            "  * Fix compound word errors (e.g. 'Generalfeind' -> 'General des Feindes')\n"
-            "  * Fix word order: verb must be second position in main clauses\n"
-            "  * Fix garbled constructions (e.g. 'Die Fan Das Paar' -> 'Das Ehepaar Fan')\n"
-            "- NLLB often invents fake German by corrupting or concatenating words:\n"
-            "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
-            "  * Fake compounds: 'Reisebewilligung'→'Reiseerlaubnis' (if EN has no 'travel permit'), 'Eigentumsurkunde'→correct document name\n"
-            "  * Wrong legal terms: 'Rechtsfall'→'Gerichtsverhandlung'/'Urteil' (never use 'Rechtsfall' for 'trial' or 'case')\n"
-            "  * Wrong context words: 'matrilokaler'→check EN source, use proper German\n"
-            "  * Hallucinated titles: 'Mylord'→'mein Herr', 'Euer Hoheit'→'mein Herr'\n"
-            "  * Wrong address: 'Geistesgestörter' or 'gesperrter' used as address → remove entirely\n"
-            "- Fix 'Schweinschlachter'→'Metzger'/'Metzgerin' when EN has 'butcher'\n"
-            "- Fix 'Dschinx'/'Dschink'→'Unglücksbringer'\n"
-            "- Produce natural spoken German, as if written by a native speaker\n"
-            "- Keep subtitle length appropriate\n"
-            + (f"\nShow context:\n{_show_context_str}\n" if _show_context_str else "")
-            + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
-            + "\n" + xml_input
-        )
+            return local_fixes, local_rejected, local_cache_hits, False
 
-        if proxy_api_key is not None:
-            payload = {
-                "model": polish_model_name,
-                "messages": [{"role": "user", "content": user_msg}],
-                "temperature": 0,
-                "stream": False,
-                "max_tokens": len(batch_ids) * 300,
-            }
-            headers = {"Authorization": f"Bearer {proxy_api_key}"}
-            result = _ollama_chat(session, chat_url, payload, timeout=120, headers=headers)
-        else:
-            payload = {
-                "model": polish_model_name,
-                "messages": [{"role": "user", "content": user_msg}],
-                "stream": False,
-                "options": {"temperature": 0, "num_ctx": 8192,
-                            "num_predict": len(batch_ids) * 300, "keep_alive": "30m"},
-            }
-            result = _ollama_chat(session, chat_url, payload, timeout=120)
+        batch_starts = list(range(0, len(suspicious), batch_size))
+        parallel = getattr(cfg, "polish_parallel", 2) if total_batches > 1 else 1
+        _polish_done = 0
+        with ThreadPoolExecutor(max_workers=parallel) as executor:
+            futures = {executor.submit(_submit_batch, s): s for s in batch_starts}
+            for future in as_completed(futures):
+                s = futures[future]
+                try:
+                    local_fixes, local_rejected, local_cache_hits, all_cached = future.result()
+                except Exception as exc:
+                    print(f"  [WARN] Batch at line {s+1} failed: {exc}", flush=True)
+                    continue
+                if local_fixes is None:
+                    print(f"  [WARN] Skipping batch at line {s+1}", flush=True)
+                    continue
+                with _fixes_lock:
+                    for idx, corr in local_fixes:
+                        ollama_fixes[idx] = corr
+                        total_ollama_fixes[idx] = corr
+                    n_rejected += local_rejected
+                    n_cache_hits += local_cache_hits
+                _polish_done += batch_size
+                done = min(_polish_done, len(suspicious))
+                elapsed = time.time() - t_start
+                tag = "  (all cached)" if all_cached else ""
+                print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s{tag}]", flush=True)
+                if progress_callback:
+                    progress_callback(done, len(suspicious))
 
-        if result is None:
-            return None, local_rejected, local_cache_hits, False
+        timer.stop("Ollama Batches")
+        for idx, new_text in ollama_fixes.items():
+            ger_texts[idx] = new_text.replace(" // ", "\n")
 
-        if proxy_api_key is not None:
-            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        else:
-            content = result.get("message", {}).get("content", "")
-        parsed = parse_xml(content)
+        all_passes_fixes.append(len(ollama_fixes))
+        all_passes_rejected += n_rejected
+        all_passes_cache_hits += n_cache_hits
 
-        for idx in uncached_ids:
-            sid = idx + 1
-            if sid in parsed and parsed[sid]:
-                corr = parsed[sid]
-                with _cache_lock:
-                    _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
-                if corr != ger_texts[idx]:
-                    if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
-                        local_rejected += 1
-                    else:
-                        local_fixes.append((idx, corr))
+        # Learn term corrections from Ollama fixes (auto-glossary)
+        timer.start("Auto-Learn")
+        auto_glossary = _load_auto_glossary()
+        learned = _learn_from_fixes(eng_texts, ger_texts, ollama_fixes, auto_glossary)
+        if learned:
+            print(f"  auto-glossary: {learned} new term(s) learned", flush=True)
+        timer.stop("Auto-Learn")
 
-        for idx, corr in cached_results.items():
-            if corr != ger_texts[idx]:
-                if _rejects_content_addition(eng_texts[idx], ger_texts[idx], corr):
-                    local_rejected += 1
-                else:
-                    local_fixes.append((idx, corr))
+        # Re-apply glossary after Ollama may have modified lines
+        timer.start("Re-glossary")
+        _ = apply_glossary(eng_texts, ger_texts, glossary)
+        timer.stop("Re-glossary")
 
-        return local_fixes, local_rejected, local_cache_hits, False
+        timer.start("Short Exclamations")
+        apply_short_exclamation_overrides(eng_texts, ger_texts)
+        timer.stop("Short Exclamations")
 
-    batch_starts = list(range(0, len(suspicious), batch_size))
-    parallel = getattr(cfg, "polish_parallel", 2) if total_batches > 1 else 1
-    _polish_done = 0
-    with ThreadPoolExecutor(max_workers=parallel) as executor:
-        futures = {executor.submit(_submit_batch, s): s for s in batch_starts}
-        for future in as_completed(futures):
-            s = futures[future]
-            try:
-                local_fixes, local_rejected, local_cache_hits, all_cached = future.result()
-            except Exception as exc:
-                print(f"  [WARN] Batch at line {s+1} failed: {exc}", flush=True)
-                continue
-            if local_fixes is None:
-                print(f"  [WARN] Skipping batch at line {s+1}", flush=True)
-                continue
-            with _fixes_lock:
-                for idx, corr in local_fixes:
-                    ollama_fixes[idx] = corr
-                n_rejected += local_rejected
-                n_cache_hits += local_cache_hits
-            _polish_done += batch_size
-            done = min(_polish_done, len(suspicious))
-            elapsed = time.time() - t_start
-            tag = "  (all cached)" if all_cached else ""
-            print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s{tag}]", flush=True)
-            if progress_callback:
-                progress_callback(done, len(suspicious))
+        # Re-apply German phrase fixes (Ollama may have reverted them)
+        timer.start("German Fixes")
+        gfc = apply_german_fixes(ger_texts, load_german_fixes())
+        mjc = fix_mojibake(ger_texts)
+        timer.stop("German Fixes")
 
-    timer.stop("Ollama Batches")
-    for idx, new_text in ollama_fixes.items():
-        ger_texts[idx] = new_text.replace(" // ", "\n")
+        # Catch remaining English words that NLLB missed
+        timer.start("English Filter")
+        _eng_fixes = _filter_english_words(eng_texts, ger_texts)
+        timer.stop("English Filter")
 
-    # Learn term corrections from Ollama fixes (auto-glossary)
-    timer.start("Auto-Learn")
-    auto_glossary = _load_auto_glossary()
-    learned = _learn_from_fixes(eng_texts, ger_texts, ollama_fixes, auto_glossary)
-    if learned:
-        print(f"  auto-glossary: {learned} new term(s) learned", flush=True)
-    timer.stop("Auto-Learn")
+        # Save persistent Ollama cache to disk
+        try:
+            _OLLAMA_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            serialized: dict[str, dict[str, str]] = {}
+            for (eng, de), corr in _ollama_cache.items():
+                serialized.setdefault(eng, {})[de] = corr
+            with open(_OLLAMA_CACHE_PATH, "w", encoding="utf-8") as f:
+                json.dump(serialized, f, ensure_ascii=False, indent=1)
+        except Exception as e:
+            print(f"  [WARN] Failed to save Ollama cache: {e}", flush=True)
 
-    # Re-apply glossary after Ollama may have modified lines
-    timer.start("Re-glossary")
-    _ = apply_glossary(eng_texts, ger_texts, glossary)
-    timer.stop("Re-glossary")
-
-    timer.start("Short Exclamations")
-    apply_short_exclamation_overrides(eng_texts, ger_texts)
-    timer.stop("Short Exclamations")
-
-    # Re-apply German phrase fixes (Ollama may have reverted them)
-    timer.start("German Fixes")
-    gfc = apply_german_fixes(ger_texts, load_german_fixes())
-    mjc = fix_mojibake(ger_texts)
-    timer.stop("German Fixes")
-
-    # Catch remaining English words that NLLB missed
-    timer.start("English Filter")
-    _eng_fixes = _filter_english_words(eng_texts, ger_texts)
-    timer.stop("English Filter")
-
-    # Save persistent Ollama cache to disk
-    try:
-        _OLLAMA_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        serialized: dict[str, dict[str, str]] = {}
-        for (eng, de), corr in _ollama_cache.items():
-            serialized.setdefault(eng, {})[de] = corr
-        with open(_OLLAMA_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(serialized, f, ensure_ascii=False, indent=1)
-    except Exception as e:
-        print(f"  [WARN] Failed to save Ollama cache: {e}", flush=True)
-
+    # ── Final save (after all passes) ──
     timer.start("Save")
     for i, sub in enumerate(ger):
         sub.text = ger_texts[i]
 
-    # Hard fail on placeholder leak
     for i, t in enumerate(ger_texts):
         if _PLACEHOLDER_RE.search(t):
             raise RuntimeError(
@@ -3454,7 +3590,7 @@ def translate_polish(fpath: Path, cfg: Config,
         timer.stop("Save")
         elapsed = time.time() - t_start
 
-        # ---- Stats collection for summary ----
+        # ── Stats summary ──
         timer.start("Summary")
         conn = _get_tm()
         tm_total = conn.execute("SELECT COUNT(*) FROM tm").fetchone()[0]
@@ -3467,29 +3603,26 @@ def translate_polish(fpath: Path, cfg: Config,
             tm_misses = n
             tm_rate = 0
 
-        # Final QA score after all polish + re-glossary
         titles = load_titles()
-        final_qa = generate_qa_report(eng_texts, ger_texts, glossary, names,
-                                      titles)
+        final_qa = generate_qa_report(eng_texts, ger_texts, glossary, names, titles)
         final_score = sum(l["score"] for l in final_qa["lines"]) if final_qa else 0
 
-        n_unchanged = len(suspicious) - len(ollama_fixes)
-        n_corr = gc + nc + len(ollama_fixes)
+        n_corr = gc + nc + len(total_ollama_fixes)
+        pass_details = ""
+        if len(all_passes_fixes) > 1:
+            pass_details = f" passes: {', '.join(str(f) for f in all_passes_fixes)} fixes"
         timer.stop("Summary")
 
-        print(f"  POLISHED: {out.name}  ({elapsed:.0f}s  {n_corr} total fixes)", flush=True)
+        print(f"  POLISHED: {out.name}  ({elapsed:.0f}s  {n_corr} total fixes{pass_details})", flush=True)
         print(f"")
         print(f"  Translation Summary")
         print(f"  {'─'*50}")
         print(f"  QA:")
-        print(f"    Suspicious: {len(suspicious)}")
+        print(f"    Suspicious passes: {all_passes_suspicious}")
         print(f"  Ollama:")
-        print(f"    Sent: {len(suspicious)}")
-        print(f"    Modified: {len(ollama_fixes)}")
-        print(f"    Rejected: {n_rejected}")
-        print(f"    Unchanged: {n_unchanged - n_rejected}")
-        if n_cache_hits:
-            print(f"    Cache hits: {n_cache_hits}")
+        print(f"    Total modifications: {len(total_ollama_fixes)}")
+        print(f"    Rejected: {all_passes_rejected}")
+        print(f"    Cache hits: {all_passes_cache_hits}")
         print(f"    Time: {elapsed:.1f}s")
         print(f"  TM:")
         print(f"    Entries: {tm_total}")
@@ -3714,7 +3847,7 @@ def run_benchmark(cfg: Config):
             polisher = load_polisher(cfg)
             if polisher:
                 ollama_warm_ms = (time.time() - t0) * 1000
-                session, chat_url, polish_model_name, _ = polisher
+                session, chat_url, polish_model_name, _, _all_providers = polisher
                 t0 = time.time()
                 payload = {
                     "model": polish_model_name,
@@ -4255,7 +4388,7 @@ def learn_scan(eng_texts: list[str], ger_texts: list[str],
                prompt_template: str = LEARN_SCAN_PROMPT,
                scan_label: str = "scan") -> list[dict]:
     """Scan every line for errors using LLM. Returns list of {find, replace}."""
-    session, chat_url, model_name, api_key = polisher
+    session, chat_url, model_name, api_key, _all_providers = polisher
     seen_pairs: set[tuple[str, str]] = set()
     candidates: list[dict] = []
     n_total = len(eng_texts)
@@ -4488,7 +4621,7 @@ def translate_learn(fpath: Path, cfg: Config,
         print(f"  [WARN] Polisher unavailable, skipping learn for {fpath.name}")
         return False
 
-    session, chat_url, polish_model_name, proxy_api_key = polisher
+    session, chat_url, polish_model_name, proxy_api_key, _all_providers = polisher
 
     # Load shared Ollama cache (populated by translate_polish)
     _ollama_cache: dict[tuple[str, str], str] = {}

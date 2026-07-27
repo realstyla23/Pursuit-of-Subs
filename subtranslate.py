@@ -49,6 +49,12 @@ def main():
                    help="Ollama model used for polish mode (default: qwen2.5:7b)")
     p.add_argument("--polish-parallel", type=int, default=2,
                    help="Number of polish batches to run in parallel (default: 2)")
+    p.add_argument("--polish-passes", type=int, default=1,
+                   help="Number of polish passes (2 = dual-pass; default: 1)")
+    p.add_argument("--openrouter-model", default="google/gemma-4-31b-it:free",
+                   help="OpenRouter model for polish (default: google/gemma-4-31b-it:free)")
+    p.add_argument("--openrouter-key",
+                   help="OpenRouter API key (falls back to OPENROUTER_API_KEY env var)")
     p.add_argument("--sentence-aware", action="store_true",
                    help="Merge captions at sentence boundaries before translation")
     p.add_argument("--merge-gap-ms", type=int, default=500,
@@ -140,7 +146,10 @@ def main():
         proxy_base_url=a.proxy_base_url or "",
         proxy_api_key=a.proxy_api_key or "",
         polish_model=a.polish_model,
+        polish_passes=a.polish_passes,
         polish_parallel=a.polish_parallel,
+        openrouter_api_key=a.openrouter_key or "",
+        openrouter_model=a.openrouter_model,
         sentence_aware=a.sentence_aware,
         merge_gap_ms=a.merge_gap_ms,
     )
