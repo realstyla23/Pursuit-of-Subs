@@ -2306,6 +2306,17 @@ def translate_fast(fpath: Path, cfg: Config,
         return False
 
 # ---------------------------------------------------------------------------
+# 4b. CPS (characters-per-second) utility
+# ---------------------------------------------------------------------------
+
+
+def calculate_cps(text: str, duration_ms: float) -> float:
+    chars = len(text)
+    seconds = duration_ms / 1000.0
+    return chars / seconds if seconds > 0 else 0.0
+
+
+# ---------------------------------------------------------------------------
 # 5a. Lightweight conversation memory (in-memory rolling context)
 # ---------------------------------------------------------------------------
 
