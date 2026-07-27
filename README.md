@@ -1,17 +1,20 @@
 # Pursuit of Subs
 
-GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with optional LLM polishing (local via Ollama or proxy via DeepSeek).
+GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with LLM polishing (local via Ollama, or any OpenAI-compatible proxy).
 
 ## Features
 
-- **Fast** — Batch NLLB-600M translation at ~30 lines/second on an RTX 4060 Ti
+- **Multi-model** — Choose between NLLB-600M (default) or Opus-MT EN-DE (2.6x faster) via Web GUI dropdown
 - **Polish** — LLM quality pass on suspicious lines (Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
-- **Full** — Both passes combined for highest quality
-- **Learn** — Self-improving mode: full pipeline + automatic error detection + fix persistence to `german_fixes.json`. Each run makes the next run better. Takes ~15min/episode but requires zero manual intervention.
-- **English filter** — Catches and translates English words that NLLB missed, without false positives
+- **Full** — Translation + polish combined for highest quality
+- **Learn** — Self-improving mode: full pipeline + automatic error detection + fix persistence to `german_fixes.json`. Each run makes the next run better. Re-runs skip expensive passes in ~0.3s.
+- **Artifact scan** — Algorithmic NLLB hallucination detection (no LLM needed). Catches fake compounds, repeated words, wrong titles, Sie/du mixing, hallucinated addresses in milliseconds.
+- **Learn verify** — Blacklist filter rejects fixes containing known hallucination terms (Schweinschlachter, Geistesgestörter, jinx) before they enter the fix database.
+- **English filter** — Catches and translates English words the model missed, without false positives
 - **Parallel batches** — Suspicious lines grouped into batches of 10, sent concurrently (2 by default)
+- **Show context** — 27-character character database with relationship-aware formality rules (du/Sie) injected into the polish prompt
 - **Smart protection** — SFX, numbers, names, song/episode markers, multi-speaker lines, short fragments (vocatives, interjections) survive translation correctly
-- **Glossary** — Domain-specific terminology enforcement
+- **Glossary** — Domain-specific terminology enforcement (140+ entries)
 - **Glossary Automation** — Extract domain terms from source SRTs via DeepSeek, then merge into glossary with dry-run preview
 - **Auto-Glossary mode** — `--auto-glossary` learns new terms from each episode and applies them immediately, improving translation quality over time without manual intervention
 - **Post-translation QA** — `--qa-report` scans output for missing glossary terms, lost character names, line length violations, and reading speed (CPS) issues
@@ -197,7 +200,7 @@ Source SRT (*.srt)
 └──────────────────────┬──────────────────────┘
                        ▼
 ┌─────────────────────────────────────────────┐
-│ 2. TRANSLATE (NLLB-600M distilled)          │
+│ 2. TRANSLATE (NLLB-600M or Opus-MT EN-DE)   │
 │    Batch inference on GPU (batch_size=64)   │
 │    Content extracted from ZZZ placeholders  │
 └──────────────────────┬──────────────────────┘
@@ -216,20 +219,39 @@ Source SRT (*.srt)
 └──────────────────────┬──────────────────────┘
                        ▼
 ┌─────────────────────────────────────────────┐
-│ 4. QA SCORING                                │
-│    Suspicious line detection                │
+│ 4. ARTIFACT SCAN (algorithmic, no LLM)       │
+│    Repeated words (triple, comma-sep)       │
+│    Hallucinated addresses (Geistesgestörter)│
+│    Fake compounds (Schweinschlachter)       │
+│    Wrong titles (Mylord→mein Herr)          │
+│    Sie/du mixing in same line               │
+│    Bracketed alternatives, pipe artifacts   │
+│    Duplicated lines                         │
+└──────────────────────┬──────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────┐
+│ 5. QA SCORING                                │
+│    Suspicious line detection (score_line)   │
 │    Missing glossary/names check             │
 └──────────────────────┬──────────────────────┘
                        ▼
 ┌─────────────────────────────────────────────┐
-│ 5. POLISH (LLM — local or proxy) [optional]│
+│ 6. POLISH (LLM — local or proxy) [optional] │
 │    Only suspicious lines sent to LLM        │
 │    Parallel batches (10 lines, 2 workers)   │
-│    Local: Qwen2.5 7B via Ollama             │
-│    Proxy: DeepSeek via proxy                │
-│    Hallucination safeguard filters bad      │
-│    English word filter catches leakage      │
+│    Model: Qwen2.5 7B / Gemma4 8B via Ollama │
+│    Known-pattern instructions in prompt     │
+│    Hallucination safeguard (rejects content)│
 │    Re-glossary after correction             │
+└──────────────────────┬──────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────┐
+│ 7. LEARN (auto-fix persistence) [optional]  │
+│    Suspicious line detection (Pass 2)       │
+│    LLM error scan + learn_verify filter     │
+│    NLLB artifact scan (candidates→fixes)    │
+│    Fixes persisted to german_fixes.json     │
+│    Re-runs skip expensive passes (~0.3s)    │
 └──────────────────────┬──────────────────────┘
                        ▼
                Output SRT (*_ger.srt)
@@ -322,26 +344,30 @@ The `<NAME>` placeholder is dynamically substituted with the actual character na
 
 Measured on RTX 4060 Ti 16GB (CUDA 12.4), Ryzen 7 5800X, 16GB RAM:
 
-| Metric | Value |
+| Metric | NLLB-600M | Opus-MT EN-DE |
+|---|---|---|
+| Model load | ~8.5s | ~2.7s |
+| Translate throughput | 18–19 l/s | 45–50 l/s |
+| 763-line episode (fast) | ~41s | ~16s |
+| Full pipeline (+ Qwen polish) | ~53s | ~62s |
+| VRAM usage | ~2–3 GB | ~1.5 GB |
+| Batch size | 64 | 64 |
+| Beam width | 4 | 4 |
+
+| Other | Value |
 |---|---|
-| NLLB throughput | 27–32 l/s (num_beams=4) |
-| 763-line episode (fast) | ~27s |
-| DeepSeek proxy batch (5 lines) | ~13s per batch |
+| Proxy polisher batch (5 lines) | ~13s per batch |
 | Qwen 2.5 7B polish (10 lines, parallel=2) | ~1.2s per batch |
-| Full pipeline (fast + DeepSeek polish) | ~72s–2min total |
-| Full pipeline (fast + Qwen polish) | ~35–45s total |
-| NLLB model | NLLB-200-distilled-600M |
-| Ollama model | qwen2.5:7b (4.7 GB) |
-| NLLB batch size | 64 |
-| Beam width | 4 |
-| NLLB VRAM usage | ~2–3 GB |
-| Ollama VRAM | ~5 GB |
+| Gemma4 8B polish (10 lines, parallel=2) | ~2.5s per batch |
+| Artifact scan (763 lines) | ~0.01s per scan |
+| Ollama models | qwen2.5:7b (4.7 GB), gemma4:e4b (9.6 GB) |
 
 ## Known Limitations
 
 - **EN → DE only** — Hardcoded language pair (NLLB supports 200+ languages, easily configurable)
 - **NLLB short-line hallucination** — Very short lines like "Mom." or "But..." can produce wrong output. Mitigated via `config/short_fragments.json` dictionary
-- **Proxy polish latency** — Each DeepSeek proxy request has ~10-15s overhead regardless of batch size
+- **Proxy latency** — Remote proxy polish has ~2-10s overhead per batch regardless of batch size. For speed, use local Ollama (qwen2.5:7b or gemma4:e4b).
+- **NLLB artifact patterns** — NLLB invents fake German compounds (Schweinschlachter, matrilokaler) and hallucinates titles/addresses. Mitigated by the artifact scan + LLM polish with pattern-aware prompts.
 - **SRT only** — No ASS/SSA/VTT support
 
 ## Tests

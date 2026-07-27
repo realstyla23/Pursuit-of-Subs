@@ -432,14 +432,6 @@
     "replace": "Fan Erniu seine Frau war"
   },
   {
-    "find": "Unglücksbringer",
-    "replace": "Gesperrter"
-  },
-  {
-    "find": "du bist ein Schwein!",
-    "replace": "du bist ein Jinx!"
-  },
-  {
     "find": "Changning Changning wartet auf mich zu Hause.",
     "replace": "Changning wartet auf mich zu Hause."
   },
@@ -600,10 +592,6 @@
     "replace": "Spielen wir verstecken."
   },
   {
-    "find": "Metzger",
-    "replace": "Schweinschlachterin"
-  },
-  {
     "find": "Metzgerei, metzger, sie öffnen sich wieder.",
     "replace": "Sie öffnen ihre Metzgerei wieder."
   },
@@ -738,10 +726,6 @@
   {
     "find": "Diesem Gentleman gefiel sie.",
     "replace": "Dem Gentleman gefiel sie."
-  },
-  {
-    "find": "sie",
-    "replace": "es"
   },
   {
     "find": "Frau, miss Song.",
@@ -2606,5 +2590,2973 @@
   {
     "find": "Das würde das Gerücht nur noch vergrößern.",
     "replace": "Das Gerücht nur noch vergrößern."
+  },
+  {
+    "find": "Schweinschlachterinei, Schweinschlachterin\n[Schweinschlachterei Guo Jiu]",
+    "replace": "Schweinschlachterinei, Schweinschlachterin"
+  },
+  {
+    "find": "Meng Lihua, Gedächtnisplatte, [Gedenktafel von Fan Erniu]",
+    "replace": "Meng Lihua, Gedächtnisplatte"
+  },
+  {
+    "find": "Meng Lihua, Gedächtnistafel, Gedächtnisplatte, Gedächtnisplatte\n[Gedächtnisplatte von Fan Erniu]",
+    "replace": "Meng Lihua, Gedächtnistafel, Gedächtnisplatte, Gedächtnisplatte"
+  },
+  {
+    "find": "Schweinschlachter war dein Vater nicht nur ein Schweinschlachter,",
+    "replace": "Schweinschlachter war dein Vater nicht nur ein Schweinschlachter"
+  },
+  {
+    "find": "Vor dem, als mein Vater Schweinschlachter wurde,",
+    "replace": "Vor dem, als mein Vater Schweinschlachter wurde"
+  },
+  {
+    "find": "Changyu matrilokaler Ehemann, chang Yu muss einen matrilokalen Ehemann finden,",
+    "replace": "Changyu matrilokaler Ehemann, chang Yu muss einen matrilokalen Ehemann finden"
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, weißt du, wie man Schweine schlachtet?\n-Nein.",
+    "replace": "Schweinschlachterin, weißt du, wie man Schweine schlachtet? -Nein."
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, so wie ich selbst Schweine schlachten sollte?",
+    "replace": "Schweinschlachterin, so wie ich selbst Schweine schlachten sollte?"
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, dass ich Schweinschweinehändlerin bin.",
+    "replace": "Schweinschlachterin, dass ich Schweinschweinehändlerin bin."
+  },
+  {
+    "find": "für jedes Pfund, für jedes Pfund Schweinefleisch, das du kaufst",
+    "replace": "für jedes Pfund Schweinefleisch, das du kaufst"
+  },
+  {
+    "find": "Schweinshaxe, schweinshaxe, ich nehme dann fünf Pfund Schweinshaxe.",
+    "replace": "Schweinshaxe, ich nehme dann fünf Pfund Schweinshaxe."
+  },
+  {
+    "find": "Schweinshaxe, für jedes Pfund, schweinshaxe, beträgt heute pro Katty 20 Maces.",
+    "replace": "Schweinshaxe, beträgt heute pro Katty 20 Maces."
+  },
+  {
+    "find": "Schweinschlachterinei, fan, Schweinschlachterin, schweinschlachterinei, Schweinschlachterin",
+    "replace": "Schweinschlachterinei, Schweinschlachterin"
+  },
+  {
+    "find": "für jedes Pfund, für jedes Pfund, ich nehme ein Katty.",
+    "replace": "für jedes Pfund, ich nehme ein Katty."
+  },
+  {
+    "find": "Schweinschlachterinei, Schweinschlachterin, schweinschlachterinei, Schweinschlachterin, schweinschlachterin",
+    "replace": "Schweinschlachterinei, schweinschlachterin"
+  },
+  {
+    "find": "Fan Daniu, fan Changyu - Ich weiß nicht.",
+    "replace": "Fan Changyu - Ich weiß nicht."
+  },
+  {
+    "find": "Frau Zhuang, Frau Zhao",
+    "replace": "Frau Zhao"
+  },
+  {
+    "find": "Meine Schwester macht\nWieder ein leckeres gekochtes Der Der Der Der Kammer.",
+    "replace": "Meine Schwester macht\nWieder ein leckeres gekochtes Der Kammer."
+  },
+  {
+    "find": "für jedes Pfund, für jedes Pfund Schweinefleisch, das du heute kaufst",
+    "replace": "für jedes Pfund Schweinefleisch, das du heute kaufst"
+  },
+  {
+    "find": "Schweinschlachterinei, Schweinschlachterin, schweinschlachterinei, guo Jiu, Schweinschlachterin, schweinschlachterin",
+    "replace": "Schweinschlachterinei, guo Jiu, Schweinschlachterin, schweinschlachterin"
+  },
+  {
+    "find": "Schweinschlachterinei, Schweinschlachterin, schweinschlachterinei, fan, Schweinschlachterin, schweinschlachterin",
+    "replace": "Schweinschlachterinei, schweinschlachterin"
+  },
+  {
+    "find": "Schweinschlachterinei, Schweinschlachterin, schweinschlachterinei, schweinschlachterin",
+    "replace": "Schweinschlachterinei, schweinschlachterin"
+  },
+  {
+    "find": "Gedächtnisplatte, meng Lihua, Gedächtnisplatte, Gedächtnisplatte, Gedächtnisplatte",
+    "replace": "Gedächtnisplatte, Gedächtnisplatte"
+  },
+  {
+    "find": "Fan Erniu, Gedächtnisplatte, fan, Gedächtnisplatte, Gedächtnisplatte, Gedächtnisplatte",
+    "replace": "Fan Gedächtnisplatte"
+  },
+  {
+    "find": "Fan Erniu, Gedächtnisplatte, fan, Gedächtnisplatte, Gedächtnisplatte, Gedächtnisplatte\nGedächtnisplatte",
+    "replace": "Fan Gedächtnisplatte Gedächtnisplatte"
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, es ist keine gute Idee, ihn zu zwingen,\neinen Schweinschlachter zu heiraten.",
+    "replace": "Schweinschlachterin, es ist keine gute Idee, ihn zu zwingen, einen Schweinschlachter zu heiraten."
+  },
+  {
+    "find": "Meine Schwester macht\nWieder ein leckeres gekochtes Der Der Der Kammer.",
+    "replace": "Meine Schwester macht\nWieder ein leckeres gekochtes Der Kammer."
+  },
+  {
+    "find": "getötet, und es hinterließen kein Eigentum,",
+    "replace": "getötet, und es hinterließen kein Eigentum"
+  },
+  {
+    "find": "es verfolgt den Beruf ihres Vaters,",
+    "replace": "es verfolgt den Beruf ihres Vaters"
+  },
+  {
+    "find": "Wer weiß,",
+    "replace": "Wer weiß"
+  },
+  {
+    "find": "dieser zarten Schönheit nachgehen,",
+    "replace": "dieser zarten Schönheit nachgehen"
+  },
+  {
+    "find": "Song-Familie hat ihre Geburtskarten abgestimmt,",
+    "replace": "Song-Familie hat ihre Geburtskarten abgestimmt"
+  },
+  {
+    "find": "Granny Kang,",
+    "replace": "Granny Kang"
+  },
+  {
+    "find": "Es ist schade,",
+    "replace": "Es ist schade"
+  },
+  {
+    "find": "Du weißt nicht einmal, ob er gut oder schlecht ist,",
+    "replace": "Du weißt nicht einmal, ob er gut oder schlecht ist"
+  },
+  {
+    "find": "Entweder stirbt er da draußen,",
+    "replace": "Entweder stirbt er da draußen"
+  },
+  {
+    "find": "Vor dem Herrn Zhao zurückkommt,",
+    "replace": "Vor dem Herrn Zhao zurückkommt"
+  },
+  {
+    "find": "Tante Zhao sagte,",
+    "replace": "Tante Zhao sagte"
+  },
+  {
+    "find": "Ich dachte,",
+    "replace": "Ich dachte"
+  },
+  {
+    "find": "da war letztes Mal nicht so viel Blut,",
+    "replace": "da war letztes Mal nicht so viel Blut"
+  },
+  {
+    "find": "Seh dir das Gesicht an,",
+    "replace": "Seh dir das Gesicht an"
+  },
+  {
+    "find": "hat, diese Konten zu regeln,",
+    "replace": "hat, diese Konten zu regeln"
+  },
+  {
+    "find": "Wenn wir über Schulden sprechen,",
+    "replace": "Wenn wir über Schulden sprechen"
+  },
+  {
+    "find": "schulden wir es deinen Eltern,",
+    "replace": "schulden wir es deinen Eltern"
+  },
+  {
+    "find": "Yan,",
+    "replace": "Yan"
+  },
+  {
+    "find": "Du erbärmliches Mädchen,",
+    "replace": "Du erbärmliches Mädchen"
+  },
+  {
+    "find": "Ich sah dich im Schnee zusammenbrechen,",
+    "replace": "Ich sah dich im Schnee zusammenbrechen"
+  },
+  {
+    "find": "Als du mich zurückbracht hast,",
+    "replace": "Als du mich zurückbracht hast"
+  },
+  {
+    "find": "Ich habe nur seine Mutter erwähnt,",
+    "replace": "Ich habe nur seine Mutter erwähnt"
+  },
+  {
+    "find": "Wenn er wirklich wegen meiner Fragen stirbt,",
+    "replace": "Wenn er wirklich wegen meiner Fragen stirbt"
+  },
+  {
+    "find": "Als ich seine Kleidung wechselte,",
+    "replace": "Als ich seine Kleidung wechselte"
+  },
+  {
+    "find": "Was das Geld angeht,",
+    "replace": "Was das Geld angeht"
+  },
+  {
+    "find": "Wenn es nicht für\nWas mit deiner Familie pasesrt ist,",
+    "replace": "Wenn es nicht für\nWas mit deiner Familie pasesrt ist"
+  },
+  {
+    "find": "Da wir Nachbarn in Xigu Lane sind,",
+    "replace": "Da wir Nachbarn in Xigu Lane sind"
+  },
+  {
+    "find": "Essen macht keinen Unterschied\nzwischen Mann und Frau,",
+    "replace": "Essen macht keinen Unterschied\nzwischen Mann und Frau"
+  },
+  {
+    "find": "Schweineauswahlmethode, ich habe die Schweineauswahlsmethode verwendet, die mein Vater mir beigebracht hat,",
+    "replace": "Schweineauswahlmethode, ich habe die Schweineauswahlsmethode verwendet, die mein Vater mir beigebracht hat"
+  },
+  {
+    "find": "Da es sich um hochwertiges Schweinefleisch handelt,",
+    "replace": "Da es sich um hochwertiges Schweinefleisch handelt"
+  },
+  {
+    "find": "Herr,",
+    "replace": "Herr"
+  },
+  {
+    "find": "Als du mich gewechselt hast,",
+    "replace": "Als du mich gewechselt hast"
+  },
+  {
+    "find": "Wenn du keine Reisebewilligung\noder Haushaltsregistrierung hast,",
+    "replace": "Wenn du keine Reisebewilligung\noder Haushaltsregistrierung hast"
+  },
+  {
+    "find": "Da die Soldaten hier sind,",
+    "replace": "Da die Soldaten hier sind"
+  },
+  {
+    "find": "Der Rest von euch,",
+    "replace": "Der Rest von euch"
+  },
+  {
+    "find": "Wusstest du,",
+    "replace": "Wusstest du"
+  },
+  {
+    "find": "Wenn du die Person jetzt übergeben,",
+    "replace": "Wenn du die Person jetzt übergeben"
+  },
+  {
+    "find": "[Post-Kreditenszene] ♪",
+    "replace": "♪"
+  },
+  {
+    "find": "[Xiangsheng Troupe] ♪",
+    "replace": "♪"
+  },
+  {
+    "find": "ein Mädchen, selbst ein junger",
+    "replace": "ein junger"
+  },
+  {
+    "find": "Zu viel zu essen kann deinen Magen zerbrechen.",
+    "replace": "Zu essen kann deinen Magen zerbrechen."
+  },
+  {
+    "find": "Das ist das Medikament.\nDu hast es gerade gekauft. Changning?",
+    "replace": "Das Medikament. Du hast es gerade gekauft. Changning?"
+  },
+  {
+    "find": "Ich... Song Yan, Ich bin kein undankbarer Mensch.",
+    "replace": "Ich... bin kein undankbarer Mensch."
+  },
+  {
+    "find": "- Wirklich? - Ja.",
+    "replace": "- Ja."
+  },
+  {
+    "find": "Es gab noch andere.\nes sind in der Schneedrift begraben?",
+    "replace": "Es sind in der Schneedrift begraben?"
+  },
+  {
+    "find": "-Er ist was?\n-Er ist was?",
+    "replace": "-Er ist was?"
+  },
+  {
+    "find": "Husch, husch, husch.",
+    "replace": "Husch, husch."
+  },
+  {
+    "find": "Shoo, shoo, shoo...",
+    "replace": "Shoo, shoo..."
+  },
+  {
+    "find": "Gehen es, gehen es.",
+    "replace": "Gehen es."
+  },
+  {
+    "find": "-Bravo!\n-Bravo!",
+    "replace": "-Bravo!"
+  },
+  {
+    "find": "-keinen.\n-keinen.",
+    "replace": "-keinen."
+  },
+  {
+    "find": "es verfolgt den Beruf",
+    "replace": "Sie folgt dem Beruf"
+  },
+  {
+    "find": "es hat die Familie zusammen gehalten",
+    "replace": "Sie hat die Familie zusammen gehalten"
+  },
+  {
+    "find": "Es war alles wegen dieses Mädchens. es hat es verflucht.",
+    "replace": "Es war alles wegen dieses Mädchens. Sie hat sie verflucht."
+  },
+  {
+    "find": "vielleicht kam es aus einem Bordell.",
+    "replace": "vielleicht kam sie aus einem Bordell."
+  },
+  {
+    "find": "es mag ihre Mutter",
+    "replace": "sie mag ihre Mutter"
+  },
+  {
+    "find": "aber es hat so viel Kraft.",
+    "replace": "aber sie hat so viel Kraft."
+  },
+  {
+    "find": "es ist sehr stark.",
+    "replace": "sie ist sehr stark."
+  },
+  {
+    "find": "War es nicht verlobt?",
+    "replace": "War sie nicht verlobt?"
+  },
+  {
+    "find": "es wurde unter einem verfluchten Stern geboren.",
+    "replace": "sie wurde unter einem verfluchten Stern geboren."
+  },
+  {
+    "find": "dass es ein hartes Leben hat.",
+    "replace": "dass sie ein hartes Leben hat."
+  },
+  {
+    "find": "Changyu kann kaum es füttert sich",
+    "replace": "Changyu kann kaum sich selbst ernährt"
+  },
+  {
+    "find": "Krieg, ♪ es antwortet mit einem Ehrwürdenen Kriegsschrei",
+    "replace": "Krieg, ♪ sie antwortet mit einem donnernden Kriegsschrei"
+  },
+  {
+    "find": "General ♪ Der Generalfeind kommt. esben volle Füße von Furcht",
+    "replace": "♪ Der feindliche General wirkt wie sieben Fuß Schrecken"
+  },
+  {
+    "find": "Lassen es mich es tun",
+    "replace": "Lass es mich tun"
+  },
+  {
+    "find": "Haben es nicht? die Familie Fan hat gerade eine Beerdigung?",
+    "replace": "Hatte die Familie Fan nicht gerade eine Beerdigung?"
+  },
+  {
+    "find": "Vermietung Changyu zum Schlachten",
+    "replace": "Changyu anheuern, um zu schlachten"
+  },
+  {
+    "find": "Wie haben es ein solches Schicksal erlebt?",
+    "replace": "Wie haben sie ein solches Schicksal erlitten?"
+  },
+  {
+    "find": "Wie könnte es sonst heiraten? wie ein Schweinschlachterin.",
+    "replace": "Wie könnte sie sonst einen Metzger wie Fan Erniu heiraten?"
+  },
+  {
+    "find": "als es die Ergebnisse sahen...",
+    "replace": "als sie die Ergebnisse sahen..."
+  },
+  {
+    "find": "esh es dir an, das ist abscheulich!",
+    "replace": "Sieh sie dir an, das ist empörend!"
+  },
+  {
+    "find": "Ei mal, was es mir angetan hat!",
+    "replace": "Sieh dir an, was sie mir angetan hat!"
+  },
+  {
+    "find": "esh es dir an!",
+    "replace": "Sieh sie dir an!"
+  },
+  {
+    "find": "Es war alles wegen dieses Mädchens.",
+    "replace": "Es ist alles wegen dieses Mädchens."
+  },
+  {
+    "find": "kÃ¶nne",
+    "replace": "könne"
+  },
+  {
+    "find": "geschÃ¼tzt",
+    "replace": "geschützt"
+  },
+  {
+    "find": "pasesrt",
+    "replace": "passiert"
+  },
+  {
+    "find": "getötet, und sie hinterließen kein Eigentum,",
+    "replace": "getötet, und sie hinterließen kein Eigentum"
+  },
+  {
+    "find": "Sie verfolgt den Beruf ihres Vaters,",
+    "replace": "Sie verfolgt den Beruf ihres Vaters"
+  },
+  {
+    "find": "Ganz zu schweigen davon,",
+    "replace": "Ganz zu schweigen davon"
+  },
+  {
+    "find": "dass ein junger Junge,",
+    "replace": "dass ein junger Junge"
+  },
+  {
+    "find": "sind die letzten Male nicht so viel Blut geflossen,",
+    "replace": "sind die letzten Male nicht so viel Blut geflossen"
+  },
+  {
+    "find": "Wenn es nicht für\nWas mit deiner Familie passiert ist,",
+    "replace": "Wenn es nicht für\nWas mit deiner Familie passiert ist"
+  },
+  {
+    "find": "Weil es hochwertiges Schweinefleisch werden wird,",
+    "replace": "Weil es hochwertiges Schweinefleisch werden wird"
+  },
+  {
+    "find": "Wenn du keine Reisebewilligung\noder ein Haushaltsregistrierungsdokument hast,",
+    "replace": "Wenn du keine Reisebewilligung\noder ein Haushaltsregistrierungsdokument hast"
+  },
+  {
+    "find": "Wenn Sie die Person jetzt übergeben,",
+    "replace": "Wenn Sie die Person jetzt übergeben"
+  },
+  {
+    "find": "General ♪ Der General des Feindes kommt.\nSieben volle Füße von Furcht ♪",
+    "replace": "General des Feindes kommt. Sieben volle Füße von Furcht ♪"
+  },
+  {
+    "find": "Sieh mal, wie schön Sieh mal, wie schön Fan Erniu's Frau war.\nFan Erniu seine Frau",
+    "replace": "Sieh wie schön Fan Erniu's Frau war. Fan Erniu seine Frau"
+  },
+  {
+    "find": "Changyu kann kaum\nChangyu kann kaum sich selbst und ihre Schwester füttern.",
+    "replace": "Changyu kann kaum sich selbst und ihre Schwester füttern."
+  },
+  {
+    "find": "Gehen Sie, gehen Sie.",
+    "replace": "Gehen Sie."
+  },
+  {
+    "find": "Schweinschlachterin, [Fan's Metzerei]\n[Schweinschlachterin, Guo Jius Metzerei]",
+    "replace": "Schweinschlachterin"
+  },
+  {
+    "find": "Aber da Sie heute der erste Kunde sind,",
+    "replace": "Aber da Sie heute der erste Kunde sind"
+  },
+  {
+    "find": "Schweinschlachterin, misstune, Schweinschlachterin, [Metzerei von Fan]",
+    "replace": "Schweinschlachterin, misstune, Schweinschlachterin"
+  },
+  {
+    "find": "Wenn du heute für sie aufstehst,",
+    "replace": "Wenn du heute für sie aufstehst"
+  },
+  {
+    "find": "- Selbst wenn du das Ganze beim Magistratsamt ans Tageslicht bringst,",
+    "replace": "- Selbst wenn du das Ganze beim Magistratsamt ans Tageslicht bringst"
+  },
+  {
+    "find": "Nun, da das Gesetzbuch des Großen Yin\nauch unterstützt, dass ich dieses Haus habe,",
+    "replace": "Nun, da das Gesetzbuch des Großen Yin\nauch unterstützt, dass ich dieses Haus habe"
+  },
+  {
+    "find": "Gedächtnisplatte, [Gedächtnisplatte of Meng Lihua]\n[Gedächtnisplatte of Fan Erniu]",
+    "replace": "Gedächtnisplatte"
+  },
+  {
+    "find": "Jin Yuanbao, Sie,",
+    "replace": "Jin Yuanbao, Sie"
+  },
+  {
+    "find": "Wenn Sie Probleme mit dem Eigentum haben,",
+    "replace": "Wenn Sie Probleme mit dem Eigentum haben"
+  },
+  {
+    "find": "Gedächtnisplatte, [Gedenktafel von Meng Lihua]",
+    "replace": "Gedächtnisplatte"
+  },
+  {
+    "find": "Gedächtnisplatte, [Gedenktafel von Fan Erniu]",
+    "replace": "Gedächtnisplatte"
+  },
+  {
+    "find": "Schweinschlachter, so war dein Vater nicht nur ein Schweinschlachter,",
+    "replace": "Schweinschlachter, so war dein Vater nicht nur ein Schweinschlachter"
+  },
+  {
+    "find": "Bevor mein Vater Schweinschlachter wurde,",
+    "replace": "Bevor mein Vater Schweinschlachter wurde"
+  },
+  {
+    "find": "Basierend auf meinen zehn-jährigen\nErfahrung in der Vermittlung,",
+    "replace": "Basierend auf meinen zehn-jährigen\nErfahrung in der Vermittlung"
+  },
+  {
+    "find": "Frau Zhao wie du gerade gesagt hast,",
+    "replace": "Frau Zhao wie du gerade gesagt hast"
+  },
+  {
+    "find": "Wenn Sie sich weigern,",
+    "replace": "Wenn Sie sich weigern"
+  },
+  {
+    "find": "Schweinschlachterin, Schweinschlachterin, weißt du, wie man Schweine schlachtet? -Nein.",
+    "replace": "Schweinschlachterin, weißt du, wie man Schweine schlachtet? -Nein."
+  },
+  {
+    "find": "Schweinshaxe, Pfund, Schweinshaxe kostet heute zwanzig Macs pro Küchenmaß.",
+    "replace": "Schweinshaxe, kostet heute zwanzig Macs pro Küchenmaß."
+  },
+  {
+    "find": "Ich dachte ich komme raus und schaue mich an.",
+    "replace": "Ich komme raus und schaue mich an."
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, ich bin nur ein Schweinschlachterin mit großer Stärke.",
+    "replace": "Schweinschlachterin, ich bin nur ein Schweinschlachterin mit großer Stärke."
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, es ist keine gute Idee, ihn zu zwingen.\nSie heiratete einen Schweinschlachterin.",
+    "replace": "Schweinschlachterin, es ist keine gute Idee, ihn zu zwingen. Sie heiratete einen Schweinschlachterin."
+  },
+  {
+    "find": "Meine Schwester macht\nWieder ein leckeres gebratenes Der Der Der Kammer.",
+    "replace": "Meine Schwester macht\nWieder ein leckeres gebratenes Der Kammer."
+  },
+  {
+    "find": "Sagen Sie mir, was Sie denken gut gut gut gut.",
+    "replace": "Sagen Sie mir, was Sie denken gut."
+  },
+  {
+    "find": "Ich meine,",
+    "replace": "Ich meine"
+  },
+  {
+    "find": "Hast du keine Angst, dass, nachdem ich gegangen bin,",
+    "replace": "Hast du keine Angst, dass, nachdem ich gegangen bin"
+  },
+  {
+    "find": "Wenn das Eigentum in meinem Namen ist,",
+    "replace": "Wenn das Eigentum in meinem Namen ist"
+  },
+  {
+    "find": "Außerdem,",
+    "replace": "Außerdem"
+  },
+  {
+    "find": "Wenn Sie sich entscheiden zu bleiben,",
+    "replace": "Wenn Sie sich entscheiden zu bleiben"
+  },
+  {
+    "find": "wenn ich ein Krüppel bin,",
+    "replace": "wenn ich ein Krüppel bin"
+  },
+  {
+    "find": "Wenn du einen Wunsch hast,",
+    "replace": "Wenn du einen Wunsch hast"
+  },
+  {
+    "find": "Schweinestall meines Vaters,",
+    "replace": "Schweinestall meines Vaters"
+  },
+  {
+    "find": "Sie hat ein Stück Stoff reserviert,",
+    "replace": "Sie hat ein Stück Stoff reserviert"
+  },
+  {
+    "find": "Ich habe von Frau Zhao gehört,",
+    "replace": "Ich habe von Frau Zhao gehört"
+  },
+  {
+    "find": "Dann ist es vielleicht zu spät,",
+    "replace": "Dann ist es vielleicht zu spät"
+  },
+  {
+    "find": "Jeder eilt zum Heiraten,",
+    "replace": "Jeder eilt zum Heiraten"
+  },
+  {
+    "find": "Xie Zheng der Marquis von Wu'an,\nein Held seiner Generation,",
+    "replace": "Xie Zheng der Marquis von Wu'an,\nein Held seiner Generation"
+  },
+  {
+    "find": "Der Marquis von Wu'an hat den Nordwesten verteidigt,",
+    "replace": "Der Marquis von Wu'an hat den Nordwesten verteidigt"
+  },
+  {
+    "find": "In den über hundert Jahren\nder großen Yin-Dynastie,",
+    "replace": "In den über hundert Jahren\nder großen Yin-Dynastie"
+  },
+  {
+    "find": "Premierminister, obwohl Sie krank sind,",
+    "replace": "Premierminister, obwohl Sie krank sind"
+  },
+  {
+    "find": "Obwohl der Marquis von Wu'an\nmilitärische Verdienste hatte,",
+    "replace": "Obwohl der Marquis von Wu'an\nmilitärische Verdienste hatte"
+  },
+  {
+    "find": "Wenn die ganze Nation trauert,",
+    "replace": "Wenn die ganze Nation trauert"
+  },
+  {
+    "find": "Zu dieser Zeit,",
+    "replace": "Zu dieser Zeit"
+  },
+  {
+    "find": "seine Schlachtung in Jinzhou,",
+    "replace": "seine Schlachtung in Jinzhou"
+  },
+  {
+    "find": "wenn Verdienste und Fehler gewogen werden,",
+    "replace": "wenn Verdienste und Fehler gewogen werden"
+  },
+  {
+    "find": "Nun den Marquis von Wu'an zu belohnen,",
+    "replace": "Nun den Marquis von Wu'an zu belohnen"
+  },
+  {
+    "find": "Es wurde gesagt:\ndass der Marquis von Wu'an im Kampf gestorben ist,",
+    "replace": "Es wurde gesagt:\ndass der Marquis von Wu'an im Kampf gestorben ist"
+  },
+  {
+    "find": "Solange sein Tod\nWenn es nicht offiziell angekündigt wird,",
+    "replace": "Solange sein Tod\nWenn es nicht offiziell angekündigt wird"
+  },
+  {
+    "find": "Großtutor, obwohl Sie geschickt sind,\nSeine Majestät's Absicht zu erkennen,",
+    "replace": "Großtutor, obwohl Sie geschickt sind,\nSeine Majestät's Absicht zu erkennen"
+  },
+  {
+    "find": "Jetzt, da der Marquis von Wu'an\nnicht mehr Yanzhou bewacht,",
+    "replace": "Jetzt, da der Marquis von Wu'an\nnicht mehr Yanzhou bewacht"
+  },
+  {
+    "find": "Über den Verschwinden des Marquis von Wu'an,",
+    "replace": "Über den Verschwinden des Marquis von Wu'an"
+  },
+  {
+    "find": "Es schneit stark,",
+    "replace": "Es schneit stark"
+  },
+  {
+    "find": "Wenn du barfuß in diesem Wetter gehst,",
+    "replace": "Wenn du barfuß in diesem Wetter gehst"
+  },
+  {
+    "find": "Ich ging zu Frau Chen, um heute die Hochzeitskleidung zu schneiden,",
+    "replace": "Ich ging zu Frau Chen, um heute die Hochzeitskleidung zu schneiden"
+  },
+  {
+    "find": "Mein Mentor sagte,",
+    "replace": "Mein Mentor sagte"
+  },
+  {
+    "find": "Nacht für Nacht,",
+    "replace": "Nacht für Nacht"
+  },
+  {
+    "find": "geheimnisvolle Gestalten, wenn diese mysteriösen Menschen verweilen,",
+    "replace": "geheimnisvolle Gestalten, wenn diese mysteriösen Menschen verweilen"
+  },
+  {
+    "find": "Meine Herren,",
+    "replace": "Meine Herren"
+  },
+  {
+    "find": "Meine Mutter sagte,",
+    "replace": "Meine Mutter sagte"
+  },
+  {
+    "find": "Überraschend,",
+    "replace": "Überraschend"
+  },
+  {
+    "find": "dass der Marquis von Wu'an\nist ein blutrünstiger,",
+    "replace": "dass der Marquis von Wu'an\nist ein blutrünstiger"
+  },
+  {
+    "find": "Wenn der Feind es schaffen könnte,",
+    "replace": "Wenn der Feind es schaffen könnte"
+  },
+  {
+    "find": "Die 12 Präfekturen von Liaodong,",
+    "replace": "Die 12 Präfekturen von Liaodong"
+  },
+  {
+    "find": "und ausgezeichnete Generäle.\nin Jahrzehnten des Krieges,",
+    "replace": "und ausgezeichnete Generäle.\nin Jahrzehnten des Krieges"
+  },
+  {
+    "find": "Aber was ist mit den Soldaten und Zivilisten,",
+    "replace": "Aber was ist mit den Soldaten und Zivilisten"
+  },
+  {
+    "find": "Würde aufrechtzuerhalten,",
+    "replace": "Würde aufrechtzuerhalten"
+  },
+  {
+    "find": "Marquis von Wu'an,",
+    "replace": "Marquis von Wu'an"
+  },
+  {
+    "find": "Wenn du zufällig meine Eltern kennst,",
+    "replace": "Wenn du zufällig meine Eltern kennst"
+  },
+  {
+    "find": "Während das Mädchen weg ist,",
+    "replace": "Während das Mädchen weg ist"
+  },
+  {
+    "find": "Am Tag meiner Hochzeit,",
+    "replace": "Am Tag meiner Hochzeit"
+  },
+  {
+    "find": "Aber ich schulde deinem Vater eine Dankbarkeit,",
+    "replace": "Aber ich schulde deinem Vater eine Dankbarkeit"
+  },
+  {
+    "find": "die Eigentumsurkunde hinterlassen,",
+    "replace": "die Eigentumsurkunde hinterlassen"
+  },
+  {
+    "find": "deine Familie heiraten.\nUm deine Güte zurückzuzahlen, mich aufzunehmen.",
+    "replace": "deine Güte zurückzuzahlen, mich aufzunehmen."
+  },
+  {
+    "find": "- Ist das wahr? - Ja.",
+    "replace": "- Ja."
+  },
+  {
+    "find": "Eure Majestät, Eure Weisheit leuchtet.",
+    "replace": "Eure Weisheit leuchtet."
+  },
+  {
+    "find": "Die Yanzhou-Armee ist auch die Armee des Großen Yin.",
+    "replace": "Die Armee des Großen Yin."
+  },
+  {
+    "find": "Sie eine Metzlerin, lassen Sie ihr Fußmassagen.\nund ihre Knochen zu legen?",
+    "replace": "Sie ihr Fußmassagen. und ihre Knochen zu legen?"
+  },
+  {
+    "find": "- Zusammen? - Ja.",
+    "replace": "- Ja."
+  },
+  {
+    "find": "Es wäre eine Verschwendung, es nicht zu benutzen.",
+    "replace": "Es nicht zu benutzen."
+  },
+  {
+    "find": "-Zwei Jin, oder?\n-Zwei Jin für mich auch.",
+    "replace": "-Zwei Jin für mich auch."
+  },
+  {
+    "find": "Bevor du irgendwo hingehst,",
+    "replace": "Bevor du irgendwo hingehst"
+  },
+  {
+    "find": "sogar wenn Herr Zhao darauf saß,",
+    "replace": "sogar wenn Herr Zhao darauf saß"
+  },
+  {
+    "find": "Wenn ich nicht eingegriffen hätte,",
+    "replace": "Wenn ich nicht eingegriffen hätte"
+  },
+  {
+    "find": "Kein Wunder, dass man sagt,",
+    "replace": "Kein Wunder, dass man sagt"
+  },
+  {
+    "find": "Wenn wir nicht gekämpft hätten,",
+    "replace": "Wenn wir nicht gekämpft hätten"
+  },
+  {
+    "find": "Onkel,",
+    "replace": "Onkel"
+  },
+  {
+    "find": "Der Der Kammersverhandlung,",
+    "replace": "Der Der Kammersverhandlung"
+  },
+  {
+    "find": "Ich habe weit gereist und viel gesehen,",
+    "replace": "Ich habe weit gereist und viel gesehen"
+  },
+  {
+    "find": "Euer Ehren,",
+    "replace": "Euer Ehren"
+  },
+  {
+    "find": "Für eine Störung im Kammer,",
+    "replace": "Für eine Störung im Kammer"
+  },
+  {
+    "find": "insbesondere Artikel 17\nder Auflösung eines Haushaltskreises,",
+    "replace": "insbesondere Artikel 17\nder Auflösung eines Haushaltskreises"
+  },
+  {
+    "find": "wenn ein Haushalt auflöst sich,\nKreis Kreis erbte,",
+    "replace": "wenn ein Haushalt auflöst sich,\nKreis Kreis erbte"
+  },
+  {
+    "find": "Da es einmal passiert ist,",
+    "replace": "Da es einmal passiert ist"
+  },
+  {
+    "find": "Gesetze beruhen letztendlich auf Vernunft,",
+    "replace": "Gesetze beruhen letztendlich auf Vernunft"
+  },
+  {
+    "find": "Saalfentlich, mit meinem Status als Provinzkanter,",
+    "replace": "Saalfentlich, mit meinem Status als Provinzkanter"
+  },
+  {
+    "find": "Du denkst nur, weil ich eine Schlachterin bin,",
+    "replace": "Du denkst nur, weil ich eine Schlachterin bin"
+  },
+  {
+    "find": "Ich habe nur nie erwartet,",
+    "replace": "Ich habe nur nie erwartet"
+  },
+  {
+    "find": "Selbst wenn man denkt, er sei sowohl gelehrt und kampferfahren,",
+    "replace": "Selbst wenn man denkt, er sei sowohl gelehrt und kampferfahren"
+  },
+  {
+    "find": "bildungsgelernt und vernünftig,",
+    "replace": "bildungsgelernt und vernünftig"
+  },
+  {
+    "find": "Das Wichtigste ist,",
+    "replace": "Das Wichtigste ist"
+  },
+  {
+    "find": "und ein paar Fetzen geborgen,",
+    "replace": "und ein paar Fetzen geborgen"
+  },
+  {
+    "find": "Aber du hast eingebrüdet.\nSo schöne Blumen,",
+    "replace": "Aber du hast eingebrüdet.\nSo schöne Blumen"
+  },
+  {
+    "find": "matrilokaler Ehemann, sagst du, dass der matrilineale Ehemann hässlich ist,",
+    "replace": "matrilokaler Ehemann, sagst du, dass der matrilineale Ehemann hässlich ist"
+  },
+  {
+    "find": "Wenn er nicht hässlich oder behindert ist,",
+    "replace": "Wenn er nicht hässlich oder behindert ist"
+  },
+  {
+    "find": "Wenn du bereit bist, meine Nebenfrau zu sein,",
+    "replace": "Wenn du bereit bist, meine Nebenfrau zu sein"
+  },
+  {
+    "find": "Aber jetzt sie ist nur wie eine Schwester für mich geworden,",
+    "replace": "Aber jetzt sie ist nur wie eine Schwester für mich geworden"
+  },
+  {
+    "find": "Ich habe dich gebeten, mein Token zu nehmen,",
+    "replace": "Ich habe dich gebeten, mein Token zu nehmen"
+  },
+  {
+    "find": "Gedächtnistafel, [Gedächtnisplatte of Meng Lihua]\n[Gedächtnisplatte of Fan Erniu]",
+    "replace": "Gedächtnistafel"
+  },
+  {
+    "find": "Bräute und Besen beugen sich gegenseitig,",
+    "replace": "Bräute und Besen beugen sich gegenseitig"
+  },
+  {
+    "find": "Wenn Sie Kinder haben,",
+    "replace": "Wenn Sie Kinder haben"
+  },
+  {
+    "find": "In der Zukunft,",
+    "replace": "In der Zukunft"
+  },
+  {
+    "find": "Du fährst, ich verfolge.\nDu gehst nirgendwo hin!",
+    "replace": "Du gehst nirgendwo hin!"
+  },
+  {
+    "find": "Ich... ich werde dir eine Lektion beibringen!",
+    "replace": "Ich... werde dir eine Lektion beibringen!"
+  },
+  {
+    "find": "Changyu Changyu Schnell! Schnell, schnell!",
+    "replace": "Changyu Schnell! Schnell, schnell!"
+  },
+  {
+    "find": "Nein, nein, nein!",
+    "replace": "Nein, nein!"
+  },
+  {
+    "find": "-Das haben wir nicht!\n-Das haben wir wirklich nicht!",
+    "replace": "-Das haben wir wirklich nicht!"
+  },
+  {
+    "find": "Geld. Bring das Geld raus.",
+    "replace": "Geld. raus."
+  },
+  {
+    "find": "-Sehr gut gemacht!\n-Sehr gut gemacht!",
+    "replace": "-Sehr gut gemacht!"
+  },
+  {
+    "find": "-Komm schon.\n-Komm schon.",
+    "replace": "-Komm schon."
+  },
+  {
+    "find": "Trink nicht Alkohol, trink stattdessen Tee.",
+    "replace": "Trink stattdessen Tee."
+  },
+  {
+    "find": "Der Präsident. - Nach der Tagesordnung folgt die Aussprache. Fan Daniu\nweil er die Tochter seines",
+    "replace": "Der Tagesordnung folgt die Aussprache. Fan Daniu weil er die Tochter seines"
+  },
+  {
+    "find": "der Mann, der gesetzlich verheiratet ist,\nIch... Fan Changyu.",
+    "replace": "der gesetzlich verheiratet ist, Ich... Fan Changyu."
+  },
+  {
+    "find": "Ein Bastard, ein Bastart.",
+    "replace": "Ein Bastart."
+  },
+  {
+    "find": "Die Essays, die du geschrieben hast.",
+    "replace": "Die du geschrieben hast."
+  },
+  {
+    "find": "Richtig, richtig, kann nicht aufscheulich sein.",
+    "replace": "Richtig, kann nicht aufscheulich sein."
+  },
+  {
+    "find": "Ich weiß, wie ich den Mund halten soll.",
+    "replace": "Ich den Mund halten soll."
+  },
+  {
+    "find": "Song Yan ich... Song",
+    "replace": "Song"
+  },
+  {
+    "find": "Das zeigt, dass du das nie losgelassen hast.\nin deinem Herzen.",
+    "replace": "Das nie losgelassen hast. in deinem Herzen."
+  },
+  {
+    "find": "Der Einzige, der die Hand beißt, der ihn füttert.",
+    "replace": "Der die Hand beißt, der ihn füttert."
+  },
+  {
+    "find": "Die Frau ist die Haushaltsführerin, -und Sie müssen alles nach Ihrer Frau tun...\n-Das ist nicht nötig.",
+    "replace": "Die -und Sie müssen alles nach Ihrer Frau tun... -Das ist nicht nötig."
+  },
+  {
+    "find": "Sieh mal, wie schön Sieh mal, wie schön Sieh mal, wie schön Fan Erniu's Frau war.",
+    "replace": "Sieh wie schön Sieh mal, wie schön Fan Erniu's Frau war."
+  },
+  {
+    "find": "Andere verlassen sich auf ihre Fähigkeiten\nUm Wertsachen zu begleiten,",
+    "replace": "Andere verlassen sich auf ihre Fähigkeiten\nUm Wertsachen zu begleiten"
+  },
+  {
+    "find": "Schatz,",
+    "replace": "Schatz"
+  },
+  {
+    "find": "Sie vermuten vielleicht schon,",
+    "replace": "Sie vermuten vielleicht schon"
+  },
+  {
+    "find": "Es war zwar ein Ersetzbare Figur,",
+    "replace": "Es war zwar ein Ersetzbare Figur"
+  },
+  {
+    "find": "Sie kann nicht erwarten, dass ich Sie lesen lerne,",
+    "replace": "Sie kann nicht erwarten, dass ich Sie lesen lerne"
+  },
+  {
+    "find": "Nur ein silberner Haarspange,",
+    "replace": "Nur ein silberner Haarspange"
+  },
+  {
+    "find": "Der Gentleman wollte sie,",
+    "replace": "Der Gentleman wollte sie"
+  },
+  {
+    "find": "Schwiegersohn des Bezirksrichters zu werden,",
+    "replace": "Schwiegersohn des Bezirksrichters zu werden"
+  },
+  {
+    "find": "und einen Job für ihn als Polizeirunner zurück nach Hause zu finden,",
+    "replace": "und einen Job für ihn als Polizeirunner zurück nach Hause zu finden"
+  },
+  {
+    "find": "Geistesgestörter, ich habe das ganze Dorf verbreitet,",
+    "replace": "Geistesgestörter, ich habe das ganze Dorf verbreitet"
+  },
+  {
+    "find": "matrilokaler Ehemann, nun, dass du einen matrilinearen Ehemann genommen hast\nund verheiratet bist,",
+    "replace": "matrilokaler Ehemann, nun, dass du einen matrilinearen Ehemann genommen hast\nund verheiratet bist"
+  },
+  {
+    "find": "Wer würde über ein Jahrzehnt wohltätig sein,",
+    "replace": "Wer würde über ein Jahrzehnt wohltätig sein"
+  },
+  {
+    "find": "Wer hätte gedacht dass,",
+    "replace": "Wer hätte gedacht dass"
+  },
+  {
+    "find": "sobald Song Yan wurde\neinen Kandidaten aus der Provinz,",
+    "replace": "sobald Song Yan wurde\neinen Kandidaten aus der Provinz"
+  },
+  {
+    "find": "-Sie haben sogar die Menstruationsunterwäsche ausgeliehen?\n-Und letztes Jahr, am Dampfbootfest,",
+    "replace": "-Sie haben sogar die Menstruationsunterwäsche ausgeliehen?\n-Und letztes Jahr, am Dampfbootfest"
+  },
+  {
+    "find": "Sie sind verstorben,",
+    "replace": "Sie sind verstorben"
+  },
+  {
+    "find": "an unsere eigenen Wege gehen,",
+    "replace": "an unsere eigenen Wege gehen"
+  },
+  {
+    "find": "Es ist richtig,",
+    "replace": "Es ist richtig"
+  },
+  {
+    "find": "Mein Vater nannte mich Qianjin,",
+    "replace": "Mein Vater nannte mich Qianjin"
+  },
+  {
+    "find": "befestigt, dass ich nie an Gold oder Silber fehlen werde,",
+    "replace": "befestigt, dass ich nie an Gold oder Silber fehlen werde"
+  },
+  {
+    "find": "Beide Eltern sind seit ihrer Kindheit tot,",
+    "replace": "Beide Eltern sind seit ihrer Kindheit tot"
+  },
+  {
+    "find": "Sie werden mir kein Geld weniger geben, als ich verdient habe,",
+    "replace": "Sie werden mir kein Geld weniger geben, als ich verdient habe"
+  },
+  {
+    "find": "In unseren Großen Yins Hauptstadt und Präfekturen,",
+    "replace": "In unseren Großen Yins Hauptstadt und Präfekturen"
+  },
+  {
+    "find": "Falls Sie zufällig durchfallen und Provinzkandidat werden,",
+    "replace": "Falls Sie zufällig durchfallen und Provinzkandidat werden"
+  },
+  {
+    "find": "Ich habe es offensichtlich als ein Ersetzbare Figur gelegt,",
+    "replace": "Ich habe es offensichtlich als ein Ersetzbare Figur gelegt"
+  },
+  {
+    "find": "Wie kann es eine solche Person geben,",
+    "replace": "Wie kann es eine solche Person geben"
+  },
+  {
+    "find": "Er schätzt meine Schriften,",
+    "replace": "Er schätzt meine Schriften"
+  },
+  {
+    "find": "Ich habe mich immer gefragt, ob ich etwas Falsches getan habe,",
+    "replace": "Ich habe mich immer gefragt, ob ich etwas Falsches getan habe"
+  },
+  {
+    "find": "befürchtet habend, dass du dich nicht mit meiner Handlung einverstanden erklären würdest,",
+    "replace": "befürchtet habend, dass du dich nicht mit meiner Handlung einverstanden erklären würdest"
+  },
+  {
+    "find": "seinen Weg zurück zu mir sich geschützt,",
+    "replace": "seinen Weg zurück zu mir sich geschützt"
+  },
+  {
+    "find": "Reisebewilligung, fan, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund die Reisebewilligung zur Überprüfung.]\n[Jiuheng]",
+    "replace": "Reisebewilligung, fan, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund die Reisebewilligung zur Überprüfung.]"
+  },
+  {
+    "find": "Kommen Sie zurück, kommen Sie zurück.",
+    "replace": "Kommen Sie zurück."
+  },
+  {
+    "find": "für eine Schande für Anständigkeit!",
+    "replace": "für Anständigkeit!"
+  },
+  {
+    "find": "-Zahlen Sie ihr!\n-Zahlen Sie ihr!",
+    "replace": "-Zahlen Sie ihr!"
+  },
+  {
+    "find": "Kammersverhandlung, als sie hörten, dass die Armee in Chongzhou Recruitierungen durchführt,",
+    "replace": "Kammersverhandlung, als sie hörten, dass die Armee in Chongzhou Recruitierungen durchführt"
+  },
+  {
+    "find": "Xie Zheng der Marquis von Wu'an\nein Held seiner Generation,",
+    "replace": "Xie Zheng der Marquis von Wu'an\nein Held seiner Generation"
+  },
+  {
+    "find": "die zahlreichen treuen Minister und ausgezeichneten Generäle verloren hatten,",
+    "replace": "die zahlreichen treuen Minister und ausgezeichneten Generäle verloren hatten"
+  },
+  {
+    "find": "Ohne den Marquis von Wu'an,",
+    "replace": "Ohne den Marquis von Wu'an"
+  },
+  {
+    "find": "Wenn wir diesmal die Eigentumsurkunde nicht finden,",
+    "replace": "Wenn wir diesmal die Eigentumsurkunde nicht finden"
+  },
+  {
+    "find": "Nacht für Nacht",
+    "replace": "Nacht"
+  },
+  {
+    "find": "Schweinschlachterin Guo, Schweinschlachterin Guo",
+    "replace": "Schweinschlachterin Guo"
+  },
+  {
+    "find": "Kreis, Schwester jetzt, dass deine Song Yan ist kurz davor,",
+    "replace": "Kreis, Schwester jetzt, dass deine Song Yan ist kurz davor"
+  },
+  {
+    "find": "Kreis, die Schwiegersohn des Kreisrichters zu werden,",
+    "replace": "Kreis, die Schwiegersohn des Kreisrichters zu werden"
+  },
+  {
+    "find": "Er schätzt meine Schriften also,",
+    "replace": "Er schätzt meine Schriften also"
+  },
+  {
+    "find": "Reisebewilligung, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund Reisebewilligung zur Überprüfung.]\n[Xie Jiuheng]",
+    "replace": "Reisebewilligung, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund Reisebewilligung zur Überprüfung.]"
+  },
+  {
+    "find": "Xie |, xie |, Du Mistkerl.",
+    "replace": "Xie Du Mistkerl."
+  },
+  {
+    "find": "Gerüchte verbreitend, dass ich ein Fluch bin,",
+    "replace": "Gerüchte verbreitend, dass ich ein Fluch bin"
+  },
+  {
+    "find": "Du... du bist ein Geistesgestörter!",
+    "replace": "Du... bist ein Geistesgestörter!"
+  },
+  {
+    "find": "Saal, saal, ihr zwei, bewacht den VorSaal!",
+    "replace": "Saal, ihr zwei, bewacht den VorSaal!"
+  },
+  {
+    "find": "Selbst wenn sie es nicht selbst getan hätte,",
+    "replace": "Selbst wenn sie es nicht selbst getan hätte"
+  },
+  {
+    "find": "Als ich dort ankam,",
+    "replace": "Als ich dort ankam"
+  },
+  {
+    "find": "Wenn sie gestorben wäre,",
+    "replace": "Wenn sie gestorben wäre"
+  },
+  {
+    "find": "Zheng iss gut,",
+    "replace": "Zheng iss gut"
+  },
+  {
+    "find": "Zheng vergiss nicht,",
+    "replace": "Zheng vergiss nicht"
+  },
+  {
+    "find": "Der Arzt sagte,",
+    "replace": "Der Arzt sagte"
+  },
+  {
+    "find": "Die Lakaien der Familie Wei\nhaben diesen Ort bemerkt,",
+    "replace": "Die Lakaien der Familie Wei\nhaben diesen Ort bemerkt"
+  },
+  {
+    "find": "Darf ich Sie bitten,",
+    "replace": "Darf ich Sie bitten"
+  },
+  {
+    "find": "Matrilinealer Ehemann von Fan Changyu,",
+    "replace": "Matrilinealer Ehemann von Fan Changyu"
+  },
+  {
+    "find": "Changyu wenn Sie heirateten in der Fan Familie,",
+    "replace": "Changyu wenn Sie heirateten in der Fan Familie"
+  },
+  {
+    "find": "Da Sie von einem anderen Ort sind,",
+    "replace": "Da Sie von einem anderen Ort sind"
+  },
+  {
+    "find": "Ich vermute, Sie sind ein Bandit aus Qingfeng Fort,",
+    "replace": "Ich vermute, Sie sind ein Bandit aus Qingfeng Fort"
+  },
+  {
+    "find": "Sobald die Reisebewilligung eingetroffen ist,",
+    "replace": "Sobald die Reisebewilligung eingetroffen ist"
+  },
+  {
+    "find": "Als Kammerschreiber,",
+    "replace": "Als Kammerschreiber"
+  },
+  {
+    "find": "warum warten wir nicht noch ein paar Tage,",
+    "replace": "warum warten wir nicht noch ein paar Tage"
+  },
+  {
+    "find": "Ich habe dir das Gesetz erklärt,",
+    "replace": "Ich habe dir das Gesetz erklärt"
+  },
+  {
+    "find": "Nun, es gibt derzeit\nkeine Beweise dafür,",
+    "replace": "Nun, es gibt derzeit\nkeine Beweise dafür"
+  },
+  {
+    "find": "Was die Wahrheit betrifft,",
+    "replace": "Was die Wahrheit betrifft"
+  },
+  {
+    "find": "Du musst essen, wenn du Kraft willst.",
+    "replace": "Du Kraft willst."
+  },
+  {
+    "find": "Du sagtest, du würdest zurückkommen.\nund male meine Augenbrauen.",
+    "replace": "Du würdest zurückkommen. und male meine Augenbrauen."
+  },
+  {
+    "find": "Sie behaupten, Sie wären fast getötet",
+    "replace": "Sie wären fast getötet"
+  },
+  {
+    "find": "Der Der Kammersbeamter willst du mich quälen, um zu gestehen?",
+    "replace": "Der Kammersbeamter willst du mich quälen, um zu gestehen?"
+  },
+  {
+    "find": "Die Reisebewilligung und die Dokumente sind hier.",
+    "replace": "Die Dokumente sind hier."
+  },
+  {
+    "find": "-Yan Zheng!\n-Yan Zheng!",
+    "replace": "-Yan Zheng!"
+  },
+  {
+    "find": "Auch,",
+    "replace": "Auch"
+  },
+  {
+    "find": "als ihr Onkel versuchte, zu ergreifen\nihr Erbe und ihr Haus,",
+    "replace": "als ihr Onkel versuchte, zu ergreifen\nihr Erbe und ihr Haus"
+  },
+  {
+    "find": "Changyu wird bald zurück sein,",
+    "replace": "Changyu wird bald zurück sein"
+  },
+  {
+    "find": "Wenn du ihr ein wenig Freundlichkeit zeigst,",
+    "replace": "Wenn du ihr ein wenig Freundlichkeit zeigst"
+  },
+  {
+    "find": "Aber jetzt, wo ich hier bin,",
+    "replace": "Aber jetzt, wo ich hier bin"
+  },
+  {
+    "find": "Du hast ihn angefleht,\nIhr matrilokaler Ehemann,",
+    "replace": "Du hast ihn angefleht,\nIhr matrilokaler Ehemann"
+  },
+  {
+    "find": "Es stellt sich heraus, dass all diese edlen Damen\nin der Hauptstadt verloren,",
+    "replace": "Es stellt sich heraus, dass all diese edlen Damen\nin der Hauptstadt verloren"
+  },
+  {
+    "find": "Aber auf dem Schlachtfeld in Chongzhou,",
+    "replace": "Aber auf dem Schlachtfeld in Chongzhou"
+  },
+  {
+    "find": "verzweifelt auf ihren Weg gekämpft\naus dem Hinterhalt heraus,",
+    "replace": "verzweifelt auf ihren Weg gekämpft\naus dem Hinterhalt heraus"
+  },
+  {
+    "find": "Wenn er dich töten wollte,",
+    "replace": "Wenn er dich töten wollte"
+  },
+  {
+    "find": "Sie durchwühlten die Fan Haus,",
+    "replace": "Sie durchwühlten die Fan Haus"
+  },
+  {
+    "find": "wie ein nettes und vernünftiges Kind,",
+    "replace": "wie ein nettes und vernünftiges Kind"
+  },
+  {
+    "find": "Nachdem ich mich erholt habe,",
+    "replace": "Nachdem ich mich erholt habe"
+  },
+  {
+    "find": "In meiner aktuellen Situation,",
+    "replace": "In meiner aktuellen Situation"
+  },
+  {
+    "find": "Wenn du ich wärst,",
+    "replace": "Wenn du ich wärst"
+  },
+  {
+    "find": "Changyu rechtsfall,",
+    "replace": "Changyu rechtsfall"
+  },
+  {
+    "find": "Diejenigen, die im Pinewald gestorben sind,",
+    "replace": "Diejenigen, die im Pinewald gestorben sind"
+  },
+  {
+    "find": "Verkaufe Ihren Schweinestall, Ihr Haus und Ihr Land,",
+    "replace": "Verkaufe Ihren Schweinestall, Ihr Haus und Ihr Land"
+  },
+  {
+    "find": "Wenn es in Zukunft noch mehr Ärger gibt,",
+    "replace": "Wenn es in Zukunft noch mehr Ärger gibt"
+  },
+  {
+    "find": "Ich wollte Strohseilen suchen,",
+    "replace": "Ich wollte Strohseilen suchen"
+  },
+  {
+    "find": "Das Fleisch, das ich vor ein paar Tagen geraucht habe,",
+    "replace": "Das Fleisch, das ich vor ein paar Tagen geraucht habe"
+  },
+  {
+    "find": "Wenn es für Rache ist,",
+    "replace": "Wenn es für Rache ist"
+  },
+  {
+    "find": "Wenn wir unterwegs auf Hooligans treffen,",
+    "replace": "Wenn wir unterwegs auf Hooligans treffen"
+  },
+  {
+    "find": "erwähnt, das du mitnehmen musst,",
+    "replace": "erwähnt, das du mitnehmen musst"
+  },
+  {
+    "find": "Was? Dein ältester Sohn ist gestorben,",
+    "replace": "Was? Dein ältester Sohn ist gestorben"
+  },
+  {
+    "find": "Erhalten Fan Daniu Tot war nicht genug,",
+    "replace": "Erhalten Fan Daniu Tot war nicht genug"
+  },
+  {
+    "find": "Wenn du an dieser Klinge vorbeigehst,",
+    "replace": "Wenn du an dieser Klinge vorbeigehst"
+  },
+  {
+    "find": "-Dein Vater ist mein...\n-Es war ihr Vater,",
+    "replace": "-Dein Vater ist mein...\n-Es war ihr Vater"
+  },
+  {
+    "find": "Seit sie nach Hause kamen,",
+    "replace": "Seit sie nach Hause kamen"
+  },
+  {
+    "find": "Während der Feiertage,",
+    "replace": "Während der Feiertage"
+  },
+  {
+    "find": "Ich dachte immer,",
+    "replace": "Ich dachte immer"
+  },
+  {
+    "find": "Bevor ich dich kennengelernt habe, dachte ich auch nie,",
+    "replace": "Bevor ich dich kennengelernt habe, dachte ich auch nie"
+  },
+  {
+    "find": "Herr, ich hörte von Herrn Li,",
+    "replace": "Herr, ich hörte von Herrn Li"
+  },
+  {
+    "find": "Seitdem der junge Herr Wang das Geschäft übernommen hat,",
+    "replace": "Seitdem der junge Herr Wang das Geschäft übernommen hat"
+  },
+  {
+    "find": "Also, hinsichtlich des Fleischwarengeschäfts,",
+    "replace": "Also, hinsichtlich des Fleischwarengeschäfts"
+  },
+  {
+    "find": "Wenn es Ihnen wirklich gefällt, Herr Manager,",
+    "replace": "Wenn es Ihnen wirklich gefällt, Herr Manager"
+  },
+  {
+    "find": "Wenn du weit weg von zu Hause gehst,",
+    "replace": "Wenn du weit weg von zu Hause gehst"
+  },
+  {
+    "find": "seit Herr Li so nett ist,",
+    "replace": "seit Herr Li so nett ist"
+  },
+  {
+    "find": "Sie liefern uns das geschmorte Fleisch\nfür das neue Jahr zuerst,",
+    "replace": "Sie liefern uns das geschmorte Fleisch\nfür das neue Jahr zuerst"
+  },
+  {
+    "find": "geschmortes Fleisch,",
+    "replace": "geschmortes Fleisch"
+  },
+  {
+    "find": "Wenn du es nicht nimmst,",
+    "replace": "Wenn du es nicht nimmst"
+  },
+  {
+    "find": "Du nimmst dieses Fleisch heute,",
+    "replace": "Du nimmst dieses Fleisch heute"
+  },
+  {
+    "find": "Wenn du jetzt nicht rauskommst,",
+    "replace": "Wenn du jetzt nicht rauskommst"
+  },
+  {
+    "find": "Wenn du so eine Szene machst,",
+    "replace": "Wenn du so eine Szene machst"
+  },
+  {
+    "find": "Manager Yu,",
+    "replace": "Manager Yu"
+  },
+  {
+    "find": "machen nur diese hinterhältigen,",
+    "replace": "machen nur diese hinterhältigen"
+  },
+  {
+    "find": "Wenn ich das meinem Onkel Manager Yu,",
+    "replace": "Wenn ich das meinem Onkel Manager Yu"
+  },
+  {
+    "find": "Auf meinem Rasen,",
+    "replace": "Auf meinem Rasen"
+  },
+  {
+    "find": "- Manager,",
+    "replace": "- Manager"
+  },
+  {
+    "find": "Kreis, eine Frau,",
+    "replace": "Kreis, eine Frau"
+  },
+  {
+    "find": "Sie kam zu Lin'an schwanger damals,",
+    "replace": "Sie kam zu Lin'an schwanger damals"
+  },
+  {
+    "find": "Da er in deine Familie verheiratet ist,",
+    "replace": "Da er in deine Familie verheiratet ist"
+  },
+  {
+    "find": "Egal, was in deinem Kopf ist,",
+    "replace": "Egal, was in deinem Kopf ist"
+  },
+  {
+    "find": "Mann, warum nutzen Sie nicht die Gelegenheit,",
+    "replace": "Mann, warum nutzen Sie nicht die Gelegenheit"
+  },
+  {
+    "find": "Tagsüber habe ich die Bettwäsche gewaschen,",
+    "replace": "Tagsüber habe ich die Bettwäsche gewaschen"
+  },
+  {
+    "find": "Er hatte Glück.\ndass er dich getroffen hat, als sein",
+    "replace": "Er dich getroffen hat, als sein"
+  },
+  {
+    "find": "Xie |, xie | tatsächlich wurde\nEin matrilokaler Ehemann?",
+    "replace": "Xie | tatsächlich wurde Ein matrilokaler Ehemann?"
+  },
+  {
+    "find": "Yan Yan Zheng stand für sie auf.",
+    "replace": "Yan Zheng stand für sie auf."
+  },
+  {
+    "find": "-Herr Sun?\n-Herr Sun.",
+    "replace": "-Herr Sun."
+  },
+  {
+    "find": "Ich sollte es sein.\nIch danke Ihnen, Frau Fan.",
+    "replace": "Ich danke Ihnen, Frau Fan."
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, wie bist du gelandet?\nmit dieser Schweinschlachterinin?",
+    "replace": "Schweinschlachterin, wie bist du gelandet? mit dieser Schweinschlachterinin?"
+  },
+  {
+    "find": "Xie Yi und Xie San",
+    "replace": "Xie San"
+  },
+  {
+    "find": "Ich fürchte, ich habe ihn.\nIn diesem Chaos gefangen.",
+    "replace": "Ich habe ihn. In diesem Chaos gefangen."
+  },
+  {
+    "find": "Ich glaube, das bin ich, naiv. ♪",
+    "replace": "Ich naiv. ♪"
+  },
+  {
+    "find": "Du... du bist voller Scheiße!",
+    "replace": "Du... bist voller Scheiße!"
+  },
+  {
+    "find": "für jedes Pfund, für Wangs",
+    "replace": "für Wangs"
+  },
+  {
+    "find": "bist, oder du bist immer noch stark?\n-Das ist mein Rasen.",
+    "replace": "bist, immer noch stark? -Das ist mein Rasen."
+  },
+  {
+    "find": "Schweinschlachterin, du bist es, Schweinschlachterin Guo.",
+    "replace": "Schweinschlachterin, Guo."
+  },
+  {
+    "find": "Er sagte, er würde vorerst mit mir gehen.",
+    "replace": "Er würde vorerst mit mir gehen."
+  },
+  {
+    "find": "-Wohltäter!\n-Wohltäter!",
+    "replace": "-Wohltäter!"
+  },
+  {
+    "find": "Das Salz gleichmäßig über das Fleisch verteilen,",
+    "replace": "Das Salz gleichmäßig über das Fleisch verteilen"
+  },
+  {
+    "find": "Wenn deine Geister zusehen,",
+    "replace": "Wenn deine Geister zusehen"
+  },
+  {
+    "find": "Tee, Schweinschlachterin, [Fan's Schweinschlachterin-Shop]",
+    "replace": "Tee, Schweinschlachterin"
+  },
+  {
+    "find": "Schweinschlachterin, [Schlachtershop von Guo Jiu] [Nudeln im Topf]",
+    "replace": "Schweinschlachterin"
+  },
+  {
+    "find": "Schweinschlachterin, [Fan's Schweinschlachterin-Shop]",
+    "replace": "Schweinschlachterin"
+  },
+  {
+    "find": "Obwohl wir Hooligans sind,",
+    "replace": "Obwohl wir Hooligans sind"
+  },
+  {
+    "find": "In einer Zeit wie dieser,",
+    "replace": "In einer Zeit wie dieser"
+  },
+  {
+    "find": "Wir wollen auch gute Menschen sein,",
+    "replace": "Wir wollen auch gute Menschen sein"
+  },
+  {
+    "find": "Aber in diesen Jahren des endlosen Krieges,",
+    "replace": "Aber in diesen Jahren des endlosen Krieges"
+  },
+  {
+    "find": "Aber wenn Sie etwas Schlimmes tun,",
+    "replace": "Aber wenn Sie etwas Schlimmes tun"
+  },
+  {
+    "find": "wenn man alles für Reis, Mehl,\nSalz, Öl, Soße und Essig,",
+    "replace": "wenn man alles für Reis, Mehl,\nSalz, Öl, Soße und Essig"
+  },
+  {
+    "find": "Übrigens,",
+    "replace": "Übrigens"
+  },
+  {
+    "find": "Junger Herr von Wang,",
+    "replace": "Junger Herr von Wang"
+  },
+  {
+    "find": "Nur weil ich ein Mädchen bin,",
+    "replace": "Nur weil ich ein Mädchen bin"
+  },
+  {
+    "find": "Als sie uns vorhin verprügelt hat,",
+    "replace": "Als sie uns vorhin verprügelt hat"
+  },
+  {
+    "find": "wäre, so schikaniert zu werden,",
+    "replace": "wäre, so schikaniert zu werden"
+  },
+  {
+    "find": "Ich habe gehört, dass du zu Wangs warst,",
+    "replace": "Ich habe gehört, dass du zu Wangs warst"
+  },
+  {
+    "find": "Sie sagte, wenn ein Mädchen weiß,\nwie diese Dinge zu tun,",
+    "replace": "Sie sagte, wenn ein Mädchen weiß,\nwie diese Dinge zu tun"
+  },
+  {
+    "find": "Unser Vater wäre nicht so dumm,",
+    "replace": "Unser Vater wäre nicht so dumm"
+  },
+  {
+    "find": "Da es bereits benutzt wird,",
+    "replace": "Da es bereits benutzt wird"
+  },
+  {
+    "find": "Diese nutzlosen Dinger zu kaufen,",
+    "replace": "Diese nutzlosen Dinger zu kaufen"
+  },
+  {
+    "find": "Fan Daniu muss einen Grund haben,",
+    "replace": "Fan Daniu muss einen Grund haben"
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin, meine Schwester wird ein Schwein abschlachten.",
+    "replace": "Schweinschlachterin, meine Schwester wird ein Schwein abschlachten."
+  },
+  {
+    "find": "Schweinschlachterin, schweinschlachterin ein Schwein?",
+    "replace": "Schweinschlachterin, ein Schwein?"
+  },
+  {
+    "find": "Das ist das Haarband, das ich dir gegeben habe.",
+    "replace": "Das das ich dir gegeben habe."
+  },
+  {
+    "find": "Das ist das Neujahrsschwein.",
+    "replace": "Das Neujahrsschwein."
+  },
+  {
+    "find": "Oma, Oma, Großmutter.",
+    "replace": "Oma, Großmutter."
+  },
+  {
+    "find": "Der Besitzer der Taverne kann auch aussagen.",
+    "replace": "Der Taverne kann auch aussagen."
+  },
+  {
+    "find": "zu spät zu kommen.",
+    "replace": "zu kommen."
+  },
+  {
+    "find": "Constable Wang, na, dann... Constable",
+    "replace": "Constable"
+  },
+  {
+    "find": "Als Mann,",
+    "replace": "Als Mann"
+  },
+  {
+    "find": "Als Ministerin,",
+    "replace": "Als Ministerin"
+  },
+  {
+    "find": "Normalerweise lasse ich dich in Ruhe,",
+    "replace": "Normalerweise lasse ich dich in Ruhe"
+  },
+  {
+    "find": "Wir fürchten, entdeckt zu werden,",
+    "replace": "Wir fürchten, entdeckt zu werden"
+  },
+  {
+    "find": "Vor 16 Jahren,",
+    "replace": "Vor 16 Jahren"
+  },
+  {
+    "find": "Da wir einen verkaufen,",
+    "replace": "Da wir einen verkaufen"
+  },
+  {
+    "find": "und ins Gefängnis gegangen,",
+    "replace": "und ins Gefängnis gegangen"
+  },
+  {
+    "find": "Eine weitere Ebene hinzufügen,",
+    "replace": "Eine weitere Ebene hinzufügen"
+  },
+  {
+    "find": "Obwohl es nicht ausgeliehen werden kann,",
+    "replace": "Obwohl es nicht ausgeliehen werden kann"
+  },
+  {
+    "find": "Kaiserin Dowager An,",
+    "replace": "Kaiserin Dowager An"
+  },
+  {
+    "find": "Wenn du Angst hast,",
+    "replace": "Wenn du Angst hast"
+  },
+  {
+    "find": "Ihr zwei liebt euch,",
+    "replace": "Ihr zwei liebt euch"
+  },
+  {
+    "find": "Wenn in die Augen gesprüht, verursacht es\nSchwellung,",
+    "replace": "Wenn in die Augen gesprüht, verursacht es\nSchwellung"
+  },
+  {
+    "find": "Eure Hoheit,",
+    "replace": "Eure Hoheit"
+  },
+  {
+    "find": "Obwohl ich meinen Gegner nicht gesehen habe,",
+    "replace": "Obwohl ich meinen Gegner nicht gesehen habe"
+  },
+  {
+    "find": "Obwohl wir uns noch nicht kennen,",
+    "replace": "Obwohl wir uns noch nicht kennen"
+  },
+  {
+    "find": "Sobald ich dein \"Das Geheimnis des Qi\" habe,",
+    "replace": "Sobald ich dein \"Das Geheimnis des Qi\" habe"
+  },
+  {
+    "find": "Ich weiß nicht, wie\ndie Konkubine der Kaiserin es erfahren hat,",
+    "replace": "Ich weiß nicht, wie\ndie Konkubine der Kaiserin es erfahren hat"
+  },
+  {
+    "find": "für den letzten halben Monat,",
+    "replace": "für den letzten halben Monat"
+  },
+  {
+    "find": "Diejenigen, die\ntäglich im Guangling-Tempel sein können,",
+    "replace": "Diejenigen, die\ntäglich im Guangling-Tempel sein können"
+  },
+  {
+    "find": "In diesem Pavillon aus der Ferne zu spielen,",
+    "replace": "In diesem Pavillon aus der Ferne zu spielen"
+  },
+  {
+    "find": "Aber jetzt, wo ich weiß,",
+    "replace": "Aber jetzt, wo ich weiß"
+  },
+  {
+    "find": "Jemand, der mit mir im Fengyu-Pavillon aus der Ferne Go gespielt hat,",
+    "replace": "Jemand, der mit mir im Fengyu-Pavillon aus der Ferne Go gespielt hat"
+  },
+  {
+    "find": "Als Sie an der Akademie ankamen,",
+    "replace": "Als Sie an der Akademie ankamen"
+  },
+  {
+    "find": "In diesem Spiel von Go,",
+    "replace": "In diesem Spiel von Go"
+  },
+  {
+    "find": "zum Ende,",
+    "replace": "zum Ende"
+  },
+  {
+    "find": "Ich könnte kurzsichtig sein,",
+    "replace": "Ich könnte kurzsichtig sein"
+  },
+  {
+    "find": "aber all die Jahre an der Grenze,",
+    "replace": "aber all die Jahre an der Grenze"
+  },
+  {
+    "find": "Solange er hier ist,",
+    "replace": "Solange er hier ist"
+  },
+  {
+    "find": "Wenn ich mich eines Tages niederlassen kann,",
+    "replace": "Wenn ich mich eines Tages niederlassen kann"
+  },
+  {
+    "find": "Er sagte jetzt, dass die Angelegenheit mit Guo\nwurde entschieden,",
+    "replace": "Er sagte jetzt, dass die Angelegenheit mit Guo\nwurde entschieden"
+  },
+  {
+    "find": "Ich bin auch neugierig,",
+    "replace": "Ich bin auch neugierig"
+  },
+  {
+    "find": "an der Grenze\nzwischen Yanzhou und Chongzhou,",
+    "replace": "an der Grenze\nzwischen Yanzhou und Chongzhou"
+  },
+  {
+    "find": "Nehmen Sie sich Zeit aus Ihrem geschäftigen Zeitplan, um das Yixiang Restaurant zu besuchen,",
+    "replace": "Nehmen Sie sich Zeit aus Ihrem geschäftigen Zeitplan, um das Yixiang Restaurant zu besuchen"
+  },
+  {
+    "find": "Das ist ein Reishändler aus der Hauptstadt,",
+    "replace": "Das ist ein Reishändler aus der Hauptstadt"
+  },
+  {
+    "find": "Wenn Sie etwas brauchen,",
+    "replace": "Wenn Sie etwas brauchen"
+  },
+  {
+    "find": "Herr Qi, Sie wissen vielleicht nicht,",
+    "replace": "Herr Qi, Sie wissen vielleicht nicht"
+  },
+  {
+    "find": "Wenn Sie irgendwelche Geschäftsideen haben,",
+    "replace": "Wenn Sie irgendwelche Geschäftsideen haben"
+  },
+  {
+    "find": "[Xie Wu, Blutroter Reiter]\n[Xie Qi, Blutroter Reiter]",
+    "replace": "[Xie Blutroter Reiter]"
+  },
+  {
+    "find": "Der Kammer, der Der Kammersaal weigert sich, Getreide freizugeben.",
+    "replace": "Der Der Kammersaal weigert sich, Getreide freizugeben."
+  },
+  {
+    "find": "um Prinz Changxin anzulocken\num Truppen nach Süden zu führen.",
+    "replace": "um Truppen nach Süden zu führen."
+  },
+  {
+    "find": "Schweinhalschneidern, Schweinhalschneidern Guo.",
+    "replace": "Schweinhalschneidern, Guo."
+  },
+  {
+    "find": "Schweinhalschneidern, Schweinhalschneidern Guo?",
+    "replace": "Schweinhalschneidern, Guo?"
+  },
+  {
+    "find": "Das wird jedem das Gesicht retten.",
+    "replace": "Das Gesicht retten."
+  },
+  {
+    "find": "wirklich am Leben ist,",
+    "replace": "wirklich am Leben ist"
+  },
+  {
+    "find": "Vater,",
+    "replace": "Vater"
+  },
+  {
+    "find": "Wenkän,",
+    "replace": "Wenkän"
+  },
+  {
+    "find": "Auf dem Weg zurück später,",
+    "replace": "Auf dem Weg zurück später"
+  },
+  {
+    "find": "Ich fühle mich den Nachbarn gegenüber schuldig,",
+    "replace": "Ich fühle mich den Nachbarn gegenüber schuldig"
+  },
+  {
+    "find": "Wenn ich dir wirklich was antue,",
+    "replace": "Wenn ich dir wirklich was antue"
+  },
+  {
+    "find": "Als ich fragte, ob du eben Hutou geschubst hast,",
+    "replace": "Als ich fragte, ob du eben Hutou geschubst hast"
+  },
+  {
+    "find": "Er jagte mich,",
+    "replace": "Er jagte mich"
+  },
+  {
+    "find": "Er zog mir die Haare,",
+    "replace": "Er zog mir die Haare"
+  },
+  {
+    "find": "meine Süßigkeiten geschnappt,",
+    "replace": "meine Süßigkeiten geschnappt"
+  },
+  {
+    "find": "Jeder in Lin'an weiß,",
+    "replace": "Jeder in Lin'an weiß"
+  },
+  {
+    "find": "keinen haben, der dich beerdigt, wenn du stirbst,",
+    "replace": "keinen haben, der dich beerdigt, wenn du stirbst"
+  },
+  {
+    "find": "berührst du Fan Changning noch einmal,",
+    "replace": "berührst du Fan Changning noch einmal"
+  },
+  {
+    "find": "Nur wegen ein paar Worten von anderen,",
+    "replace": "Nur wegen ein paar Worten von anderen"
+  },
+  {
+    "find": "Wenn du früher die Krawatten zu uns schneidest,",
+    "replace": "Wenn du früher die Krawatten zu uns schneidest"
+  },
+  {
+    "find": "meine Familie nicht einfach gehen lassen,",
+    "replace": "meine Familie nicht einfach gehen lassen"
+  },
+  {
+    "find": "Wenn jemand Wasser auf dich spritzt,",
+    "replace": "Wenn jemand Wasser auf dich spritzt"
+  },
+  {
+    "find": "bist, egal wie freundlich du bist,",
+    "replace": "bist, egal wie freundlich du bist"
+  },
+  {
+    "find": "Aber wenn du an die Macht steigst,",
+    "replace": "Aber wenn du an die Macht steigst"
+  },
+  {
+    "find": "in ihren Augen,",
+    "replace": "in ihren Augen"
+  },
+  {
+    "find": "Du kannst mir diese Dinge sagen,",
+    "replace": "Du kannst mir diese Dinge sagen"
+  },
+  {
+    "find": "Herrn Zhao und Frau Zhao wegen dessen abzuhalten,",
+    "replace": "Herrn Zhao und Frau Zhao wegen dessen abzuhalten"
+  },
+  {
+    "find": "Wenn ich etwas Geld übrig habe,",
+    "replace": "Wenn ich etwas Geld übrig habe"
+  },
+  {
+    "find": "Ich will meine Familie alle zusammen,",
+    "replace": "Ich will meine Familie alle zusammen"
+  },
+  {
+    "find": "Eure Majestät,",
+    "replace": "Eure Majestät"
+  },
+  {
+    "find": "Wenn der SchatzDer Der Kammer leer ist,\nGetreide vor Ort zu erheben,",
+    "replace": "Wenn der SchatzDer Der Kammer leer ist,\nGetreide vor Ort zu erheben"
+  },
+  {
+    "find": "Premierminister,",
+    "replace": "Premierminister"
+  },
+  {
+    "find": "Großtutor Li, sicherlich,",
+    "replace": "Großtutor Li, sicherlich"
+  },
+  {
+    "find": "Auf General Suituo,",
+    "replace": "Auf General Suituo"
+  },
+  {
+    "find": "General He general deshalb sende ich\nmein HausGeneral Wei Qilin,",
+    "replace": "General He general deshalb sende ich\nmein HausGeneral Wei Qilin"
+  },
+  {
+    "find": "Nun,",
+    "replace": "Nun"
+  },
+  {
+    "find": "Warum hat Li Huai'an eine solche Lüge erfunden,",
+    "replace": "Warum hat Li Huai'an eine solche Lüge erfunden"
+  },
+  {
+    "find": "Wenn es eine Chance gibt, diese Banditen zu fangen,",
+    "replace": "Wenn es eine Chance gibt, diese Banditen zu fangen"
+  },
+  {
+    "find": "Gouverneur He von Jizhou aus Sorge um das Volk geschickt hat,",
+    "replace": "Gouverneur He von Jizhou aus Sorge um das Volk geschickt hat"
+  },
+  {
+    "find": "Für diejenigen, die durch die Hände der Banditen aus Qingfeng Stronghold gelitten haben,",
+    "replace": "Für diejenigen, die durch die Hände der Banditen aus Qingfeng Stronghold gelitten haben"
+  },
+  {
+    "find": "Dann sagten Sie, wenn Zheng ginge,",
+    "replace": "Dann sagten Sie, wenn Zheng ginge"
+  },
+  {
+    "find": "Sag ihnen,",
+    "replace": "Sag ihnen"
+  },
+  {
+    "find": "Frau Zhao sagt,",
+    "replace": "Frau Zhao sagt"
+  },
+  {
+    "find": "Um den Mörder zu erwischen,",
+    "replace": "Um den Mörder zu erwischen"
+  },
+  {
+    "find": "Nur einer, der zurückkommt,",
+    "replace": "Nur einer, der zurückkommt"
+  },
+  {
+    "find": "Nun, da sie mit dem Yixiang Restaurant zusammenarbeitet,",
+    "replace": "Nun, da sie mit dem Yixiang Restaurant zusammenarbeitet"
+  },
+  {
+    "find": "Sie uns 5 Kunden in der Zukunft bringen kann,",
+    "replace": "Sie uns 5 Kunden in der Zukunft bringen kann"
+  },
+  {
+    "find": "Du hast nur ein paar Worte gesagt,",
+    "replace": "Du hast nur ein paar Worte gesagt"
+  },
+  {
+    "find": "Die Süßigkeiten, die ich dir gekauft habe\nwar nicht dafür bestimmt.",
+    "replace": "Die ich dir gekauft habe war nicht dafür bestimmt."
+  },
+  {
+    "find": "Du sagtest, du hättest Angst vor den Gewürzen.\nvon außerhalb der Stadt waren nicht authentisch.",
+    "replace": "Du hättest Angst vor den Gewürzen. von außerhalb der Stadt waren nicht authentisch."
+  },
+  {
+    "find": "Ich bin es, ich bin es.",
+    "replace": "Ich bin es."
+  },
+  {
+    "find": "noch egal ist, was Sie denken gut gut gut, oder?",
+    "replace": "noch egal ist, was Sie denken gut, oder?"
+  },
+  {
+    "find": "Wenn du jetzt ihre Jacke ausziehst,",
+    "replace": "Wenn du jetzt ihre Jacke ausziehst"
+  },
+  {
+    "find": "Sie wollten mir nur sagen,",
+    "replace": "Sie wollten mir nur sagen"
+  },
+  {
+    "find": "In dem Moment, in dem Ihr hereinkamt,",
+    "replace": "In dem Moment, in dem Ihr hereinkamt"
+  },
+  {
+    "find": "Ich habe mich auf dich gefreut.\nSie kommen jeden Tag, um mit mir zu spielen,",
+    "replace": "Ich habe mich auf dich gefreut.\nSie kommen jeden Tag, um mit mir zu spielen"
+  },
+  {
+    "find": "würzigen heißen Topf,",
+    "replace": "würzigen heißen Topf"
+  },
+  {
+    "find": "dem exquisiten Essen im Yixiang Restaurant verglichen,",
+    "replace": "dem exquisiten Essen im Yixiang Restaurant verglichen"
+  },
+  {
+    "find": "Ich werde alt,",
+    "replace": "Ich werde alt"
+  },
+  {
+    "find": "das Kind sieht ein bisschen wie du aus.\nals du jung warst,",
+    "replace": "das Kind sieht ein bisschen wie du aus.\nals du jung warst"
+  },
+  {
+    "find": "Er lügt gern,",
+    "replace": "Er lügt gern"
+  },
+  {
+    "find": "Junger Herr ehrwürdiger Jüngster Meister rate ich Ihnen,",
+    "replace": "Junger Herr ehrwürdiger Jüngster Meister rate ich Ihnen"
+  },
+  {
+    "find": "Nur weil ich ein paar Schlachten verloren habe,",
+    "replace": "Nur weil ich ein paar Schlachten verloren habe"
+  },
+  {
+    "find": "In drei Tagen, bis Mittag,",
+    "replace": "In drei Tagen, bis Mittag"
+  },
+  {
+    "find": "wenn ich nicht sehe 100,000 Pikul von Körnern,",
+    "replace": "wenn ich nicht sehe 100,000 Pikul von Körnern"
+  },
+  {
+    "find": "Also rannten Sie eifrig hierher,",
+    "replace": "Also rannten Sie eifrig hierher"
+  },
+  {
+    "find": "Qianjin,",
+    "replace": "Qianjin"
+  },
+  {
+    "find": "Ich gebe dir keinen Schaden, Fräulein Cui,",
+    "replace": "Ich gebe dir keinen Schaden, Fräulein Cui"
+  },
+  {
+    "find": "Als du versprochen hast,\ndie Familie Fan vor zehn Jahren,",
+    "replace": "Als du versprochen hast,\ndie Familie Fan vor zehn Jahren"
+  },
+  {
+    "find": "Wenn die Nordgänse nach Süden fliegen,",
+    "replace": "Wenn die Nordgänse nach Süden fliegen"
+  },
+  {
+    "find": "Ich weiß nicht warum,",
+    "replace": "Ich weiß nicht warum"
+  },
+  {
+    "find": "Ich bin hierher gekommen, um den Laterentag zu besuchen,",
+    "replace": "Ich bin hierher gekommen, um den Laterentag zu besuchen"
+  },
+  {
+    "find": "Wenn du mich fragst,",
+    "replace": "Wenn du mich fragst"
+  },
+  {
+    "find": "wenn er wirklich die Prüfung macht,",
+    "replace": "wenn er wirklich die Prüfung macht"
+  },
+  {
+    "find": "Aber es macht auch keinen Sinn,",
+    "replace": "Aber es macht auch keinen Sinn"
+  },
+  {
+    "find": "Aber unsere Ehe wird von unseren Ältesten entschieden,",
+    "replace": "Aber unsere Ehe wird von unseren Ältesten entschieden"
+  },
+  {
+    "find": "Ich habe einen Plan,",
+    "replace": "Ich habe einen Plan"
+  },
+  {
+    "find": "Ich schätze, deshalb habe ich dich gewählt.\nals mein Lebenspartner.",
+    "replace": "Ich dich gewählt. als mein Lebenspartner."
+  },
+  {
+    "find": "-Du auch?\n-Du willst auch einen. Changning?",
+    "replace": "-Du willst auch einen. Changning?"
+  },
+  {
+    "find": "-Frohes neues Jahr!\n-Frohes neues Jahr!",
+    "replace": "-Frohes neues Jahr!"
+  },
+  {
+    "find": "-Lass uns gehen.\n-Lass uns gehen.",
+    "replace": "-Lass uns gehen."
+  },
+  {
+    "find": "Junger Herr danke, junger Meister.",
+    "replace": "Junger Meister."
+  },
+  {
+    "find": "Junger Herr eldester junger Meister",
+    "replace": "Junger Meister"
+  },
+  {
+    "find": "Junger Herr Eldester junger Meister.\n-Bewusst die Moral der Armee zu schütteln.",
+    "replace": "Junger Meister. -Bewusst die Moral der Armee zu schütteln."
+  },
+  {
+    "find": "-Herr General!\n-Herr General!",
+    "replace": "-Herr General!"
+  },
+  {
+    "find": "Er sagte, er wolle mich von ganzem Herzen entschuldigen!\n-Halt den Quatsch auf!",
+    "replace": "Er wolle mich von ganzem Herzen entschuldigen! -Halt den Quatsch auf!"
+  },
+  {
+    "find": "Song Yan meine Liebste Song",
+    "replace": "Song"
+  },
+  {
+    "find": "Nicht nötig, störe sie nicht.",
+    "replace": "Nicht"
+  },
+  {
+    "find": "Fuling sagte,",
+    "replace": "Fuling sagte"
+  },
+  {
+    "find": "Ich frage das Personal hier.\nim Yixiang Restaurant,",
+    "replace": "Ich frage das Personal hier.\nim Yixiang Restaurant"
+  },
+  {
+    "find": "Sie hat ihre kleine Schwester bei sich,",
+    "replace": "Sie hat ihre kleine Schwester bei sich"
+  },
+  {
+    "find": "Wenn es Ihnen nichts ausmacht,",
+    "replace": "Wenn es Ihnen nichts ausmacht"
+  },
+  {
+    "find": "Sag mir nicht,",
+    "replace": "Sag mir nicht"
+  },
+  {
+    "find": "Nehmen Sie sie an die Front,\num Schwerstarbeit zu ertragen,",
+    "replace": "Nehmen Sie sie an die Front,\num Schwerstarbeit zu ertragen"
+  },
+  {
+    "find": "man eine Frau\ndie die Verantwortung übernehmen kann,",
+    "replace": "man eine Frau\ndie die Verantwortung übernehmen kann"
+  },
+  {
+    "find": "Aus meiner Sicht,",
+    "replace": "Aus meiner Sicht"
+  },
+  {
+    "find": "Sobald du gehst,",
+    "replace": "Sobald du gehst"
+  },
+  {
+    "find": "Ein erwachsener Mann, der mit einer Frau isst,",
+    "replace": "Ein erwachsener Mann, der mit einer Frau isst"
+  },
+  {
+    "find": "Sie erheben es pro Person,",
+    "replace": "Sie erheben es pro Person"
+  },
+  {
+    "find": "Aber in Xigu-Straße gibt es Menschen,",
+    "replace": "Aber in Xigu-Straße gibt es Menschen"
+  },
+  {
+    "find": "Seit Onkel gestorben ist,",
+    "replace": "Seit Onkel gestorben ist"
+  },
+  {
+    "find": "Wenn die Regierung Getreide verlangt,",
+    "replace": "Wenn die Regierung Getreide verlangt"
+  },
+  {
+    "find": "Es sei denn, andere Landkreise tun das Gleiche,",
+    "replace": "Es sei denn, andere Landkreise tun das Gleiche"
+  },
+  {
+    "find": "es ist möglich, dass der Magistrat hier\ndie Chance nutzt,",
+    "replace": "es ist möglich, dass der Magistrat hier\ndie Chance nutzt"
+  },
+  {
+    "find": "Du elendes altes Ding,",
+    "replace": "Du elendes altes Ding"
+  },
+  {
+    "find": "Wenn eine Ehefrau unehrenvoll ist\nnach dem Tod ihres Ehemannes,",
+    "replace": "Wenn eine Ehefrau unehrenvoll ist\nnach dem Tod ihres Ehemannes"
+  },
+  {
+    "find": "Ob man die ganze Menge rausschmeißt,",
+    "replace": "Ob man die ganze Menge rausschmeißt"
+  },
+  {
+    "find": "Selbst wenn ich mich hier das Leben weg schlage,",
+    "replace": "Selbst wenn ich mich hier das Leben weg schlage"
+  },
+  {
+    "find": "Vor 17 Jahren,",
+    "replace": "Vor 17 Jahren"
+  },
+  {
+    "find": "dass Erniu, der vor all diesen Jahren verschwunden war,",
+    "replace": "dass Erniu, der vor all diesen Jahren verschwunden war"
+  },
+  {
+    "find": "Am Tag vor dem Vorfall,",
+    "replace": "Am Tag vor dem Vorfall"
+  },
+  {
+    "find": "Er sagte nur,",
+    "replace": "Er sagte nur"
+  },
+  {
+    "find": "Wie Sie wissen,",
+    "replace": "Wie Sie wissen"
+  },
+  {
+    "find": "Dein Onkel. Zusammen mit dem Ratgeber Guo, als er versuchte,",
+    "replace": "Dein Onkel. Zusammen mit dem Ratgeber Guo, als er versuchte"
+  },
+  {
+    "find": "Gericht, egal, wie groß das Der Der Kammer des Großen Yins ist,",
+    "replace": "Gericht, egal, wie groß das Der Der Kammer des Großen Yins ist"
+  },
+  {
+    "find": "Wenn es zum Schlimmsten kommt,",
+    "replace": "Wenn es zum Schlimmsten kommt"
+  },
+  {
+    "find": "in den Tod meiner Eltern verwickelt ist,",
+    "replace": "in den Tod meiner Eltern verwickelt ist"
+  },
+  {
+    "find": "Wenn ich ein Mann wäre,",
+    "replace": "Wenn ich ein Mann wäre"
+  },
+  {
+    "find": "Da Ihre Hoheit dies gesagt hat,",
+    "replace": "Da Ihre Hoheit dies gesagt hat"
+  },
+  {
+    "find": "Nach der Bestellung deiner Schwester als Konkubine der Prinzessin,",
+    "replace": "Nach der Bestellung deiner Schwester als Konkubine der Prinzessin"
+  },
+  {
+    "find": "Und während du dabei bist,",
+    "replace": "Und während du dabei bist"
+  },
+  {
+    "find": "Wissen Sie,",
+    "replace": "Wissen Sie"
+  },
+  {
+    "find": "Dein Lehrer, He Jingyuan,",
+    "replace": "Dein Lehrer, He Jingyuan"
+  },
+  {
+    "find": "er unterwirft sich Wei Yan ausschließlich\num des Kaiserlichen Palastes willen,",
+    "replace": "er unterwirft sich Wei Yan ausschließlich\num des Kaiserlichen Palastes willen"
+  },
+  {
+    "find": "Aber es war wegen Wei Yan\nGrundloser Verdacht,",
+    "replace": "Aber es war wegen Wei Yan\nGrundloser Verdacht"
+  },
+  {
+    "find": "Damals,",
+    "replace": "Damals"
+  },
+  {
+    "find": "Aber jetzt ist er ein mächtiger Minister geworden,",
+    "replace": "Aber jetzt ist er ein mächtiger Minister geworden"
+  },
+  {
+    "find": "Um Ihre Ideale zu verwirklichen,",
+    "replace": "Um Ihre Ideale zu verwirklichen"
+  },
+  {
+    "find": "ist deine größte Stärke,",
+    "replace": "ist deine größte Stärke"
+  },
+  {
+    "find": "Ihr,",
+    "replace": "Ihr"
+  },
+  {
+    "find": "Ich glaube,",
+    "replace": "Ich glaube"
+  },
+  {
+    "find": "Erwähne nicht,",
+    "replace": "Erwähne nicht"
+  },
+  {
+    "find": "Gemeindevorsteher, kreis, bezahlen, so dass unser Gemeinschaftsleiter uns\nan das Bezirksamt, um zu bitten,",
+    "replace": "Gemeindevorsteher, kreis, bezahlen, so dass unser Gemeinschaftsleiter uns\nan das Bezirksamt, um zu bitten"
+  },
+  {
+    "find": "Aber wer hätte voraussagen kann,",
+    "replace": "Aber wer hätte voraussagen kann"
+  },
+  {
+    "find": "Der Manager bemerkte\nund dachte, es könnte Epilepsie sein,",
+    "replace": "Der Manager bemerkte\nund dachte, es könnte Epilepsie sein"
+  },
+  {
+    "find": "Wenn ihr eine einzige Lüge sagt,",
+    "replace": "Wenn ihr eine einzige Lüge sagt"
+  },
+  {
+    "find": "Geh nicht hin.\nConstable Wang entweder um Hilfe,",
+    "replace": "Geh nicht hin.\nConstable Wang entweder um Hilfe"
+  },
+  {
+    "find": "Was jetzt wichtiger ist, ist,",
+    "replace": "Was jetzt wichtiger ist, ist"
+  },
+  {
+    "find": "Sie und Changning Ruhen Sie sich zuerst aus.",
+    "replace": "Sie sich zuerst aus."
+  },
+  {
+    "find": "das ist das einzige Gästezimmer, das noch übrig ist.",
+    "replace": "das einzige Gästezimmer, das noch übrig ist."
+  },
+  {
+    "find": "Tut mir leid, tut mir leid.",
+    "replace": "Tut mir leid."
+  },
+  {
+    "find": "Hier, hier, hier.",
+    "replace": "Hier, hier."
+  },
+  {
+    "find": "Das Geld soll das Reden machen lassen.",
+    "replace": "Das Reden machen lassen."
+  },
+  {
+    "find": "Junger Herr der Eldeste Junger Herr hat sogar\nInhaftiert He Jingyuan.",
+    "replace": "Junger Herr hat sogar Inhaftiert He Jingyuan."
+  },
+  {
+    "find": "-Nimm unser Getreide zurück!\n-Nimm unser Getreide zurück!",
+    "replace": "-Nimm unser Getreide zurück!"
+  },
+  {
+    "find": "-Wir wollen Gerechtigkeit!\n-Wir wollen Gerechtigkeit!",
+    "replace": "-Wir wollen Gerechtigkeit!"
+  },
+  {
+    "find": "General He General die Wei-Armee hat abgeschlachtet.\nDiese unschuldigen Dorfbewohner.",
+    "replace": "General die Wei-Armee hat abgeschlachtet. Diese unschuldigen Dorfbewohner."
+  },
+  {
+    "find": "Ein Leben für ein Leben!",
+    "replace": "Ein Leben!"
+  },
+  {
+    "find": "Die drei, die am meisten reden.",
+    "replace": "Die am meisten reden."
+  },
+  {
+    "find": "Ich rede, ich rede.",
+    "replace": "Ich rede."
+  },
+  {
+    "find": "-Ich gehe zuerst!\n-Ich gehe zuerst.",
+    "replace": "-Ich gehe zuerst."
+  },
+  {
+    "find": "-Ich zuerst!\n-Ich gehe zuerst!",
+    "replace": "-Ich gehe zuerst!"
+  },
+  {
+    "find": "Wir wissen es nicht, wir wissen es wirklich nicht!",
+    "replace": "Wir wissen es wirklich nicht!"
+  },
+  {
+    "find": "konnte, aber ich konnte es nicht sehen.\neinen einzigen von ihnen.",
+    "replace": "konnte, es nicht sehen. einen einzigen von ihnen."
+  },
+  {
+    "find": "-Ja.\n-Ja.",
+    "replace": "-Ja."
+  },
+  {
+    "find": "-Genau!\n-Genau!",
+    "replace": "-Genau!"
+  },
+  {
+    "find": "-Ich!\n-Ich!",
+    "replace": "-Ich!"
+  },
+  {
+    "find": "-Wir wissen es wirklich nicht!\n-Wir wissen es wirklich nicht!",
+    "replace": "-Wir wissen es wirklich nicht!"
+  },
+  {
+    "find": "Es gibt Kleidung, Schuhe,",
+    "replace": "Es gibt Kleidung, Schuhe"
+  },
+  {
+    "find": "Jetzt, wo du gehst,",
+    "replace": "Jetzt, wo du gehst"
+  },
+  {
+    "find": "Wenn Lin'an friedlich bleibt,",
+    "replace": "Wenn Lin'an friedlich bleibt"
+  },
+  {
+    "find": "Wenn ich wirklich gehe,",
+    "replace": "Wenn ich wirklich gehe"
+  },
+  {
+    "find": "Wenn ich dich wirklich belästigen wollte,",
+    "replace": "Wenn ich dich wirklich belästigen wollte"
+  },
+  {
+    "find": "Entweder stirbt er,",
+    "replace": "Entweder stirbt er"
+  },
+  {
+    "find": "Wenn ich sterbe,",
+    "replace": "Wenn ich sterbe"
+  },
+  {
+    "find": "Du hast mich belästigt,",
+    "replace": "Du hast mich belästigt"
+  },
+  {
+    "find": "Yan Zheng kaum sprach, als er zu Hause war,",
+    "replace": "Yan Zheng kaum sprach, als er zu Hause war"
+  },
+  {
+    "find": "Er musste warten, bis das Chaos ausbrach.\nbevor er sich zeigte,",
+    "replace": "Er musste warten, bis das Chaos ausbrach.\nbevor er sich zeigte"
+  },
+  {
+    "find": "Wenn du im Nordwesten bleibst,",
+    "replace": "Wenn du im Nordwesten bleibst"
+  },
+  {
+    "find": "Heute im Palast,",
+    "replace": "Heute im Palast"
+  },
+  {
+    "find": "Großtutor, warum bist du so eifrig,",
+    "replace": "Großtutor, warum bist du so eifrig"
+  },
+  {
+    "find": "so eifrig,",
+    "replace": "so eifrig"
+  },
+  {
+    "find": "Wenn der Marquis von Wu'an wirklich überlebt,",
+    "replace": "Wenn der Marquis von Wu'an wirklich überlebt"
+  },
+  {
+    "find": "Minister,",
+    "replace": "Minister"
+  },
+  {
+    "find": "er ist der Marquis Seiner Majestät von Wu'an,",
+    "replace": "er ist der Marquis Seiner Majestät von Wu'an"
+  },
+  {
+    "find": "Wenn ich etwas Beute auf dem Schlachtfeld greife,",
+    "replace": "Wenn ich etwas Beute auf dem Schlachtfeld greife"
+  },
+  {
+    "find": "Bruder,",
+    "replace": "Bruder"
+  },
+  {
+    "find": "und wir es lebend zurück schaffen,",
+    "replace": "und wir es lebend zurück schaffen"
+  },
+  {
+    "find": "Sagen Sie mir,",
+    "replace": "Sagen Sie mir"
+  },
+  {
+    "find": "Kind glücklich dem Land dienen lassen,",
+    "replace": "Kind glücklich dem Land dienen lassen"
+  },
+  {
+    "find": "Der Kammer,",
+    "replace": "Der Kammer"
+  },
+  {
+    "find": "Um unserer früheren Freundschaft willen,",
+    "replace": "Um unserer früheren Freundschaft willen"
+  },
+  {
+    "find": "Der Offizier sagte,",
+    "replace": "Der Offizier sagte"
+  },
+  {
+    "find": "sobald ich in der Armee bin,",
+    "replace": "sobald ich in der Armee bin"
+  },
+  {
+    "find": "sein, ein Schmied,",
+    "replace": "sein, ein Schmied"
+  },
+  {
+    "find": "Wenn du es ins Lager bringst,",
+    "replace": "Wenn du es ins Lager bringst"
+  },
+  {
+    "find": "Solange ich lebe,",
+    "replace": "Solange ich lebe"
+  },
+  {
+    "find": "wird Rache für den Pfeil suchen\nDu hast auf ihn geschossen,",
+    "replace": "wird Rache für den Pfeil suchen\nDu hast auf ihn geschossen"
+  },
+  {
+    "find": "Ich habe lediglich getan, was du tun wolltest, aber es war zu grausam,",
+    "replace": "Ich habe lediglich getan, was du tun wolltest, aber es war zu grausam"
+  },
+  {
+    "find": "Wenn er mich wirklich tötet,",
+    "replace": "Wenn er mich wirklich tötet"
+  },
+  {
+    "find": "Er ist dein Mann,",
+    "replace": "Er ist dein Mann"
+  },
+  {
+    "find": "Es ist normal, wenn ihr auseinander seid,",
+    "replace": "Es ist normal, wenn ihr auseinander seid"
+  },
+  {
+    "find": "Wenn ich Nezha wäre,",
+    "replace": "Wenn ich Nezha wäre"
+  },
+  {
+    "find": "Der Plan des Herrn Changxin, Flüchtlinge zu nutzen,",
+    "replace": "Der Plan des Herrn Changxin, Flüchtlinge zu nutzen"
+  },
+  {
+    "find": "Nun da He Jingyuan in Lucheng stationiert ist,",
+    "replace": "Nun da He Jingyuan in Lucheng stationiert ist"
+  },
+  {
+    "find": "Zurück im Ostpalast,",
+    "replace": "Zurück im Ostpalast"
+  },
+  {
+    "find": "Eure Lordschaft, es gibt eine Nachricht\nvom Spion in der Hauptstadt,",
+    "replace": "Eure Lordschaft, es gibt eine Nachricht\nvom Spion in der Hauptstadt"
+  },
+  {
+    "find": "Wenn die Armee von Yanzhou\nLucheng stärken will,",
+    "replace": "Wenn die Armee von Yanzhou\nLucheng stärken will"
+  },
+  {
+    "find": "Aber tief im Inneren,",
+    "replace": "Aber tief im Inneren"
+  },
+  {
+    "find": "Wenn Sie es nicht in der Zukunft wollen,",
+    "replace": "Wenn Sie es nicht in der Zukunft wollen"
+  },
+  {
+    "find": "Wenn der Krieg vorbei ist,",
+    "replace": "Wenn der Krieg vorbei ist"
+  },
+  {
+    "find": "General He kommissar Wei General",
+    "replace": "General"
+  },
+  {
+    "find": "Nein, nein, nein. Herr Zhao?",
+    "replace": "Nein, nein. Herr Zhao?"
+  },
+  {
+    "find": "Ich studierte Veterinärmedizin\nals ich jung war und",
+    "replace": "Ich jung war und"
+  },
+  {
+    "find": "Ich kam speziell zurück.\nIch gratuliere Ihnen.",
+    "replace": "Ich gratuliere Ihnen."
+  },
+  {
+    "find": "- Baxia? - Nein.",
+    "replace": "- Nein."
+  },
+  {
+    "find": "Ouch, ouch, Ouch!",
+    "replace": "Ouch, Ouch!"
+  },
+  {
+    "find": "Sie sagten, sie hätte es vielleicht getan.\nGetroffene Banditen.",
+    "replace": "Sie hätte es vielleicht getan. Getroffene Banditen."
+  },
+  {
+    "find": "Wir wissen nicht, wann wir uns wiedersehen.",
+    "replace": "Wir uns wiedersehen."
+  },
+  {
+    "find": "-Bewegung!\n-Bewegung!",
+    "replace": "-Bewegung!"
+  },
+  {
+    "find": "Ehrwürden",
+    "replace": "Mein Herr"
+  },
+  {
+    "find": "Der Der Der Kammer",
+    "replace": "Kammer"
+  },
+  {
+    "find": "Der Der Der Kammere",
+    "replace": "Kammer"
+  },
+  {
+    "find": "Der Der Der Kammers",
+    "replace": "Kammer"
+  },
+  {
+    "find": "SchatzDer Der Der Der Kammer",
+    "replace": "Schatzkammer"
+  },
+  {
+    "find": "Multe Dank",
+    "replace": "Vielen Dank"
+  },
+  {
+    "find": "Schweinschlachterin",
+    "replace": "Metzgerin"
+  },
+  {
+    "find": "[Pursuit of Jade]",
+    "replace": "[Jadeverfolgung]"
+  },
+  {
+    "find": "[Intimacy Instruction Drawings]",
+    "replace": "[Zeichnungen zur Intimitätsanweisung]"
+  },
+  {
+    "find": "[Xigu Lane]",
+    "replace": "[Xigu-Gasse]"
+  },
+  {
+    "find": "[Happiness]",
+    "replace": "[Glück]"
+  },
+  {
+    "find": "Bao'er! Was ist los?",
+    "replace": "Bao'er!"
+  },
+  {
+    "find": "Qianqian! Was ist los?",
+    "replace": "Qianqian!"
+  },
+  {
+    "find": "Changning! Was ist los?",
+    "replace": "Changning!"
+  },
+  {
+    "find": "BrautDer Der Der",
+    "replace": "Braut"
+  },
+  {
+    "find": "Männer sind jünger als Frauen im besten Alter,",
+    "replace": "Männer sind jünger als Frauen im besten Alter"
+  },
+  {
+    "find": ", weißt du?",
+    "replace": "weißt du?"
+  },
+  {
+    "find": "haben sie den Mut, aber nicht den Wunsch,",
+    "replace": "haben sie den Mut, aber nicht den Wunsch"
+  },
+  {
+    "find": "Wenn sie wirklich friert,",
+    "replace": "Wenn sie wirklich friert"
+  },
+  {
+    "find": "Ich habe erst von Ihrem Hintergrund erfahren,",
+    "replace": "Ich habe erst von Ihrem Hintergrund erfahren"
+  },
+  {
+    "find": "sie wollten dir etwas antun,",
+    "replace": "sie wollten dir etwas antun"
+  },
+  {
+    "find": "Aber jedes Mal, wenn sie fertig war,",
+    "replace": "Aber jedes Mal, wenn sie fertig war"
+  },
+  {
+    "find": "will dir wirklich wehtun,",
+    "replace": "will dir wirklich wehtun"
+  },
+  {
+    "find": "im Grunde genommen,",
+    "replace": "im Grunde genommen"
+  },
+  {
+    "find": "Was genau macht die Familie Fan haben,",
+    "replace": "Was genau macht die Familie Fan haben"
+  },
+  {
+    "find": "Ihr Herr ist\nder Kriegskommandant von Jizhou,",
+    "replace": "Ihr Herr ist\nder Kriegskommandant von Jizhou"
+  },
+  {
+    "find": "Offizier,",
+    "replace": "Offizier"
+  },
+  {
+    "find": "Ja,",
+    "replace": "Ja"
+  },
+  {
+    "find": "Da ich dieses Mal gekommen bin,",
+    "replace": "Da ich dieses Mal gekommen bin"
+  },
+  {
+    "find": "wenn diese Menschen aus Rache zurückkommen,",
+    "replace": "wenn diese Menschen aus Rache zurückkommen"
+  },
+  {
+    "find": "Obwohl du das Opfer bist,",
+    "replace": "Obwohl du das Opfer bist"
+  },
+  {
+    "find": "Ich hörte, dass Kriminelle Ärger machen.\nin der Xigu Lane,",
+    "replace": "Ich hörte, dass Kriminelle Ärger machen.\nin der Xigu Lane"
+  },
+  {
+    "find": "Gesetzbuch des Großen Yin, besagt das Gesetzbuch des Großen Yin,",
+    "replace": "Gesetzbuch des Großen Yin, besagt das Gesetzbuch des Großen Yin"
+  },
+  {
+    "find": "Warum bin ich nicht darüber im Bilde,",
+    "replace": "Warum bin ich nicht darüber im Bilde"
+  },
+  {
+    "find": "Herr Li, du solltest erst in die Stadt zurückkehren,",
+    "replace": "Herr Li, du solltest erst in die Stadt zurückkehren"
+  },
+  {
+    "find": "Wenn sie schon immer Feinde waren,",
+    "replace": "Wenn sie schon immer Feinde waren"
+  },
+  {
+    "find": "Sogar wenn der Hof sich windet,",
+    "replace": "Sogar wenn der Hof sich windet"
+  },
+  {
+    "find": "Sag ich,",
+    "replace": "Sag ich"
+  },
+  {
+    "find": "Wir fanden,",
+    "replace": "Wir fanden"
+  },
+  {
+    "find": "Nicht, dass er jetzt Schwierigkeiten hat, aber selbst wenn der Kaiser ihn ins Gefängnis wirft\num ihn zur Ehe mit der Ältesten Prinzessin zu zwingen\nund ihm damit in die königliche Familie einzubinden,",
+    "replace": "Nicht, dass er jetzt Schwierigkeiten hat, aber selbst wenn der Kaiser ihn ins Gefängnis wirft\num ihn zur Ehe mit der Ältesten Prinzessin zu zwingen\nund ihm damit in die königliche Familie einzubinden"
+  },
+  {
+    "find": "Trotzdem haben wir uns seit mehr als einem Jahrzehnt nicht gesehen,",
+    "replace": "Trotzdem haben wir uns seit mehr als einem Jahrzehnt nicht gesehen"
+  },
+  {
+    "find": "Frau starb wegen Changyu Pech,",
+    "replace": "Frau starb wegen Changyu Pech"
+  },
+  {
+    "find": "Gerichtsverhandlung, Der Der Kammersverhandlung, als ich von ihnen hörte,",
+    "replace": "Gerichtsverhandlung, Der Der Kammersverhandlung, als ich von ihnen hörte"
+  },
+  {
+    "find": "Ich weiß es nur. Frau Fan\nwollte ihr Eigentum behalten,",
+    "replace": "Ich weiß es nur. Frau Fan\nwollte ihr Eigentum behalten"
+  },
+  {
+    "find": "Reiseerlaubnis, basierend auf den Reisebewilligungen, die wir überprüft haben,",
+    "replace": "Reiseerlaubnis, basierend auf den Reisebewilligungen, die wir überprüft haben"
+  },
+  {
+    "find": "Frau Zhao sieht klug aus,",
+    "replace": "Frau Zhao sieht klug aus"
+  },
+  {
+    "find": "ziemlich gutaussehend,",
+    "replace": "ziemlich gutaussehend"
+  },
+  {
+    "find": "Fan Changyu matrilokaler Ehemann,",
+    "replace": "Fan Changyu matrilokaler Ehemann"
+  },
+  {
+    "find": "Weißt du,",
+    "replace": "Weißt du"
+  },
+  {
+    "find": "Es ist leicht zu verteidigen und schwer anzugreifen,",
+    "replace": "Es ist leicht zu verteidigen und schwer anzugreifen"
+  },
+  {
+    "find": "Ein sechster Kommandant,",
+    "replace": "Ein sechster Kommandant"
+  },
+  {
+    "find": "Er will diese Chance offensichtlich nutzen,",
+    "replace": "Er will diese Chance offensichtlich nutzen"
+  },
+  {
+    "find": "Sobald wir Erfolg haben,",
+    "replace": "Sobald wir Erfolg haben"
+  },
+  {
+    "find": "Das ist ein Befehl,",
+    "replace": "Das ist ein Befehl"
+  },
+  {
+    "find": "Wenn es um die Loyalität zu Great Yin geht,",
+    "replace": "Wenn es um die Loyalität zu Great Yin geht"
+  },
+  {
+    "find": "\"Obwohl unser Land weit ist,",
+    "replace": "\"Obwohl unser Land weit ist"
+  },
+  {
+    "find": "Söhne der Familien Wei und Xie\nkann auf dem Schlachtfeld dafür sterben,",
+    "replace": "Söhne der Familien Wei und Xie\nkann auf dem Schlachtfeld dafür sterben"
+  },
+  {
+    "find": "Wenn er zurückkommt,",
+    "replace": "Wenn er zurückkommt"
+  },
+  {
+    "find": "Als du es mir damals gegeben hast,",
+    "replace": "Als du es mir damals gegeben hast"
+  },
+  {
+    "find": "Im Ratssaal heute Nachmittag wusste ich,",
+    "replace": "Im Ratssaal heute Nachmittag wusste ich"
+  },
+  {
+    "find": "Wenn Sie ein reines Gewissen haben,",
+    "replace": "Wenn Sie ein reines Gewissen haben"
+  },
+  {
+    "find": "wenn der Marquis von Wu'an wirklich lebendig wäre,",
+    "replace": "wenn der Marquis von Wu'an wirklich lebendig wäre"
+  },
+  {
+    "find": "Es ist nicht nötig, es zu überstürzen.",
+    "replace": "Es zu überstürzen."
+  },
+  {
+    "find": "Wenn du mehr willst, wenn du",
+    "replace": "Wenn du"
+  },
+  {
+    "find": "Ich glaube das bin ich, naiv. ♪",
+    "replace": "Ich naiv. ♪"
+  },
+  {
+    "find": "Ich weiß, was ich tue.",
+    "replace": "Ich tue."
+  },
+  {
+    "find": "der Stil der gerüchten Selbstmordkrieger der Wei-Fraktion.",
+    "replace": "der gerüchten Selbstmordkrieger der Wei-Fraktion."
+  },
+  {
+    "find": "Er wird zurückkehren\nSobald er die Untersuchung beendet hat.",
+    "replace": "Er die Untersuchung beendet hat."
+  },
+  {
+    "find": "General He Vater general, ich respektiere Sie als Veteranengeneral\nUnter meinem",
+    "replace": "General ich respektiere Sie als Veteranengeneral Unter meinem"
+  },
+  {
+    "find": "um sich gut um Ihre beiden Töchter zu kümmern.",
+    "replace": "um Ihre beiden Töchter zu kümmern."
+  },
+  {
+    "find": "[Fill Your Belly]",
+    "replace": "[Fülle deinen Bauch]"
+  },
+  {
+    "find": "Dschinx",
+    "replace": "Unglücksbringer"
+  },
+  {
+    "find": "Dschink",
+    "replace": "Unglücksbringer"
   }
 ]

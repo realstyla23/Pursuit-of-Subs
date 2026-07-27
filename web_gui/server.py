@@ -14,12 +14,9 @@ from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_from_directory, abort
 
-# Silence Flask/Werkzeug request logging for health-check endpoint
-class _HealthFilter(logging.Filter):
-    def filter(self, record):
-        msg = record.getMessage()
-        return '"/api/status"' not in msg
-logging.getLogger('werkzeug').addFilter(_HealthFilter())
+# Silence all Flask/Werkzeug request logging (polling spam)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger('flask').setLevel(logging.ERROR)
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from translator import (
@@ -109,6 +106,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 continue
 
             file_cfg = Config(
+                model_id=cfg.model_id,
                 src_lang=cfg.src_lang,
                 tgt_lang=cfg.tgt_lang,
                 device=cfg.device,
@@ -163,12 +161,13 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
             try:
                 if _cancel_event.is_set():
                     raise KeyboardInterrupt()
-                # If output exists, skip NLLB
-                if out.exists():
+                if out.exists() and not file_cfg.force:
                     push_event("step_changed", {"step": f"Output exists ({mode.upper()})"})
                     success = True
                 else:
                     push_event("step_changed", {"step": "Protecting placeholders"})
+                    if out.exists():
+                        out.unlink()
                     success = translate_fast(fpath, file_cfg,
                                              progress_callback=timed_progress,
                                              output_path=out)
@@ -325,8 +324,10 @@ def api_start():
     num_beams = body.get("num_beams", 4)
     resume = body.get("resume", False)
     output_dir = body.get("output_dir") or None
+    model_id = body.get("model_id", "facebook/nllb-200-distilled-600M")
 
     cfg = Config(
+        model_id=model_id,
         device=_auto_device(device),
         batch_size=batch_size,
         num_beams=num_beams,

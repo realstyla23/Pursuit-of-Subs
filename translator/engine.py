@@ -9,7 +9,7 @@ Modes:
   --benchmark  Measure performance metrics
 """
 
-__version__ = "4.3.0"
+__version__ = "4.4.0"
 
 import argparse, json, os, re, sys, time, subprocess, shutil, threading, unicodedata
 from dataclasses import dataclass
@@ -66,6 +66,7 @@ def atomic_save(subs, path: Path, encoding: str = "utf-8"):
 class Config:
     src_lang: str = "eng_Latn"
     tgt_lang: str = "deu_Latn"
+    model_id: str = "facebook/nllb-200-distilled-600M"
     device: str = "cuda"
     batch_size: int = 64
     num_beams: int = 4
@@ -83,7 +84,7 @@ class Config:
     proxy_base_url: str = ""
     proxy_api_key: str = ""
     polish_parallel: int = 2
-    sentence_aware: bool = False
+    sentence_aware: bool = True
     merge_gap_ms: int = 500
 
     def __post_init__(self):
@@ -135,6 +136,182 @@ def load_json(name: str) -> dict | list:
     result = {} if name.endswith("glossary.json") else []
     _CONFIG_CACHE[name] = result
     return result
+
+# ---------------------------------------------------------------------------
+# Show context system — per-show context for polish prompt
+# ---------------------------------------------------------------------------
+
+_SHOW_CONTEXTS_DIR = CONFIG_DIR / "show_contexts"
+_SHOW_CONTEXT_CACHE: dict[str, dict] = {}
+
+def extract_show_name(fpath: Path) -> str:
+    """Extract normalized show name from subtitle file path."""
+    name = fpath.stem
+    # Remove episode identifiers: E01, S01E01, 01x01, EP01, Episode 1, etc.
+    name = re.sub(r'(?:[._\-\s]+)?(?:E\d+|S\d+E\d+|\d+x\d+|EP?\d+|Episode?\s*\d+)', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'[._\-]+', ' ', name).strip()
+    return name
+
+def make_slug(show_name: str) -> str:
+    return show_name.lower().replace(' ', '_')
+
+def show_context_path(slug: str) -> Path:
+    return _SHOW_CONTEXTS_DIR / f"{slug}.json"
+
+def load_show_context(slug: str) -> dict | None:
+    if slug in _SHOW_CONTEXT_CACHE:
+        return _SHOW_CONTEXT_CACHE[slug]
+    p = show_context_path(slug)
+    if p.exists():
+        try:
+            with open(p, encoding='utf-8') as f:
+                ctx = json.load(f)
+                _SHOW_CONTEXT_CACHE[slug] = ctx
+                return ctx
+        except Exception as e:
+            print(f"  [WARN] Failed to load show context {slug}: {e}", flush=True)
+    return None
+
+def save_show_context(slug: str, data: dict):
+    _SHOW_CONTEXTS_DIR.mkdir(parents=True, exist_ok=True)
+    p = show_context_path(slug)
+    try:
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        _SHOW_CONTEXT_CACHE[slug] = data
+        print(f"  [CONTEXT] Saved show context: {p.name}", flush=True)
+    except Exception as e:
+        print(f"  [WARN] Failed to save show context: {e}", flush=True)
+
+def fetch_show_context_web(show_name: str) -> dict | None:
+    """Try to fetch show context from Baidu Baike then Wikipedia."""
+    import urllib.parse, urllib.request
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; SubtitleTools/1.0)'}
+
+    # Try Baidu Baike first
+    try:
+        encoded = urllib.parse.quote(show_name)
+        url = f"https://baike.baidu.com/item/{encoded}"
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode('utf-8', errors='replace')
+        if html and 'lemmaWgt-subLemmaListTitle' not in html[:2000]:
+            return {"source": "baidu", "url": url, "raw": html[:8000]}
+    except Exception:
+        pass
+
+    # Fallback: Wikipedia
+    try:
+        search_url = "https://en.wikipedia.org/w/api.php"
+        params = "?action=query&list=search&srsearch=" + urllib.parse.quote(show_name) + "&format=json&srlimit=3"
+        req = urllib.request.Request(search_url + params, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            search_data = json.loads(resp.read())
+        pages = search_data.get('query', {}).get('search', [])
+        if pages:
+            page_title = urllib.parse.quote(pages[0]['title'])
+            summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{page_title}"
+            req = urllib.request.Request(summary_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                summary = resp.read().decode('utf-8')
+            return {"source": "wikipedia", "url": summary_url, "raw": summary[:8000]}
+    except Exception:
+        pass
+    return None
+
+def parse_context_with_llm(raw_text: str, show_name: str) -> dict | None:
+    """Use the local LLM to extract structured context from raw web page content."""
+    prompt = (
+        f"Extract structured context about the show \"{show_name}\" from this text.\n"
+        "Return ONLY valid JSON with this exact schema:\n"
+        '{\n'
+        '  "synopsis": "2-3 sentence plot summary",\n'
+        '  "setting": "time period / setting description",\n'
+        '  "characters": {\n'
+        '    "CharacterName": {"gender": "male/female", "role": "protagonist/supporting/antagonist", "description": "brief"}\n'
+        '  },\n'
+        '  "locations": ["location1", "location2"],\n'
+        '  "key_terms": ["important term 1", "important term 2"]\n'
+        '}\n\n'
+        f"Text:\n{raw_text[:6000]}"
+    )
+    try:
+        session = requests.Session()
+        payload = {
+            "model": "qwen2.5:7b",
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "options": {"temperature": 0, "num_predict": 2000, "keep_alive": "5m"},
+        }
+        result = _ollama_chat(session, "http://127.0.0.1:11434/api/chat", payload, timeout=60)
+        if result:
+            content = result.get("message", {}).get("content", "")
+            # Extract JSON from response
+            import re as _re
+            m = _re.search(r'\{.*\}', content, _re.DOTALL)
+            if m:
+                parsed = json.loads(m.group())
+                parsed["show_name"] = show_name
+                return parsed
+    except Exception as e:
+        print(f"  [WARN] Failed to parse context with LLM: {e}", flush=True)
+    return None
+
+def get_or_create_show_context(fpath: Path) -> dict | None:
+    """Get existing or fetch+parse show context for the given subtitle file."""
+    show_name = extract_show_name(fpath)
+    if not show_name:
+        return None
+    slug = make_slug(show_name)
+    cached = load_show_context(slug)
+    if cached:
+        return cached
+    # Try to fetch from web
+    print(f"  [CONTEXT] No cached context for \"{show_name}\". Fetching...", flush=True)
+    raw = fetch_show_context_web(show_name)
+    if raw:
+        parsed = parse_context_with_llm(raw["raw"], show_name)
+        if parsed:
+            parsed["slug"] = slug
+            if "alternate_names" not in parsed:
+                parsed["alternate_names"] = [show_name]
+            save_show_context(slug, parsed)
+            return parsed
+    return None
+
+def build_context_prompt(ctx: dict) -> str:
+    """Format show context into the prompt injection string."""
+    lines = []
+    lines.append(f"This is a {ctx.get('setting', 'show')}.")
+    chars = ctx.get("characters", {})
+    if chars:
+        lines.append("Key characters — use correct German pronoun genders at all times:")
+        for cname, cinfo in chars.items():
+            ger_pronoun = "sie" if cinfo.get("gender") == "female" else "er"
+            role = cinfo.get("description", cinfo.get("role", "")).strip()
+            if role:
+                lines.append(f"  {cname} — {cinfo['gender']} → {ger_pronoun}; {role}")
+            else:
+                lines.append(f"  {cname} — {cinfo['gender']} → {ger_pronoun}")
+    formality = ctx.get("formality")
+    if formality:
+        pairs = formality.get("informal_pairs", [])
+        if pairs:
+            lines.append("German formality: these character pairs ALWAYS use informal 'du':")
+            for pair in pairs:
+                lines.append(f"  • {pair}")
+        formal = formality.get("always_formal", [])
+        if formal:
+            lines.append("These situations ALWAYS use formal 'Sie':")
+            for s in formal:
+                lines.append(f"  • {s}")
+    terms = ctx.get("key_terms", [])
+    if terms:
+        lines.append("Key terminology: " + ", ".join(terms))
+    synopsis = ctx.get("synopsis", "")
+    if synopsis:
+        lines.append(f"Synopsis: {synopsis}")
+    return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
 # XML helpers (used by polish pass)
@@ -792,6 +969,32 @@ def _resolve_glossary_entry(v) -> tuple[str, list[str]]:
 # Auto-glossary — learns term corrections from Ollama polish over time
 _AUTO_GLOSSARY_PATH = _config_path("auto_glossary.json")
 _OLLAMA_CACHE_PATH = _config_path("ollama_cache.json")
+_LEARNED_EPISODES_PATH = _config_path("learned_episodes.json")
+
+
+def _load_learned_episodes() -> set[str]:
+    if _LEARNED_EPISODES_PATH.exists():
+        try:
+            with open(_LEARNED_EPISODES_PATH, encoding="utf-8") as f:
+                return set(json.load(f))
+        except Exception as e:
+            print(f"  [WARN] Failed to parse {_LEARNED_EPISODES_PATH.name}: {e}", flush=True)
+    return set()
+
+
+def _save_learned_episodes(episodes: set[str]) -> None:
+    _LEARNED_EPISODES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(_LEARNED_EPISODES_PATH, "w", encoding="utf-8") as f:
+        json.dump(sorted(episodes), f, ensure_ascii=False, indent=1)
+
+
+def _episode_id(fpath: Path) -> str:
+    stem = fpath.stem
+    show_name = extract_show_name(fpath)
+    ep_match = re.search(r'(E\d+|S\d+E\d+|\d+x\d+|EP?\d+|Episode?\s*\d+)', stem, re.IGNORECASE)
+    ep = ep_match.group(1) if ep_match else "unknown"
+    slug = make_slug(show_name) if show_name else "unknown"
+    return f"{slug}_{ep}"
 
 
 def _load_auto_glossary() -> dict[str, str]:
@@ -1403,6 +1606,12 @@ _NLLB_CORRUPTIONS = [
     (re.compile(r'\bdort\s+Krieg\b'), 'dort war'),
     (re.compile(r'\bKrieg\b(?=[.!?,;:\])])'), 'war'),
     (re.compile(r'\|{2,}\s*$'), ''),
+    # Common NLLB garbled words
+    (re.compile(r'\bpasesrt\b'), 'passiert'),
+    (re.compile(r'\bPasesrt\b'), 'Passiert'),
+    (re.compile(r'\bGasesrt\b'), 'Gesicht'),
+    (re.compile(r'\bpasesrt\w*\b'), 'passiert'),
+    (re.compile(r'\bPasesrt\w*\b'), 'Passiert'),
 ]
 
 def fix_nllb_hallucinations(ger_texts: list[str]) -> int:
@@ -1414,6 +1623,51 @@ def fix_nllb_hallucinations(ger_texts: list[str]) -> int:
         if new_t != t:
             ger_texts[i] = new_t
             count += 1
+    return count
+
+
+def fix_mojibake(ger_texts: list[str]) -> int:
+    """Fix UTF-8 double-encoding mojibake (e.g. Ã¶ -> ö, Ã¼ -> ü)."""
+    replacements = {
+        '\u00c3\u00b6': '\u00f6',  # ö
+        '\u00c3\u009c': '\u00dc',  # Ü
+        '\u00c3\u00bc': '\u00fc',  # ü
+        '\u00c3\u00a4': '\u00e4',  # ä
+        '\u00c3\u0084': '\u00c4',  # Ä
+        '\u00c3\u009f': '\u00df',  # ß
+        '\u00c3\u0089': '\u00c9',  # É
+        '\u00c3\u00a9': '\u00e9',  # é
+        '\u00c2\u00b0': '\u00b0',  # °
+    }
+    count = 0
+    for i, t in enumerate(ger_texts):
+        new_t = t
+        for bad, good in replacements.items():
+            new_t = new_t.replace(bad, good)
+        if new_t != t:
+            ger_texts[i] = new_t
+            count += 1
+    return count
+
+
+def fix_nllb_duplicates(eng_texts: list[str], ger_texts: list[str]) -> int:
+    """Clear duplicate consecutive identical German translations
+    where the English source differs (NLLB repeats blocks).
+    Keeps the first occurrence, empties the rest for the polish pass.
+    """
+    n = min(len(eng_texts), len(ger_texts))
+    count = 0
+    for i in range(n - 2):
+        if not (ger_texts[i] == ger_texts[i+1] == ger_texts[i+2]
+                and ger_texts[i].strip()):
+            continue
+        en_norms = {_normalize_line(eng_texts[j]) for j in range(i, i + 3)}
+        if len(en_norms) == 1 and all(en_norms):
+            continue
+        for j in range(i + 1, i + 3):
+            if ger_texts[j]:
+                ger_texts[j] = ""
+                count += 1
     return count
 
 # ---------------------------------------------------------------------------
@@ -1901,20 +2155,27 @@ def tm_stats() -> dict:
 
 _MODEL = None
 _TOKENIZER = None
+_LOADED_MODEL_ID: str = ""
 
-def load_nllb(cfg: Config):
-    global _MODEL, _TOKENIZER
-    if _MODEL is not None:
+_OPUS_MODEL_NAME = "Helsinki-NLP/opus-mt-en-de"
+
+def load_translation_model(cfg: Config):
+    global _MODEL, _TOKENIZER, _LOADED_MODEL_ID
+    if _MODEL is not None and _LOADED_MODEL_ID == cfg.model_id:
         return _TOKENIZER, _MODEL
-    print("  Loading NLLB-600M model...", end=" ", flush=True)
     t0 = time.time()
-    _TOKENIZER = AutoTokenizer.from_pretrained(
-        "facebook/nllb-200-distilled-600M", src_lang=cfg.src_lang
-    )
-    _MODEL = AutoModelForSeq2SeqLM.from_pretrained(
-        "facebook/nllb-200-distilled-600M"
-    ).to(cfg.device)
+    if cfg.model_id == _OPUS_MODEL_NAME:
+        print("  Loading Opus-MT EN-DE model...", end=" ", flush=True)
+        _TOKENIZER = AutoTokenizer.from_pretrained(_OPUS_MODEL_NAME)
+        _MODEL = AutoModelForSeq2SeqLM.from_pretrained(_OPUS_MODEL_NAME).to(cfg.device)
+    else:
+        print("  Loading NLLB-600M model...", end=" ", flush=True)
+        _TOKENIZER = AutoTokenizer.from_pretrained(
+            cfg.model_id, src_lang=cfg.src_lang
+        )
+        _MODEL = AutoModelForSeq2SeqLM.from_pretrained(cfg.model_id).to(cfg.device)
     _MODEL.eval()
+    _LOADED_MODEL_ID = cfg.model_id
     print(f"  Done ({time.time()-t0:.1f}s)", flush=True)
     return _TOKENIZER, _MODEL
 
@@ -2097,9 +2358,10 @@ def translate_fast(fpath: Path, cfg: Config,
                   flush=True)
 
     timer.start("NLLB Load")
-    tok, model = load_nllb(cfg)
+    tok, model = load_translation_model(cfg)
     timer.stop("NLLB Load")
-    forced_bos = tok.convert_tokens_to_ids(cfg.tgt_lang)
+    use_opus = (cfg.model_id == _OPUS_MODEL_NAME)
+    forced_bos = None if use_opus else tok.convert_tokens_to_ids(cfg.tgt_lang)
 
     try:
         timer.start("NLLB Translate")
@@ -2115,23 +2377,32 @@ def translate_fast(fpath: Path, cfg: Config,
                     progress_callback(done, n)
                 continue
 
-            # Translate only text content (no ZZZ placeholders reach NLLB)
+            # Translate only text content (no ZZZ placeholders reach model)
             batch_end = min(s + batch_size, n)
             c_start = _cum_content[s]
             c_end = _cum_content[batch_end]
             batch_content = all_content[c_start:c_end]
 
             if batch_content:
-                inputs = tok(batch_content, src_lang=cfg.src_lang, return_tensors="pt",
-                             padding=True, truncation=True).to(cfg.device)
-
-                outputs = model.generate(
-                    **inputs,
-                    forced_bos_token_id=forced_bos,
-                    max_new_tokens=96,
-                    num_beams=cfg.num_beams,
-                    no_repeat_ngram_size=cfg.no_repeat_ngram,
-                )
+                if use_opus:
+                    inputs = tok(batch_content, return_tensors="pt",
+                                 padding=True, truncation=True).to(cfg.device)
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=128,
+                        num_beams=cfg.num_beams,
+                        no_repeat_ngram_size=cfg.no_repeat_ngram,
+                    )
+                else:
+                    inputs = tok(batch_content, src_lang=cfg.src_lang, return_tensors="pt",
+                                 padding=True, truncation=True).to(cfg.device)
+                    outputs = model.generate(
+                        **inputs,
+                        forced_bos_token_id=forced_bos,
+                        max_new_tokens=96,
+                        num_beams=cfg.num_beams,
+                        no_repeat_ngram_size=cfg.no_repeat_ngram,
+                    )
                 translated = tok.batch_decode(outputs, skip_special_tokens=True)
             else:
                 translated = []
@@ -2227,8 +2498,8 @@ def translate_fast(fpath: Path, cfg: Config,
     timer.start("NLLB Rum Fix")
     rfc = fix_nllb_hallucinations(ger_texts)
     timer.stop("NLLB Rum Fix")
+    mjc = fix_mojibake(ger_texts)
 
-    # Cleanup subtitle typography
     timer.start("Cleanup")
     cc = cleanup_subtitles(ger_texts)
     timer.stop("Cleanup")
@@ -2282,6 +2553,11 @@ def translate_fast(fpath: Path, cfg: Config,
     if cfg.sentence_aware and merge_blocks:
         ger_texts = split_sentence_blocks(ger_texts, merge_blocks, subs)
         n = len(ger_texts)
+
+    # Fix NLLB duplicate consecutive blocks — runs AFTER split so eng/ger lengths match
+    dc = fix_nllb_duplicates(eng_texts, ger_texts)
+    if dc:
+        print(f"  NLLB dup fix: {dc} line(s)", flush=True)
 
     # Write output (atomic) — assign AFTER final restore
     for i, sub in enumerate(subs):
@@ -2506,7 +2782,7 @@ class ConversationMemory:
 
 LLM_BATCH_SIZE = 30
 LLM_CONTEXT_WINDOW = 2
-LLM_LINE_RE = re.compile(r"^(\d+)\s*:\s*(.+)", re.MULTILINE | re.UNICODE)
+LLM_LINE_RE = re.compile(r"^\s*(\d+)\s*:\s*(.+)", re.MULTILINE | re.UNICODE)
 
 
 def _make_glossary_text(glossary: dict) -> str:
@@ -2581,63 +2857,82 @@ def translate_llm(fpath: Path, cfg: Config,
     glossary = load_glossary()
     names = load_names()
 
-    session = requests.Session()
-    chat_url = f"{cfg.ollama_host}/api/chat"
-
-    timer.start("LLM Warmup")
-    print(f"  Loading {cfg.llm_model}...", end=" ", flush=True)
-    warmup = {
-        "model": cfg.llm_model,
-        "messages": [{"role": "user", "content": "Translate: Hello → German."}],
-        "stream": False,
-        "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 10, "keep_alive": "30m"},
-    }
-    try:
-        r = session.post(chat_url, json=warmup, timeout=120)
-        r.raise_for_status()
-    except Exception as e:
-        print(f"FAILED: {e}")
+    # Use polisher (supports both Ollama and proxy/DeepSeek)
+    polisher = load_polisher(cfg, cfg.polish_model)
+    if polisher is None:
+        print(f"  [FAIL] No LLM available (Ollama or proxy)")
         return False
-    timer.stop("LLM Warmup")
+    session, chat_url, llm_model_name, proxy_api_key = polisher
+    is_proxy = proxy_api_key is not None
 
+    timer.start("LLM Translate")
     batch_size = cfg.llm_batch_size
     translations: dict[int, str] = {}
     batch_starts = list(range(0, n, batch_size))
     total = len(batch_starts)
     t_start = time.time()
 
-    timer.start("LLM Translate")
     for bi, s in enumerate(batch_starts):
         ids = list(range(s, min(s + batch_size, n)))
         prompt = build_llm_prompt(ids, eng_texts, glossary, names)
-        payload = {
-            "model": cfg.llm_model,
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": False,
-            "options": {"temperature": 0, "num_ctx": 4096,
-                        "num_predict": len(ids) * 120, "keep_alive": "30m"},
-        }
         found = 0
         expected = len(ids)
-        for attempt in range(2):
-            try:
-                resp = session.post(chat_url, json=payload, timeout=180)
-                resp.raise_for_status()
-                content = resp.json().get("message", {}).get("content", "")
-                for m in LLM_LINE_RE.finditer(content):
-                    num = int(m.group(1))
-                    if num in {i + 1 for i in ids}:
-                        text = m.group(2).strip()
-                        if text:
-                            translations[num] = text
-                            found += 1
-                break
-            except Exception as e:
-                if attempt == 0:
-                    print(f"\n    [RETRY] batch {bi+1}: {e}", flush=True)
-                    time.sleep(5)
-                else:
-                    print(f"\n    [FAIL] batch {bi+1}: {e}", flush=True)
+
+        if is_proxy:
+            payload = {
+                "model": llm_model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0,
+                "stream": False,
+                "max_tokens": len(ids) * 120,
+            }
+            headers = {"Authorization": f"Bearer {proxy_api_key}"} if proxy_api_key else {}
+            for attempt in range(2):
+                try:
+                    resp = session.post(chat_url, json=payload, headers=headers, timeout=180)
+                    resp.raise_for_status()
+                    content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                    for m in LLM_LINE_RE.finditer(content):
+                        num = int(m.group(1))
+                        if num in {i + 1 for i in ids}:
+                            text = m.group(2).strip()
+                            if text:
+                                translations[num] = text
+                                found += 1
+                    break
+                except Exception as e:
+                    if attempt == 0:
+                        print(f"\n    [RETRY] batch {bi+1}: {e}", flush=True)
+                        time.sleep(5)
+                    else:
+                        print(f"\n    [FAIL] batch {bi+1}: {e}", flush=True)
+        else:
+            payload = {
+                "model": llm_model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "options": {"temperature": 0, "num_ctx": 4096,
+                            "num_predict": len(ids) * 120, "keep_alive": "30m"},
+            }
+            for attempt in range(2):
+                try:
+                    resp = session.post(chat_url, json=payload, timeout=180)
+                    resp.raise_for_status()
+                    content = resp.json().get("message", {}).get("content", "")
+                    for m in LLM_LINE_RE.finditer(content):
+                        num = int(m.group(1))
+                        if num in {i + 1 for i in ids}:
+                            text = m.group(2).strip()
+                            if text:
+                                translations[num] = text
+                                found += 1
+                    break
+                except Exception as e:
+                    if attempt == 0:
+                        print(f"\n    [RETRY] batch {bi+1}: {e}", flush=True)
+                        time.sleep(5)
+                    else:
+                        print(f"\n    [FAIL] batch {bi+1}: {e}", flush=True)
 
         elapsed = time.time() - t_start
         done = min(s + batch_size, n)
@@ -2680,6 +2975,7 @@ def translate_llm(fpath: Path, cfg: Config,
     timer.start("NLLB Rum Fix")
     rfc = fix_nllb_hallucinations(ger_texts)
     timer.stop("NLLB Rum Fix")
+    mjc = fix_mojibake(ger_texts)
 
     timer.start("Cleanup")
     cc = cleanup_subtitles(ger_texts)
@@ -2757,7 +3053,7 @@ def load_polisher(cfg: Config, model_override: str | None = None):
     session = requests.Session()
     model_name = model_override or cfg.ollama_model
 
-    if cfg.proxy_base_url and model_name.startswith("deepseek"):
+    if cfg.proxy_base_url:
         chat_url = cfg.proxy_base_url.rstrip("/") + "/v1/chat/completions"
         model = model_name
         api_key = cfg.proxy_api_key
@@ -2886,8 +3182,22 @@ def translate_polish(fpath: Path, cfg: Config,
     nc = preserve_names(eng_texts, ger_texts, names, glossary)
     apply_short_exclamation_overrides(eng_texts, ger_texts)
 
+    # Algorithmic artifact scan — catches NLLB hallucinations without LLM
+    art_candidates = _nllb_artifact_scan(eng_texts, ger_texts)
+    for c in art_candidates:
+        for i, t in enumerate(ger_texts):
+            if t == c["find"]:
+                ger_texts[i] = c["replace"]
+    if art_candidates:
+        print(f"  [Artifact scan] {len(art_candidates)} fix(es) applied", flush=True)
+
     # Build conversation memory from file for context-aware polishing
     ConversationMemory.build_from_file(eng_texts, ger_texts)
+    # Load show-specific context for polish prompt
+    show_ctx = get_or_create_show_context(fpath)
+    _show_context_str = build_context_prompt(show_ctx) if show_ctx else ""
+    if _show_context_str:
+        print(f"  [Show context] {show_ctx.get('show_name', '')} loaded ({len(show_ctx.get('characters', {}))} characters)", flush=True)
     timer.stop("Pre-Polish")
 
     timer.start("QA")
@@ -2978,18 +3288,30 @@ def translate_polish(fpath: Path, cfg: Config,
             "Rules:\n"
             "- ONLY rewrite the <de> text within <current>, never <previous> or <next>\n"
             "- Use surrounding context to ensure consistent character voices\n"
+            "- Use correct German pronouns: Fan Changyu (female) → 'sie', not 'es'; Xie Zheng (male) → 'er', not 'es'\n"
             "- Preserve all [SFX] brackets exactly\n"
             "- Match EN speaker count: if EN has multiple speaker lines (//), DE must have same count, each prefixed with dash\n"
             "- Never merge two speakers into one line\n"
             "- Translate ALL remaining English words to natural German. NO English words allowed in output.\n"
             "- Fix German grammar specifically:\n"
+            "  * Fix wrong pronoun gender (es→sie/er) for named characters\n"
             "  * Fix adjective declension to match article/preposition (e.g. 'mit feine Augen' -> 'mit feinen Augen')\n"
             "  * Fix separable verb prefixes in zu-infinitives (e.g. 'um es zu fangen' -> 'um es aufzufangen')\n"
             "  * Fix compound word errors (e.g. 'Generalfeind' -> 'General des Feindes')\n"
             "  * Fix word order: verb must be second position in main clauses\n"
             "  * Fix garbled constructions (e.g. 'Die Fan Das Paar' -> 'Das Ehepaar Fan')\n"
+            "- NLLB often invents fake German by corrupting or concatenating words:\n"
+            "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
+            "  * Fake compounds: 'Reisebewilligung'→'Reiseerlaubnis' (if EN has no 'travel permit'), 'Eigentumsurkunde'→correct document name\n"
+            "  * Wrong legal terms: 'Rechtsfall'→'Gerichtsverhandlung'/'Urteil' (never use 'Rechtsfall' for 'trial' or 'case')\n"
+            "  * Wrong context words: 'matrilokaler'→check EN source, use proper German\n"
+            "  * Hallucinated titles: 'Mylord'→'mein Herr', 'Euer Hoheit'→'mein Herr'\n"
+            "  * Wrong address: 'Geistesgestörter' or 'gesperrter' used as address → remove entirely\n"
+            "- Fix 'Schweinschlachter'→'Metzger'/'Metzgerin' when EN has 'butcher'\n"
+            "- Fix 'Dschinx'/'Dschink'→'Unglücksbringer'\n"
             "- Produce natural spoken German, as if written by a native speaker\n"
             "- Keep subtitle length appropriate\n"
+            + (f"\nShow context:\n{_show_context_str}\n" if _show_context_str else "")
             + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
             + "\n" + xml_input
         )
@@ -2999,6 +3321,7 @@ def translate_polish(fpath: Path, cfg: Config,
                 "model": polish_model_name,
                 "messages": [{"role": "user", "content": user_msg}],
                 "temperature": 0,
+                "stream": False,
                 "max_tokens": len(batch_ids) * 300,
             }
             headers = {"Authorization": f"Bearer {proxy_api_key}"}
@@ -3095,6 +3418,7 @@ def translate_polish(fpath: Path, cfg: Config,
     # Re-apply German phrase fixes (Ollama may have reverted them)
     timer.start("German Fixes")
     gfc = apply_german_fixes(ger_texts, load_german_fixes())
+    mjc = fix_mojibake(ger_texts)
     timer.stop("German Fixes")
 
     # Catch remaining English words that NLLB missed
@@ -3229,8 +3553,9 @@ def run_test(cfg: Config):
     n = len(all_texts)
     print(f"TEST: {n} lines (10 smoke + 90 from {fpath.name})\n", flush=True)
 
-    tok, model = load_nllb(cfg)
-    forced_bos = tok.convert_tokens_to_ids(cfg.tgt_lang)
+    tok, model = load_translation_model(cfg)
+    use_opus = (cfg.model_id == _OPUS_MODEL_NAME)
+    forced_bos = None if use_opus else tok.convert_tokens_to_ids(cfg.tgt_lang)
     glossary = load_glossary()
     short_fragments = load_short_fragments()
     names = load_names()
@@ -3245,13 +3570,22 @@ def run_test(cfg: Config):
     protected, short_map = protect_short_fragments(protected, glossary, short_fragments)
 
     t0 = time.time()
-    inputs = tok(protected, src_lang=cfg.src_lang, return_tensors="pt",
-                 padding=True, truncation=True).to(cfg.device)
-    outputs = model.generate(
-        **inputs, forced_bos_token_id=forced_bos,
-        max_new_tokens=96, num_beams=cfg.num_beams,
-        no_repeat_ngram_size=cfg.no_repeat_ngram,
-    )
+    if use_opus:
+        inputs = tok(protected, return_tensors="pt",
+                     padding=True, truncation=True).to(cfg.device)
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=128, num_beams=cfg.num_beams,
+            no_repeat_ngram_size=cfg.no_repeat_ngram,
+        )
+    else:
+        inputs = tok(protected, src_lang=cfg.src_lang, return_tensors="pt",
+                     padding=True, truncation=True).to(cfg.device)
+        outputs = model.generate(
+            **inputs, forced_bos_token_id=forced_bos,
+            max_new_tokens=96, num_beams=cfg.num_beams,
+            no_repeat_ngram_size=cfg.no_repeat_ngram,
+        )
     results = tok.batch_decode(outputs, skip_special_tokens=True)
     t1 = time.time()
     ger_texts = _canonical_restore(
@@ -3333,7 +3667,7 @@ def run_benchmark(cfg: Config):
 
     # Load model
     t0 = time.time()
-    tok, model = load_nllb(cfg)
+    tok, model = load_translation_model(cfg)
     model_load_ms = (time.time() - t0) * 1000
 
     # Check GPU memory
@@ -3347,17 +3681,27 @@ def run_benchmark(cfg: Config):
     test_texts = [sub.text for sub in subs[:100]]
     n = len(test_texts)
 
+    use_opus = (cfg.model_id == _OPUS_MODEL_NAME)
     protected, sfx_map = protect_sfx(test_texts)
-    forced_bos = tok.convert_tokens_to_ids(cfg.tgt_lang)
 
     t0 = time.time()
-    inputs = tok(protected, src_lang=cfg.src_lang, return_tensors="pt",
-                 padding=True, truncation=True).to(cfg.device)
-    outputs = model.generate(
-        **inputs, forced_bos_token_id=forced_bos,
-        max_new_tokens=96, num_beams=cfg.num_beams,
-        no_repeat_ngram_size=cfg.no_repeat_ngram,
-    )
+    if use_opus:
+        inputs = tok(protected, return_tensors="pt",
+                     padding=True, truncation=True).to(cfg.device)
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=128, num_beams=cfg.num_beams,
+            no_repeat_ngram_size=cfg.no_repeat_ngram,
+        )
+    else:
+        forced_bos = tok.convert_tokens_to_ids(cfg.tgt_lang)
+        inputs = tok(protected, src_lang=cfg.src_lang, return_tensors="pt",
+                     padding=True, truncation=True).to(cfg.device)
+        outputs = model.generate(
+            **inputs, forced_bos_token_id=forced_bos,
+            max_new_tokens=96, num_beams=cfg.num_beams,
+            no_repeat_ngram_size=cfg.no_repeat_ngram,
+        )
     results = tok.batch_decode(outputs, skip_special_tokens=True)
     translate_ms = (time.time() - t0) * 1000
 
@@ -3549,8 +3893,9 @@ def translate_fast_to_texts(fpath: Path, cfg: Config) -> list[str] | None:
     for lay in line_layouts:
         _cum_content.append(_cum_content[-1] + sum(1 for t, _ in lay if t == 'content'))
 
-    tok, model = load_nllb(cfg)
-    forced_bos = tok.convert_tokens_to_ids(cfg.tgt_lang)
+    tok, model = load_translation_model(cfg)
+    use_opus = (cfg.model_id == _OPUS_MODEL_NAME)
+    forced_bos = None if use_opus else tok.convert_tokens_to_ids(cfg.tgt_lang)
     all_trans: dict[int, str] = {}
 
     batch_size = cfg.batch_size
@@ -3561,14 +3906,22 @@ def translate_fast_to_texts(fpath: Path, cfg: Config) -> list[str] | None:
         batch_content = all_content[c_start:c_end]
 
         if batch_content:
-            inputs = tok(batch_content, src_lang=cfg.src_lang, return_tensors="pt",
-                         padding=True, truncation=True).to(cfg.device)
-
-            outputs = model.generate(
-                **inputs, forced_bos_token_id=forced_bos,
-                max_new_tokens=96, num_beams=cfg.num_beams,
-                no_repeat_ngram_size=cfg.no_repeat_ngram,
-            )
+            if use_opus:
+                inputs = tok(batch_content, return_tensors="pt",
+                             padding=True, truncation=True).to(cfg.device)
+                outputs = model.generate(
+                    **inputs,
+                    max_new_tokens=128, num_beams=cfg.num_beams,
+                    no_repeat_ngram_size=cfg.no_repeat_ngram,
+                )
+            else:
+                inputs = tok(batch_content, src_lang=cfg.src_lang, return_tensors="pt",
+                             padding=True, truncation=True).to(cfg.device)
+                outputs = model.generate(
+                    **inputs, forced_bos_token_id=forced_bos,
+                    max_new_tokens=96, num_beams=cfg.num_beams,
+                    no_repeat_ngram_size=cfg.no_repeat_ngram,
+                )
             translated = tok.batch_decode(outputs, skip_special_tokens=True)
         else:
             translated = []
@@ -3642,6 +3995,18 @@ POLISH_PASS2_PROMPT = (
     "replace it with proper German (\"geriet in Panik\")\n"
     "- Fix adjective declensions: \"leuchtende Augen\" → \"leuchtenden Augen\"\n"
     "- Fix wrong noun compounds\n"
+    "- NLLB-specific errors to watch for:\n"
+    "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
+    "  * Wrong legal terms: 'Rechtsfall' is NEVER correct for 'trial'/'case' → use 'Gerichtsverhandlung'/'Urteil'\n"
+    "  * Wrong document terms: 'Eigentumsurkunde'/'Titelurkunde' → use correct document name from EN\n"
+    "  * Wrong travel term: 'Reisebewilligung' → only correct if EN says 'travel permit'\n"
+    "  * 'Schweinschlachter'→'Metzger'/'Metzgerin', 'Dschinx'→'Unglücksbringer'\n"
+    "  * 'Mylord'/'Euer Hoheit'→'mein Herr', 'Ehrwürden'→'Mein Herr' (when EN has 'sir'/'my lord')\n"
+    "  * 'Geistesgestörter'/'gesperrter' as address → remove entirely, it's an NLLB hallucination\n"
+    "- Fix formal/informal address mismatches:\n"
+    "  * Characters who are family, close friends, or married → use \"du\"/\"dich\"/\"dein\"\n"
+    "  * Strangers, servants↔masters, commoners↔officials → use \"Sie\"/\"Ihnen\"/\"Ihr\"\n"
+    "  * NEVER mix both in one sentence (e.g. \"Sie\" + \"dein\" is WRONG)\n"
     "Return ONLY the corrected text. If unchanged, return the original."
 )
 
@@ -3784,6 +4149,102 @@ def _nllb_artifact_scan(eng_texts: list[str], ger_texts: list[str]) -> list[dict
                 seen.add(key)
                 candidates.append({"find": ger, "replace": fixed})
 
+    # Pattern: "herrlich" (splendid/glorious) when EN has "sir" or "my lord" → "mein Herr"
+    _herrlich_en = re.compile(r'\b(sir|my lord)\b', re.IGNORECASE)
+    for i, (en, ger) in enumerate(zip(eng_texts, ger_texts)):
+        if _herrlich_en.search(en) and re.search(r'\bherrlich\b', ger, re.IGNORECASE):
+            fixed = re.sub(r'\bherrlich\b', 'Mein Herr', ger)
+            # Lowercase "mein Herr" if it starts a line
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Ehrwürden" when EN has "sir" or "my lord" → "Mein Herr"
+    for i, (en, ger) in enumerate(zip(eng_texts, ger_texts)):
+        if _herrlich_en.search(en) and re.search(r'\bEhrwürden\b', ger):
+            fixed = re.sub(r'\bEhrwürden\b', 'Mein Herr', ger)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Dschinx"/"Dschink" → "Unglücksbringer"
+    for i, ger in enumerate(ger_texts):
+        if re.search(r'\bDschinx\b|\bDschink\b', ger, re.IGNORECASE):
+            fixed = re.sub(r'\bDschinx\b|\bDschink\b', 'Unglücksbringer', ger, flags=re.IGNORECASE)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Schweinschlachter" when EN has "butcher" → "Metzger"
+    _butcher_en = re.compile(r'\bbutcher\b', re.IGNORECASE)
+    for i, (en, ger) in enumerate(zip(eng_texts, ger_texts)):
+        if _butcher_en.search(en) and re.search(r'Schweinschlachter', ger, re.IGNORECASE):
+            fixed = re.sub(r'Schweinschlachter(in|inin|inei|ininin)?', 'Metzgerin', ger, flags=re.IGNORECASE)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Geistesgestörter" as address → remove
+    for i, ger in enumerate(ger_texts):
+        m = re.match(r'^\s*Geistesgestörter[,]\s*(.*)', ger)
+        if m:
+            fixed = m.group(1)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "gesperrter" as address → remove
+    for i, ger in enumerate(ger_texts):
+        m = re.match(r'^\s*gesperrte[rn]?[,]\s*(.*)', ger, re.IGNORECASE)
+        if m:
+            fixed = m.group(1)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: Sie/du inconsistency within one line (e.g. "Sie" + "dein")
+    _sie_re = re.compile(r'\b(Sie|Ihnen|Ihrer)\b')
+    _du_re = re.compile(r'\b(du|dich|dir|dein|deine)\b', re.IGNORECASE)
+    for i, ger in enumerate(ger_texts):
+        if _sie_re.search(ger) and _du_re.search(ger):
+            # Mixed formality — prefer du if line contains "du" anywhere (informal), else Sie
+            has_informal = bool(re.search(r'^(du|dich|dir|dein)', ger, re.IGNORECASE))
+            if has_informal:
+                fixed = re.sub(r'\bSie\b', 'du', ger)
+                fixed = re.sub(r'\bIhnen\b', 'dir', fixed)
+                fixed = re.sub(r'\bIhrer\b', 'deiner', fixed)
+            else:
+                fixed = re.sub(r'\bdu\b', 'Sie', ger, flags=re.IGNORECASE)
+                fixed = re.sub(r'\bdich\b', 'Sie', fixed, flags=re.IGNORECASE)
+                fixed = re.sub(r'\bdir\b', 'Ihnen', fixed, flags=re.IGNORECASE)
+                fixed = re.sub(r'\bdein\b', 'Ihr', fixed, flags=re.IGNORECASE)
+            if fixed != ger:
+                key = (ger, fixed)
+                if key not in seen:
+                    seen.add(key)
+                    candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Mylord"/"Euer Hoheit" → "mein Herr" (when EN has "my lord")
+    _mylord_en = re.compile(r'\b(my lord|sir)\b', re.IGNORECASE)
+    for i, (en, ger) in enumerate(zip(eng_texts, ger_texts)):
+        if _mylord_en.search(en):
+            fixed = ger
+            if re.search(r'\bMylord\b', ger):
+                fixed = re.sub(r'\bMylord\b', 'mein Herr', fixed)
+            if re.search(r'\bEuer Hoheit\b', ger):
+                fixed = re.sub(r'\bEuer Hoheit\b', 'mein Herr', fixed)
+            if fixed != ger:
+                key = (ger, fixed)
+                if key not in seen:
+                    seen.add(key)
+                    candidates.append({"find": ger, "replace": fixed})
+
     print(f"    artifact scan: {len(candidates)} candidate(s)", flush=True)
     return candidates
 
@@ -3891,6 +4352,14 @@ def learn_verify(candidates: list[dict], ger_texts: list[str]) -> list[dict]:
     existing_finds = {f["find"].lower() for f in existing_fixes}
     all_text = "\n".join(ger_texts).lower()
 
+    # Blacklist: replacement terms that are known model hallucinations
+    _bad_replacements = re.compile(
+        r'\b(gesperrter|gesperrte|gesperrten|'
+        r'Schweinschlachter(in|inin|inei|ininin)?|'
+        r'jinx)\b',
+        re.IGNORECASE
+    )
+
     verified = []
     for fix in candidates:
         find = fix["find"]
@@ -3907,6 +4376,9 @@ def learn_verify(candidates: list[dict], ger_texts: list[str]) -> list[dict]:
         # English-text guard: reject if replacement has 3+ common English words
         eng_words = re.findall(r'\b(the|this|that|and|are|for|with|was|but|your|which|each|their|what|when|where|who|been|there|very|just|than|about|because|people|other|every|after|being|much|many|into|over|such|without|around|another|however)\b', replace, re.IGNORECASE)
         if len(set(w.lower() for w in eng_words)) >= 3:
+            continue
+        # Blacklist: reject if replacement introduces known hallucination terms
+        if _bad_replacements.search(replace):
             continue
         # Add to verified
         verified.append(fix)
@@ -3937,12 +4409,17 @@ def translate_learn(fpath: Path, cfg: Config,
                     nllb_path: Path | None = None,
                     polish_model: str | None = None,
                     progress_callback: Callable | None = None) -> bool:
-    """Learn mode: full pipeline + Pass 2 + error scan + auto-fix persist."""
+    """Learn mode: full pipeline + Pass 2 + error scan + auto-fix persist.
+    On re-run, skips expensive Pass 2 / error scan and just applies new fixes.
+    """
     timer = _Timer()
     out = nllb_path or output_path_for(fpath)
     if not out.exists():
         print(f"  [SKIP] No output found: {out.name}")
         return False
+
+    ep_id = _episode_id(fpath)
+    already_learned = ep_id in _load_learned_episodes()
 
     timer.start("Load")
     eng = safe_open_srt(fpath)
@@ -3954,13 +4431,12 @@ def translate_learn(fpath: Path, cfg: Config,
 
     # Fix known NLLB hallucinations in existing output
     rfc = fix_nllb_hallucinations(ger_texts)
+    mjc = fix_mojibake(ger_texts)
     if rfc:
         print(f"  NLLB hallucination fix: {rfc} line(s) corrected", flush=True)
-        # Persist fixes to disk immediately
         for i, sub in enumerate(ger):
             sub.text = ger_texts[i]
-        with open(out, "w", encoding="utf-8") as f:
-            f.write(ger.to_string())
+        atomic_save(ger, out)
 
     glossary = load_glossary()
     auto_glossary = _load_auto_glossary()
@@ -3971,6 +4447,36 @@ def translate_learn(fpath: Path, cfg: Config,
                 merged[k] = v
         glossary = merged
     names = load_names()
+
+    # Apply german_fixes early so Pass 2 only sees remaining issues
+    timer.start("German Fixes")
+    gfc = apply_german_fixes(ger_texts, load_german_fixes())
+    timer.stop("German Fixes")
+
+    if already_learned:
+        timer.start("Save")
+        for i, sub in enumerate(ger):
+            sub.text = ger_texts[i]
+        for i, t in enumerate(ger_texts):
+            if _PLACEHOLDER_RE.search(t):
+                raise RuntimeError(
+                    f"Placeholder leak in {out.name} line {i+1}: "
+                    f"{_PLACEHOLDER_RE.search(t).group()} — aborting save"
+                )
+        try:
+            atomic_save(ger, out)
+            timer.stop("Save")
+        except Exception as e:
+            print(f"  [ERROR] Save failed: {e}", flush=True)
+            return False
+
+        print(f"  {fpath.name}  already learned, {gfc} fix(es) applied")
+        print(f"  {timer.report()}")
+        return True
+
+    # Load show-specific context for Pass 2 prompt
+    show_ctx_learn = get_or_create_show_context(fpath)
+    _learn_context_str = build_context_prompt(show_ctx_learn) if show_ctx_learn else ""
 
     # Find suspicious lines for Pass 2
     timer.start("QA")
@@ -3984,25 +4490,59 @@ def translate_learn(fpath: Path, cfg: Config,
 
     session, chat_url, polish_model_name, proxy_api_key = polisher
 
+    # Load shared Ollama cache (populated by translate_polish)
+    _ollama_cache: dict[tuple[str, str], str] = {}
+    if _OLLAMA_CACHE_PATH.exists():
+        try:
+            with open(_OLLAMA_CACHE_PATH, encoding="utf-8") as f:
+                raw = json.load(f)
+            for eng, de_map in raw.items():
+                for de_text, corr in de_map.items():
+                    _ollama_cache[(eng, de_text)] = corr
+        except Exception as e:
+            print(f"  [WARN] Failed to load Ollama cache: {e}", flush=True)
+
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    _cache_lock = threading.Lock()
+    _fixes_lock = threading.Lock()
 
     # Polish Pass 2 — English killer
     pass2_fixes = {}
     if suspicious:
         timer.start("Polish Pass 2")
         batch_size = 10
-        fixes_lock = threading.Lock()
         pass2_batch_starts = list(range(0, len(suspicious), batch_size))
 
         def _submit_pass2(s):
             batch_ids = suspicious[s:s + batch_size]
-            xml_input = build_contextual_xml(batch_ids, eng_texts, ger_texts)
-            user_msg = POLISH_PASS2_PROMPT + "\n\n" + xml_input
+            # Check cache first
+            cached_results = {}
+            uncached_ids = []
+            for idx in batch_ids:
+                with _cache_lock:
+                    key = (eng_texts[idx], ger_texts[idx])
+                    if key in _ollama_cache:
+                        cached_results[idx] = _ollama_cache[key]
+                    else:
+                        uncached_ids.append(idx)
+
+            if not uncached_ids:
+                for idx, corr in cached_results.items():
+                    if corr != ger_texts[idx] and not _rejects_content_addition(
+                            eng_texts[idx], ger_texts[idx], corr):
+                        with _fixes_lock:
+                            pass2_fixes[idx] = corr
+                return
+
+            xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
+            ctx_block2 = f"\n\nShow context:\n{_learn_context_str}\n\n" if _learn_context_str else "\n\n"
+            user_msg = POLISH_PASS2_PROMPT + ctx_block2 + xml_input
             if proxy_api_key:
                 payload = {
                     "model": polish_model_name,
                     "messages": [{"role": "user", "content": user_msg}],
                     "temperature": 0,
+                    "stream": False,
                     "max_tokens": len(batch_ids) * 200,
                 }
                 headers = {"Authorization": f"Bearer {proxy_api_key}"}
@@ -4023,17 +4563,22 @@ def translate_learn(fpath: Path, cfg: Config,
             else:
                 content = result.get("message", {}).get("content", "")
             parsed = parse_xml(content)
-            local_fixes = []
-            for idx in batch_ids:
-                sid = idx + 1
-                if sid in parsed and parsed[sid]:
-                    corr = parsed[sid]
-                    if corr != ger_texts[idx] and not _rejects_content_addition(
-                            eng_texts[idx], ger_texts[idx], corr):
-                        local_fixes.append((idx, corr))
-            with fixes_lock:
-                for idx, corr in local_fixes:
-                    pass2_fixes[idx] = corr
+            with _cache_lock:
+                for idx in uncached_ids:
+                    sid = idx + 1
+                    if sid in parsed and parsed[sid]:
+                        corr = parsed[sid]
+                        _ollama_cache[(eng_texts[idx], ger_texts[idx])] = corr
+                        if corr != ger_texts[idx] and not _rejects_content_addition(
+                                eng_texts[idx], ger_texts[idx], corr):
+                            with _fixes_lock:
+                                pass2_fixes[idx] = corr
+
+            for idx, corr in cached_results.items():
+                if corr != ger_texts[idx] and not _rejects_content_addition(
+                        eng_texts[idx], ger_texts[idx], corr):
+                    with _fixes_lock:
+                        pass2_fixes[idx] = corr
 
         parallel = getattr(cfg, "polish_parallel", 2) if len(pass2_batch_starts) > 1 else 1
         pass2_done = 0
@@ -4048,15 +4593,21 @@ def translate_learn(fpath: Path, cfg: Config,
                 if progress_callback and pass2_batch_starts and len(pass2_batch_starts) > 1:
                     progress_callback(pass2_done * batch_size, n)
 
+        # Persist cache to disk so future runs benefit
+        try:
+            _OLLAMA_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            serializable: dict[str, dict[str, str]] = {}
+            for (eng, de), corr in _ollama_cache.items():
+                serializable.setdefault(eng, {})[de] = corr
+            with open(_OLLAMA_CACHE_PATH, "w", encoding="utf-8") as f:
+                json.dump(serializable, f, ensure_ascii=False)
+        except Exception as e:
+            print(f"  [WARN] Failed to save Ollama cache: {e}", flush=True)
+
         for idx, new_text in pass2_fixes.items():
             ger_texts[idx] = new_text.replace(" // ", "\n")
         print(f"    pass 2: {len(pass2_fixes)} fix(es)", flush=True)
         timer.stop("Polish Pass 2")
-
-    # Re-apply German fixes after Pass 2
-    timer.start("German Fixes")
-    gfc = apply_german_fixes(ger_texts, load_german_fixes())
-    timer.stop("German Fixes")
 
     # Algorithmic error scan — catches NLLB artifacts without LLM
     timer.start("Error Scan")
@@ -4094,6 +4645,11 @@ def translate_learn(fpath: Path, cfg: Config,
     except Exception as e:
         print(f"  [ERROR] Save failed: {e}", flush=True)
         return False
+
+    # Mark as learned so future re-runs skip Pass 2 / error scan
+    learned = _load_learned_episodes()
+    learned.add(ep_id)
+    _save_learned_episodes(learned)
 
     print(f"  {fpath.name}  QA: {n} lines, Pass 2: {len(suspicious)} suspicious/{len(pass2_fixes)} fixes, "
           f"scan: {len(candidates)} candidates, {added} learned")
