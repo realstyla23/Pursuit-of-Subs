@@ -2,6 +2,7 @@
 
 import io
 import json
+import logging
 import os
 import sys
 import time
@@ -12,6 +13,13 @@ import uuid
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_from_directory, abort
+
+# Silence Flask/Werkzeug request logging for health-check endpoint
+class _HealthFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return '"/api/status"' not in msg
+logging.getLogger('werkzeug').addFilter(_HealthFilter())
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from translator import (
@@ -155,9 +163,9 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
             try:
                 if _cancel_event.is_set():
                     raise KeyboardInterrupt()
-                # If mode is "polish", output already exists — skip NLLB
-                if mode == "polish" and out.exists():
-                    push_event("step_changed", {"step": "Polishing existing output"})
+                # If output exists, skip NLLB
+                if out.exists():
+                    push_event("step_changed", {"step": f"Output exists ({mode.upper()})"})
                     success = True
                 else:
                     push_event("step_changed", {"step": "Protecting placeholders"})
@@ -178,16 +186,29 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                                          "stats": {"error": "translate_fast returned False"}})
                 continue
 
-            # Polish pass
+            # Polish pass (for learn mode always re-run; for other modes skip if QA report exists)
+            qa_path = out.with_suffix(".qa_report.json")
+            polish_needed = (mode == "learn") or (mode in ("polish", "full") and not (out.exists() and qa_path.exists()))
             if _cancel_event.is_set():
                 push_event("log", {"message": "Cancelled before polish", "level": "warn"})
                 break
-            if mode in ("polish", "full", "learn"):
+            if polish_needed:
                 model_label = polish_model.split(":")[0] if polish_model else "qwen"
                 push_event("step_changed", {"step": f"Polishing ({model_label})"})
+
+                def polish_progress(done, total):
+                    if _cancel_event.is_set():
+                        raise KeyboardInterrupt()
+                    lap_elapsed = time.time() - t0
+                    rate = done / lap_elapsed if lap_elapsed > 0 else 0
+                    eta = (total - done) / rate if rate > 0 else 0
+                    push_event("progress", {"done": done, "total": total})
+                    push_event("speed_eta", {"speed": round(rate, 1), "eta": round(eta, 1)})
+
                 try:
                     translate_polish(fpath, file_cfg, nllb_path=out,
-                                    polish_model=polish_model or None)
+                                    polish_model=polish_model or None,
+                                    progress_callback=polish_progress)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Polish error (non-fatal): {e}",
                                        "level": "warn"})
@@ -203,7 +224,11 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 def learn_progress(done, total):
                     if _cancel_event.is_set():
                         raise KeyboardInterrupt()
+                    lap_elapsed = time.time() - t0
+                    rate = done / lap_elapsed if lap_elapsed > 0 else 0
+                    eta = (total - done) / rate if rate > 0 else 0
                     push_event("progress", {"done": done, "total": total})
+                    push_event("speed_eta", {"speed": round(rate, 1), "eta": round(eta, 1)})
                     if done > 0 and done - 1 < len(eng_texts):
                         push_event("current_en", {"text": eng_texts[done - 1]})
                     try:

@@ -1394,6 +1394,13 @@ _NLLB_CORRUPTIONS = [
     (re.compile(r'\bwiedrum\b'), 'wieder'),
     (re.compile(r'\bodrum\b'), 'oder'),
     (re.compile(r'\bodrum'), 'oder'),
+    # NLLB hallucinates "Krieg" (war) instead of "war" (was, past tense of sein)
+    (re.compile(r'^\s*Krieg,\s*(?=ich|du|er|sie|es|wir|ihr|man|das|wer|was)'), ''),
+    (re.compile(r'\bEs\s+Krieg\b'), 'Es war'),
+    (re.compile(r'\bes\s+Krieg\b'), 'es war'),
+    (re.compile(r'\bdort\s+Krieg\b'), 'dort war'),
+    (re.compile(r'\bKrieg\b(?=[.!?,;:\])])'), 'war'),
+    (re.compile(r'\|{2,}\s*$'), ''),
 ]
 
 def fix_nllb_hallucinations(ger_texts: list[str]) -> int:
@@ -2719,7 +2726,8 @@ def _rejects_content_addition(en_text: str, nllb_text: str, corr_text: str) -> b
 
 def translate_polish(fpath: Path, cfg: Config,
                      nllb_path: Path | None = None,
-                     polish_model: str | None = None) -> bool:
+                     polish_model: str | None = None,
+                     progress_callback: Callable[[int, int], None] | None = None) -> bool:
     timer = _Timer()
     out = nllb_path or output_path_for(fpath)
     if not out.exists():
@@ -2909,6 +2917,7 @@ def translate_polish(fpath: Path, cfg: Config,
 
     batch_starts = list(range(0, len(suspicious), batch_size))
     parallel = getattr(cfg, "polish_parallel", 2) if total_batches > 1 else 1
+    _polish_done = 0
     with ThreadPoolExecutor(max_workers=parallel) as executor:
         futures = {executor.submit(_submit_batch, s): s for s in batch_starts}
         for future in as_completed(futures):
@@ -2926,10 +2935,13 @@ def translate_polish(fpath: Path, cfg: Config,
                     ollama_fixes[idx] = corr
                 n_rejected += local_rejected
                 n_cache_hits += local_cache_hits
-            done = min(s + batch_size, len(suspicious))
+            _polish_done += batch_size
+            done = min(_polish_done, len(suspicious))
             elapsed = time.time() - t_start
             tag = "  (all cached)" if all_cached else ""
             print(f"  [{done}/{len(suspicious)}  {elapsed:.0f}s{tag}]", flush=True)
+            if progress_callback:
+                progress_callback(done, len(suspicious))
 
     timer.stop("Ollama Batches")
     for idx, new_text in ollama_fixes.items():
@@ -3549,6 +3561,105 @@ LEARN_SCAN_PROMPT_B = (
 )
 
 
+def _nllb_artifact_scan(eng_texts: list[str], ger_texts: list[str]) -> list[dict]:
+    """Algorithmic scan for known NLLB artifacts. No LLM needed."""
+    candidates = []
+    seen: set[tuple[str, str]] = set()
+
+    # Pattern: bracketed alternatives — "word, [word]" or "word [word]"
+    bracket_re = re.compile(r'\[.*?\]')
+    for i, ger in enumerate(ger_texts):
+        fixed = bracket_re.sub('', ger).strip()
+        fixed = re.sub(r' ,', ',', fixed)
+        fixed = re.sub(r',\s*,', ',', fixed)
+        fixed = re.sub(r'^,\s*', '', fixed)
+        fixed = re.sub(r'\s*,$', '', fixed)
+        if fixed and fixed != ger:
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: repeated word within first 5 tokens separated by commas
+    # e.g. "Reisebewilligung, reisebewilligung, die Reiseerlaubnis"
+    for i, ger in enumerate(ger_texts):
+        tokens = ger.split()
+        if len(tokens) < 3:
+            continue
+        # Check first 5 tokens for repetition pattern
+        first_word = tokens[0].rstrip(',.!?;:')
+        for j in range(1, min(5, len(tokens))):
+            candidate = tokens[j].rstrip(',.!?;:')
+            if first_word.lower() == candidate.lower():
+                # Found repeated word — likely NLLB multi-candidate output
+                # Try to fix: keep the first occurrence, strip the repetition
+                # Find where the repetition segment ends
+                segment_end = j + 1
+                while segment_end < len(tokens) and tokens[segment_end].endswith(','):
+                    segment_end += 1
+                rest = ' '.join(tokens[segment_end:]) if segment_end < len(tokens) else ''
+                prefix = tokens[0]
+                fixed = (prefix + ' ' + rest).strip()
+                fixed = re.sub(r'\s+,', ',', fixed)
+                fixed = re.sub(r',\s*$', '', fixed)
+                fixed = re.sub(r'^\s*,\s*', '', fixed)
+                fixed = fixed.strip()
+                if fixed and fixed != ger and len(fixed) > 3:
+                    key = (ger, fixed)
+                    if key not in seen:
+                        seen.add(key)
+                        candidates.append({"find": ger, "replace": fixed})
+                break
+
+    # Pattern: identical consecutive lines within a single entry (duplicated text)
+    for i, ger in enumerate(ger_texts):
+        parts = ger.split('\n')
+        if len(parts) == 2 and parts[0].strip() == parts[1].strip():
+            deduped = parts[0].strip()
+            if deduped and deduped != ger:
+                key = (ger, deduped)
+                if key not in seen:
+                    seen.add(key)
+                    candidates.append({"find": ger, "replace": deduped})
+
+    # Pattern: trailing pipe artifacts — "text||||"
+    for i, ger in enumerate(ger_texts):
+        if '|' in ger:
+            fixed = re.sub(r'\s*\|{2,}\s*$', '', ger).strip()
+            if fixed and fixed != ger:
+                key = (ger, fixed)
+                if key not in seen:
+                    seen.add(key)
+                    candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: single word repeated 3+ times consecutively (no comma)
+    # e.g. "Der Der Der Kammer" -> "Der Kammer"
+    _triple_re = re.compile(r'\b(\w+)(?:\s+\1){2,}\b', re.IGNORECASE)
+    for i, ger in enumerate(ger_texts):
+        fixed = _triple_re.sub(r'\1', ger)
+        if fixed != ger and len(fixed) > 3 and fixed.strip():
+            fixed = re.sub(r'\s{2,}', ' ', fixed).strip()
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: 2-word phrase repeated 2+ times consecutively
+    # e.g. "Fan Changyu Fan Changyu Fan Changyu Fan Changyu" -> "Fan Changyu"
+    _phrase_re = re.compile(r'\b(\w+\s+\w+)(?:\s+\1){2,}\b', re.IGNORECASE)
+    for i, ger in enumerate(ger_texts):
+        fixed = _phrase_re.sub(r'\1', ger)
+        if fixed != ger and len(fixed) > 3 and fixed.strip():
+            fixed = re.sub(r'\s{2,}', ' ', fixed).strip()
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    print(f"    artifact scan: {len(candidates)} candidate(s)", flush=True)
+    return candidates
+
+
 def learn_scan(eng_texts: list[str], ger_texts: list[str],
                polisher: tuple,
                progress_callback: Callable | None = None,
@@ -3664,6 +3775,10 @@ def learn_verify(candidates: list[dict], ger_texts: list[str]) -> list[dict]:
             continue
         # Duplicate check
         if find.lower() in existing_finds:
+            continue
+        # English-text guard: reject if replacement has 3+ common English words
+        eng_words = re.findall(r'\b(the|this|that|and|are|for|with|was|but|your|which|each|their|what|when|where|who|been|there|very|just|than|about|because|people|other|every|after|being|much|many|into|over|such|without|around|another|however)\b', replace, re.IGNORECASE)
+        if len(set(w.lower() for w in eng_words)) >= 3:
             continue
         # Add to verified
         verified.append(fix)
@@ -3815,29 +3930,9 @@ def translate_learn(fpath: Path, cfg: Config,
     gfc = apply_german_fixes(ger_texts, load_german_fixes())
     timer.stop("German Fixes")
 
-    # Error scan — two passes with different prompts for thorough coverage
+    # Algorithmic error scan — catches NLLB artifacts without LLM
     timer.start("Error Scan")
-    scan_futures = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        scan_futures[pool.submit(
-            learn_scan, eng_texts, ger_texts, polisher,
-            progress_callback=progress_callback,
-            prompt_template=LEARN_SCAN_PROMPT,
-            scan_label="scan-pass1")] = "pass1"
-        scan_futures[pool.submit(
-            learn_scan, eng_texts, ger_texts, polisher,
-            progress_callback=None,  # only pass1 reports progress
-            prompt_template=LEARN_SCAN_PROMPT_B,
-            scan_label="scan-pass2")] = "pass2"
-        all_candidates = []
-        seen_dup: set[tuple[str, str]] = set()
-        for future in as_completed(scan_futures):
-            for c in future.result():
-                key = (c["find"].lower(), c["replace"].lower())
-                if key not in seen_dup:
-                    seen_dup.add(key)
-                    all_candidates.append(c)
-    candidates = all_candidates
+    candidates = _nllb_artifact_scan(eng_texts, ger_texts)
     timer.stop("Error Scan")
 
     # Verify and persist

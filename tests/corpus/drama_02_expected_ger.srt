@@ -1,0 +1,80 @@
+1
+00:00:01,000 --> 00:00:03,000
+# PLACEHOLDER Führen Sie die Übersetzung mit --modus-Regression aus, um den tatsächlichen erwarteten Ausgang zu erzeugen
+
+2
+00:00:04,000 --> 00:00:06,000
+# Platzhalter
+
+3
+00:00:07,000 --> 00:00:08,000
+# Platzhalter
+
+4
+00:00:09,000 --> 00:00:10,500
+# Platzhalter
+
+5
+00:00:11,000 --> 00:00:14,000
+# Platzhalter
+
+6
+00:00:15,000 --> 00:00:17,500
+# Platzhalter
+
+7
+00:00:18,000 --> 00:00:21,000
+# Platzhalter
+
+8
+00:00:22,000 --> 00:00:25,000
+# Platzhalter
+
+9
+00:00:26,000 --> 00:00:29,000
+# Platzhalter
+
+10
+00:00:30,000 --> 00:00:33,000
+# Platzhalter
+
+11
+00:00:34,000 --> 00:00:37,000
+# Platzhalter
+
+12
+00:00:38,000 --> 00:00:41,000
+# Platzhalter
+
+13
+00:00:42,000 --> 00:00:45,000
+# Platzhalter
+
+14
+00:00:46,000 --> 00:00:49,000
+# Platzhalter
+
+15
+00:00:50,000 --> 00:00:53,000
+# Platzhalter
+
+16
+00:00:54,000 --> 00:00:57,000
+# Platzhalter
+
+17
+00:00:58,000 --> 00:01:01,000
+# Platzhalter
+
+18
+00:01:02,000 --> 00:01:05,000
+# Platzhalter
+
+19
+00:01:06,000 --> 00:01:09,000
+# Platzhalter
+
+20
+00:01:10,000 --> 00:01:13,000
+# Platzhalter
+

@@ -157,7 +157,7 @@ Pursuit.of.Jade.E01.srt  →  Pursuit.of.Jade.E01_ger.srt
 ├── launch_gui.bat               PySide6 GUI launcher (double-click)
 ├── launch_web_gui.bat           Web GUI launcher (double-click)
 ├── translator/
-│   ├── engine.py                Core translation pipeline (~2900 lines)
+│   ├── engine.py                Core translation pipeline (~3970 lines)
 │   ├── gui.py                   PySide6 GUI
 │   └── __init__.py              Public API exports
 ├── web_gui/
