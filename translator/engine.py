@@ -4001,7 +4001,9 @@ def run_regression(cfg: Config):
     print(f"\n{'='*50}")
     print(f"E01 Reference Check:", flush=True)
 
-    e01_source = Path("tests") / "corpus" / "drama_01_eng.srt"
+    e01_source = Path("e01") / "E01_eng.srt"
+    if not e01_source.exists():
+        e01_source = Path("tests") / "corpus" / "drama_01_eng.srt"
     e01_ref = Path("config") / "e01_reference.srt"
 
     if not e01_source.exists():

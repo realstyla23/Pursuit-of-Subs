@@ -200,6 +200,10 @@
     "replace": "5 Eimer Lampenöl"
   },
   {
+    "find": "[Episode",
+    "replace": "[Folge"
+  },
+  {
     "find": "[Fill Your Belly]",
     "replace": "[Fülle deinen Bauch]"
   },
@@ -214,6 +218,10 @@
   {
     "find": "[Intimacy Instruction Drawings]",
     "replace": "[Zeichnungen zur Intimitätsanweisung]"
+  },
+  {
+    "find": "[Jadeverfolgung]",
+    "replace": "[Pursuit of Jade]"
   },
   {
     "find": "[Post-Kreditenszene] ♪",
@@ -502,6 +510,10 @@
   {
     "find": "Anstatt eine Familie aufzubauen\nund eine Karriere zu verfolgen,",
     "replace": "Anstatt eine Familie aufzubauen\nund eine Karriere zu verfolgen"
+  },
+  {
+    "find": "antwortete: ,",
+    "replace": ""
   },
   {
     "find": "Auch,",
@@ -802,6 +814,10 @@
   {
     "find": "Das Fan Das Paar",
     "replace": "Das Ehepaar Fan"
+  },
+  {
+    "find": "Das Fan Paar",
+    "replace": "Die Fans"
   },
   {
     "find": "Das Fleisch, das ich vor ein paar Tagen geraucht habe,",
@@ -1152,6 +1168,10 @@
     "replace": "die Familie Fan"
   },
   {
+    "find": "Die Fan Paar",
+    "replace": "Die Fans"
+  },
+  {
     "find": "Die Frau ist die Haushaltsführerin, -und Sie müssen alles nach Ihrer Frau tun...\n-Das ist nicht nötig.",
     "replace": "Die -und Sie müssen alles nach Ihrer Frau tun... -Das ist nicht nötig."
   },
@@ -1426,6 +1446,18 @@
   {
     "find": "Entweder stirbt er,",
     "replace": "Entweder stirbt er"
+  },
+  {
+    "find": "Episode 1",
+    "replace": "Folge 1"
+  },
+  {
+    "find": "Episode 2",
+    "replace": "Folge 2"
+  },
+  {
+    "find": "Episode 3",
+    "replace": "Folge 3"
   },
   {
     "find": "Er hatte Glück.\ndass er dich getroffen hat, als sein",
@@ -1896,6 +1928,10 @@
     "replace": "Fan Gedächtnisplatte Gedächtnisplatte"
   },
   {
+    "find": "Fan Paar",
+    "replace": "Fan Familie"
+  },
+  {
     "find": "Fan, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund eine Reisebewilligung zur Überprüfung.]\n[|]",
     "replace": "Fan, [Ich habe meine Haushaltsregistrierkarte mitgebracht.\nund eine Reisebewilligung zur Überprüfung.]"
   },
@@ -1906,6 +1942,14 @@
   {
     "find": "Feind, ♪ ",
     "replace": "♪ "
+  },
+  {
+    "find": "fragte: ,",
+    "replace": ""
+  },
+  {
+    "find": "Frau allgemein",
+    "replace": "Generalin"
   },
   {
     "find": "Frau Chen Sagte er",
@@ -2936,6 +2980,10 @@
     "replace": "Ja, esse mehr."
   },
   {
+    "find": "Jadeverfolgung",
+    "replace": "Pursuit of Jade"
+  },
+  {
     "find": "Jede Familie beeilt sich.\nUm jetzt Heiraten zu arrangieren,",
     "replace": "Jede Familie beeilt sich.\nUm jetzt Heiraten zu arrangieren"
   },
@@ -2990,6 +3038,10 @@
   {
     "find": "Jiuheng",
     "replace": "|"
+  },
+  {
+    "find": "junge Frau allgemein",
+    "replace": "junge Generalin"
   },
   {
     "find": "junge Frau General",
@@ -3814,6 +3866,10 @@
   {
     "find": "Sagen Sie mir, was Sie denken gut gut gut gut.",
     "replace": "Sagen Sie mir, was Sie denken gut."
+  },
+  {
+    "find": "sagte: ,",
+    "replace": ""
   },
   {
     "find": "said",
