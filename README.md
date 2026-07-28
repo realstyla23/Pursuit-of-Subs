@@ -1,10 +1,10 @@
 # Pursuit of Subs
 
-GPU-accelerated batch subtitle translation (EN → DE) using Facebook's NLLB-600M distilled, with LLM polishing (local via Ollama, or any OpenAI-compatible proxy).
+GPU-accelerated batch subtitle translation (EN → DE) using Opus-MT EN-DE (default) or Facebook's NLLB-600M distilled, with LLM polishing (local via Ollama, or any OpenAI-compatible proxy).
 
 ## Features
 
-- **Multi-model** — Choose between NLLB-600M (default) or Opus-MT EN-DE (2.6x faster) via Web GUI dropdown
+- **Multi-model** — Choose between Opus-MT EN-DE (default, 2.6x faster) or NLLB-600M via Web GUI dropdown
 - **Polish** — LLM quality pass on suspicious lines (Qwen 2.5 locally via Ollama, or DeepSeek via proxy)
 - **Full** — Translation + polish combined for highest quality
 - **Learn** — Self-improving mode: full pipeline + automatic error detection + fix persistence to `german_fixes.json`. Each run makes the next run better. Re-runs skip expensive passes in ~0.3s.
@@ -51,10 +51,10 @@ pip install -r requirements.txt
 ### 2. Run
 
 ```bash
-# Fast mode (NLLB only) — ~28s per episode
+# Fast mode (Opus or NLLB) — ~16s per episode (Opus)
 python subtranslate.py --mode fast --input-dir "path\to\subs"
 
-# Full mode (NLLB + LLM polish) — ~80s per episode
+# Full mode (translate + LLM polish) — ~62s per episode
 python subtranslate.py --mode full --input-dir "path\to\subs"
 
 # Full with Gemma 4 and 3 parallel batches
@@ -108,7 +108,7 @@ Options:
 Examples:
 
 ```bash
-# Fast NLLB-only pass
+# Fast pass (Opus-MT default)
 python subtranslate.py --mode fast --input-dir "D:\Shows\Season 1"
 
 # Full pipeline: NLLB + local Gemma 4 polish
@@ -159,8 +159,9 @@ Pursuit.of.Jade.E01.srt  →  Pursuit.of.Jade.E01_ger.srt
 ├── subtranslate.py              CLI entry point
 ├── launch_gui.bat               PySide6 GUI launcher (double-click)
 ├── launch_web_gui.bat           Web GUI launcher (double-click)
+├── try_polish.bat               Polish-only launcher
 ├── translator/
-│   ├── engine.py                Core translation pipeline (~3970 lines)
+│   ├── engine.py                Core translation pipeline
 │   ├── gui.py                   PySide6 GUI
 │   └── __init__.py              Public API exports
 ├── web_gui/
@@ -172,11 +173,20 @@ Pursuit.of.Jade.E01.srt  →  Pursuit.of.Jade.E01_ger.srt
 │   ├── german_fixes.json        Known fix patterns
 │   ├── short_fragments.json     Fragments NLLB hallucinates on
 │   ├── names.json               Character name list
-│   └── titles.json              Known title translations
+│   ├── titles.json              Known title translations
+│   ├── auto_glossary.json       Auto-learned terms from polish corrections
+│   ├── glossary_auto.json       DeepSeek-extracted domain terms
+│   ├── learned_episodes.json    Episodes processed by learn mode
+│   ├── e01_reference.srt        Human-verified E01 reference translation
+│   └── show_contexts/           Character context databases per episode
 ├── assets/
 │   └── screenshot_*.png         README screenshots
 ├── tests/
 │   └── corpus/                  Regression test corpus
+├── e01/
+│   └── E01_eng.srt              English source for episode 1
+├── tm/
+│   └── .gitkeep                 Translation memory directory
 ├── requirements.txt
 └── pyproject.toml
 ```
@@ -200,7 +210,7 @@ Source SRT (*.srt)
 └──────────────────────┬──────────────────────┘
                        ▼
 ┌─────────────────────────────────────────────┐
-│ 2. TRANSLATE (NLLB-600M or Opus-MT EN-DE)   │
+│ 2. TRANSLATE (Opus-MT EN-DE or NLLB-600M)   │
 │    Batch inference on GPU (batch_size=64)   │
 │    Content extracted from ZZZ placeholders  │
 └──────────────────────┬──────────────────────┘

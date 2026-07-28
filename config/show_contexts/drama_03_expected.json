@@ -1,0 +1,29 @@
+{
+  "synopsis": "Drama is the specific mode of fiction represented in performance, such as a play or opera, performed in a theatre, or on radio or television. It has been contrasted with the epic and the lyrical modes since Aristotle's Poetics.",
+  "setting": "Performance venues including theatres, radio, or television",
+  "characters": {
+    "CharacterName": {
+      "gender": "",
+      "role": "",
+      "description": ""
+    }
+  },
+  "locations": [
+    "theatre",
+    "radio studio",
+    "television set"
+  ],
+  "key_terms": [
+    "performance",
+    "fiction",
+    "play",
+    "opera",
+    "epic",
+    "lyrical"
+  ],
+  "show_name": "drama 03 expected",
+  "slug": "drama_03_expected",
+  "alternate_names": [
+    "drama 03 expected"
+  ]
+}

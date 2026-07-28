@@ -1,10 +1,30 @@
+# Python
 venv/
 __pycache__/
 *.pyc
 *.pyo
+*.pyc
+*.log
+.env
+
+# TM & data
 tm/*.db
 benchmark.json
-.DS_Store
 config/ollama_cache.json
+
+# Temp / uploads
 tmpe02/
 uploads/
+
+# Planning / session artifacts
+.planning/
+.superpowers/
+docs/superpowers/
+
+# OS
+.DS_Store
+
+# Proxy / node
+proxy/node_modules/
+proxy/*.log
+proxy/*.err

@@ -1,0 +1,33 @@
+{
+  "synopsis": "Drama 01 ENG is a fictional narrative set in the English-speaking world, exploring characters and events from Old English to Middle English periods. It features key figures like Beowulf and Geoffrey Chaucer, highlighting the development of vernacular literature.",
+  "setting": "The setting spans from the Anglo-Saxon period (5th century) to the Middle English period (1470s), with a focus on England during the Norman Conquest in 1066 and the rise of London as a literary center.",
+  "characters": {
+    "Beowulf": {
+      "gender": "male",
+      "role": "protagonist",
+      "description": "A legendary hero from Old English literature."
+    },
+    "Geoffrey Chaucer": {
+      "gender": "male",
+      "role": "protagonist",
+      "description": "A significant figure in the development of Middle English vernacular literature."
+    }
+  },
+  "locations": [
+    "Great Britain (5th century)",
+    "England (1066-1470s)",
+    "London"
+  ],
+  "key_terms": [
+    "Old English",
+    "Middle English",
+    "Beowulf",
+    "Geoffrey Chaucer",
+    "Norman Conquest"
+  ],
+  "show_name": "drama 01 eng",
+  "slug": "drama_01_eng",
+  "alternate_names": [
+    "drama 01 eng"
+  ]
+}

@@ -2,13 +2,13 @@
 
 Claude has read the full source. This answers open questions with file/line citations.
 
-> **Update (2026-07-28):** P0–P2 hardening session completed. See `.superpowers/sdd/progress.md` for commit details. Key changes: checkpoint validation, .gitmodules restored, dead providers removed, E01 reference regression wired, comparator fixed.
+> **Update (2026-07-28):** P0–P2 hardening session completed. Key changes: checkpoint validation, .gitmodules restored, dead providers removed, E01 reference regression wired, comparator fixed. Session artifacts in `.superpowers/sdd/` have been archived.
 
 ---
 
 ## §1 sentence_aware default flip
 
-**Config.sentence_aware defaults to True** (`engine.py:92`). The spec doc (`docs/superpowers/specs/2026-07-27-sentence-aware-reflow-design.md:200-206`) requires this sequence before flipping the default:
+**Config.sentence_aware defaults to True** (`engine.py:92`). The original design spec requires this sequence before flipping the default:
 
 1. Land behind flag, **off by default** → implemented with `True` instead — **the default was set True without completing the rollout checklist**
 2. "Run one full episode with `--sentence-aware --qa-report` and diff QA score against the same episode without the flag" → **NOT DONE. No before/after QA scores exist**
@@ -75,7 +75,7 @@ Commit: `cfd1437`
 ## §6 glossary state
 
 - **`config/glossary.json`**: 144 entries (maintained manually)
-- **`config/auto_glossary.json`**: 54 entries (auto-learned from polish corrections)
+- **`config/auto_glossary.json`**: 126 entries (auto-learned from polish corrections)
 
 **Is `--auto-glossary` run regularly?** No. It was a one-time experiment. The flag exists in CLI (`subtranslate.py:87-89`) but the learn-mode's inline auto-glossary (runs during `translate_polish`) is what actually populates `auto_glossary.json`. The `--auto-glossary` CLI flag was used at most once.
 
@@ -93,7 +93,7 @@ Commit: `dd39f57`
 
 ## §8 current known issues (user's perceived)
 
-No `TODO`/`FIXME`/`HACK` comments in `translator/`. No open issues filed. The `.superpowers/sdd/progress.md` shows only the sentence-aware tasks as completed with clean reviews.
+No `TODO`/`FIXME`/`HACK` comments in `translator/`. No open issues filed. The P0–P2 hardening session completed with checkpoint validation, dead provider removal, and E01 reference regression wired.
 
 From the user's own workflow (last session): the main pain point is **pipeline output quality vs reference** — 83.5% of blocks still differ after polish. The false-positive comparator has been fixed (strip normalization), and `german_fixes.json` entries are now sorted for easier review. Specific remaining gaps:
 - "Loser" at block 362 not fixed (not in `german_fixes.json`)

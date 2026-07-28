@@ -1,0 +1,29 @@
+{
+  "synopsis": "House of the Dragon is an American fantasy drama television series created by George R. R. Martin and Ryan Condal for HBO. It portrays events leading up to the decline of House Targaryen, focusing on a devastating war of succession known as the 'Dance of the Dragons'.",
+  "setting": "The show is set about 100 years after the Seven Kingdoms are united by the Targaryen conquest and nearly 200 years before the events of Game of Thrones.",
+  "characters": {
+    "Viserys Targaryen": {
+      "gender": "male",
+      "role": "protagonist",
+      "description": "The first Targaryen king to rule Westeros in over a century."
+    },
+    "Rhaenyra Targaryen": {
+      "gender": "female",
+      "role": "protagonist",
+      "description": "Daughter of King Viserys I and heir to the Iron Throne, who faces significant challenges as she tries to secure her position."
+    }
+  },
+  "locations": [
+    "King's Landing",
+    "Dragonstone"
+  ],
+  "key_terms": [
+    "Targaryen conquest",
+    "Dance of the Dragons"
+  ],
+  "show_name": "drama 02 expected",
+  "slug": "drama_02_expected",
+  "alternate_names": [
+    "drama 02 expected"
+  ]
+}

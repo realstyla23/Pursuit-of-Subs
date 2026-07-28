@@ -1,50 +1,50 @@
 1
 00:00:01,000 --> 00:00:03,000
-- Ja, ich weiß.
+Ja das ist gut.
 
 2
 00:00:04,000 --> 00:00:06,000
-Nein, das ist nicht wahr.
+Nein.
 
 3
 00:00:07,000 --> 00:00:08,000
-es verlieren.
+Verlieren.
 
 4
 00:00:09,000 --> 00:00:10,500
-Warten es mal.
+Warte mal.
 
 5
 00:00:11,000 --> 00:00:14,000
-General der Feind ist am Tor.
+Der General des Feindes ist am Tor.
 
 6
 00:00:15,000 --> 00:00:17,500
-- Ja, General.
+- Ja Herr General.
 
 7
 00:00:18,000 --> 00:00:21,000
-Oberst, war das Ihr Befehl?
+Oberst, welche Befehle haben Sie?
 
 8
 00:00:22,000 --> 00:00:25,000
-Hauptmann, melden ist ein Kommandoposten.
+Hauptmann, meldet euch am Kommandantoposten ein.
 
 9
 00:00:26,000 --> 00:00:29,000
-Lieutenant, nehmen es Ihre Truppe und halten es die Brücke fest.
+Leutnant, nehmt eure Truppe und haltet 555-123-4567 Brücke fest.
 
 10
 00:00:30,000 --> 00:00:33,000
-Kommandant, die Flotte ist bereit.
+Kommandant, 555-123-4567 Flotte ist bereit.
 
 11
 00:00:34,000 --> 00:00:37,000
-Der Führer der Sekte, der Dämon nähert sich.
+Sekte-Leiter, der Dämon nähert sich.
 
 12
 00:00:38,000 --> 00:00:41,000
-Junger Herr, junger Meister Ihr älterer Bruder wartet.
+Junger Meister dein älterer Bruder wartet.
 
 13
 00:00:42,000 --> 00:00:45,000
@@ -52,7 +52,7 @@ Junger Herr, junger Meister Ihr älterer Bruder wartet.
 
 14
 00:00:46,000 --> 00:00:49,000
-Ehrwürden, ja, Ehrwürden!
+Kultivierung, Meister die Kultivierungshalle ist vorbereitet.
 
 15
 00:00:50,000 --> 00:00:53,000
@@ -60,21 +60,21 @@ Junge Dame, der Wagen ist bereit.
 
 16
 00:00:54,000 --> 00:00:57,000
-Kultivierung, Meister die Kultivierungshalle ist vorbereitet.
+555-123-4567, General danke für deinen Dienst.
 
 17
 00:00:58,000 --> 00:01:01,000
-Schüler, du musst hierher trainieren.
+Unsterbliche, unsterblich, bitte akzeptiere dieses Angebot.
 
 18
 00:01:02,000 --> 00:01:05,000
-Unsterblicher, unsterblich, bitte akzeptiere dieses Angebot.
+General danke für deinen Dienst.
 
 19
 00:01:06,000 --> 00:01:09,000
-General danke für Ihren Dienst.
+Chance, sagte: Lass mich dich nie wiedersehen.
 
 20
 00:01:10,000 --> 00:01:13,000
-Ich sagte, lass mich dich nie wieder sehen.
+sagte: Lass mich dich nie wiedersehen.
 

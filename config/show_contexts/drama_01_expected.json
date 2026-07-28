@@ -1,0 +1,29 @@
+{
+  "synopsis": "A Knight of the Seven Kingdoms is an American fantasy drama television series that serves as a prequel to Game of Thrones and is part of George R. R. Martin's A Song of Ice and Fire franchise, focusing on Ser Duncan 'Dunk' the Tall and his squire, Aegon 'Egg' Targaryen.",
+  "setting": "The show takes place in the Seven Kingdoms during a time period that predates the events of Game of Thrones.",
+  "characters": {
+    "Ser Duncan 'Dunk' the Tall": {
+      "gender": "male",
+      "role": "protagonist",
+      "description": "Titled hedge knight"
+    },
+    "Aegon 'Egg' Targaryen": {
+      "gender": "male",
+      "role": "supporting",
+      "description": "Squire to Ser Duncan"
+    }
+  },
+  "locations": [
+    "Seven Kingdoms"
+  ],
+  "key_terms": [
+    "prequel",
+    "Game of Thrones",
+    "Tales of Dunk and Egg"
+  ],
+  "show_name": "drama 01 expected",
+  "slug": "drama_01_expected",
+  "alternate_names": [
+    "drama 01 expected"
+  ]
+}
