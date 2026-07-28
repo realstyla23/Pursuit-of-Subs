@@ -6,10 +6,10 @@
 <title>Pursuit of Subs</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#1e1e1e;--bg2:#252525;--bg3:#1a1a1a;--bg4:#121212;--fg:#ddd;--fg2:#aaa;--fg3:#888;--border:#444;--border2:#333;--accent:#4a9eff;--green:#1a6b3c;--green2:#2a8b4c;--green3:#51cf66;--red:#6b1a1a;--red2:#ff6b6b;--yellow:#ffd93d;--purple:#da77f2;--blue:#6bcbff;font-size:13px}
+:root{--bg:#1e1e1e;--bg2:#252525;--bg3:#1a1a1a;--bg4:#121212;--fg:#ddd;--fg2:#aaa;--fg3:#888;--border:#444;--border2:#333;--accent:#2d8a4e;--accent2:#4acd7a;--gold:#c9a84c;--gold-light:#e8d07a;--jade:#2d8a4e;--jade-light:#4acd7a;--green:#1a6b3c;--green2:#2a8b4c;--green3:#51cf66;--red:#6b1a1a;--red2:#ff6b6b;--yellow:#ffd93d;--purple:#da77f2;--blue:#6bcbff;--blue-silver:#7a9bb5;--warm-orange:#d4874a;--mode-fast:#4acd7a;--mode-full:#c9a84c;--mode-polish:#7a9bb5;--mode-learn:#d4874a;--mode-regr:#888;font-size:13px}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;min-height:100vh;overflow-y:scroll}
 .header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
-.header h1{font-size:15px;font-weight:600;color:var(--fg)}
+.header h1{font-size:15px;font-weight:700;color:var(--fg);letter-spacing:3px;text-shadow:0 0 12px var(--gold)}
 .header .version{color:var(--fg3);font-size:11px}
 .content{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:6px;min-height:0}
 .io-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -68,13 +68,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .gpu-grid label{font-size:12px;color:var(--fg2);text-align:right}
 .gpu-grid select,.gpu-grid input[type=number]{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:4px 8px;color:var(--fg);font-size:12px;min-height:28px;width:100%}
 .gpu-grid .full-row{grid-column:1/-1}
-.mode-options{display:flex;gap:16px;flex-wrap:wrap}
-.mode-option{display:flex;flex-direction:column;gap:0;cursor:pointer}
+.mode-options{display:flex;gap:12px;flex-wrap:wrap}
+.mode-option{display:flex;flex-direction:column;gap:4px;cursor:pointer;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:10px 12px;min-width:130px;transition:background .15s,border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
+.mode-option:hover{background:#2d2d2d;border-color:#555}
 .mode-option input[type=radio]{display:none}
-.mode-option .mode-label{font-size:12px;font-weight:600;color:var(--fg2);padding:2px 0;transition:color .15s}
-.mode-option input[type=radio]:checked+.mode-label{color:#fff;text-shadow:0 0 6px var(--accent)}
-.mode-option .mode-desc{font-size:10px;color:var(--fg3)}
-.mode-option .mode-badge{font-size:9px;color:var(--yellow);font-weight:700}
+.mode-option .mode-card-top{display:flex;align-items:center;gap:8px}
+.mode-option .mode-icon{font-size:16px;line-height:1;transition:transform .15s}
+.mode-option .mode-label{font-size:12px;font-weight:600;color:var(--fg2);transition:color .15s}
+.mode-option .mode-desc{font-size:10px;color:var(--fg3);padding-left:24px}
+.mode-option .mode-badge{display:inline-block;font-size:9px;font-weight:600;border-radius:3px;padding:1px 6px;margin-top:2px;align-self:flex-start}
+.mode-option.selected .mode-label{color:#fff}
+.mode-option.selected .mode-icon{transform:scale(1.15)}
+.mode-option[data-mode=fast] .mode-icon{color:var(--mode-fast)}
+.mode-option[data-mode=fast].selected{border-color:var(--mode-fast);box-shadow:0 0 8px rgba(74,205,122,.3)}
+.mode-option[data-mode=full] .mode-icon{color:var(--mode-full)}
+.mode-option[data-mode=full].selected{border-color:var(--mode-full);box-shadow:0 0 8px rgba(201,168,76,.3)}
+.mode-option[data-mode=polish] .mode-icon{color:var(--mode-polish)}
+.mode-option[data-mode=polish].selected{border-color:var(--mode-polish);box-shadow:0 0 8px rgba(122,155,181,.3)}
+.mode-option[data-mode=learn] .mode-icon{color:var(--mode-learn)}
+.mode-option[data-mode=learn].selected{border-color:var(--mode-learn);box-shadow:0 0 8px rgba(212,135,74,.3)}
+.mode-option[data-mode=regression] .mode-icon{color:var(--mode-regr)}
+.mode-option[data-mode=regression].selected{border-color:var(--mode-regr);box-shadow:0 0 8px rgba(136,136,136,.3)}
+.mode-badge.recommended{color:var(--gold);border:1px solid var(--gold)}
+.mode-badge.self-improving{color:var(--jade-light);border:1px solid var(--jade-light)}
 .checkbox-row{display:flex;align-items:center;gap:6px;margin-top:4px}
 .checkbox-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--green2);cursor:pointer}
 .checkbox-row label{font-size:12px;color:var(--fg2);cursor:pointer}
@@ -199,31 +215,46 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
     <div class="mode-section section-box">
       <h3>Mode</h3>
       <div class="mode-options" id="modeOptions">
-        <label class="mode-option">
+        <label class="mode-option" data-mode="fast">
           <input type="radio" name="mode" value="fast">
-          <span class="mode-label">Fast</span>
-          <span class="mode-desc">Fastest (NLLB only)</span>
+          <div class="mode-card-top">
+            <span class="mode-icon">&#9889;</span>
+            <span class="mode-label">Fast</span>
+          </div>
+          <span class="mode-desc">Fastest translation</span>
         </label>
-        <label class="mode-option">
+        <label class="mode-option" data-mode="full">
           <input type="radio" name="mode" value="full" checked>
-          <span class="mode-label">Full</span>
-          <span class="mode-badge">&#9733; Recommended</span>
-          <span class="mode-desc">NLLB + LLM polish</span>
+          <div class="mode-card-top">
+            <span class="mode-icon">&#10022;</span>
+            <span class="mode-label">Full</span>
+          </div>
+          <span class="mode-desc">Translate + polish</span>
+          <span class="mode-badge recommended">Recommended</span>
         </label>
-        <label class="mode-option">
+        <label class="mode-option" data-mode="polish">
           <input type="radio" name="mode" value="polish">
-          <span class="mode-label">Polish</span>
-          <span class="mode-desc">LLM on existing</span>
+          <div class="mode-card-top">
+            <span class="mode-icon">&#9998;</span>
+            <span class="mode-label">Polish</span>
+          </div>
+          <span class="mode-desc">Polish existing output</span>
         </label>
-        <label class="mode-option">
+        <label class="mode-option" data-mode="learn">
           <input type="radio" name="mode" value="learn">
-          <span class="mode-label">Learn</span>
-          <span class="mode-badge">&#9733; Self-improving</span>
-          <span class="mode-desc">NLLB + polish + auto-fix</span>
+          <div class="mode-card-top">
+            <span class="mode-icon">&#10267;</span>
+            <span class="mode-label">Learn</span>
+          </div>
+          <span class="mode-desc">Translate + auto-fix</span>
+          <span class="mode-badge self-improving">Self-improving</span>
         </label>
-        <label class="mode-option">
+        <label class="mode-option" data-mode="regression">
           <input type="radio" name="mode" value="regression">
-          <span class="mode-label">Regression</span>
+          <div class="mode-card-top">
+            <span class="mode-icon">&#9881;</span>
+            <span class="mode-label">Regression</span>
+          </div>
           <span class="mode-desc">Developer testing</span>
         </label>
       </div>
@@ -242,18 +273,22 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
           <option value="facebook/nllb-200-distilled-600M">NLLB-600M</option>
           <option value="Helsinki-NLP/opus-mt-en-de" selected>Opus-MT EN-DE (default)</option>
         </select>
+        <div class="full-row model-custom-row">
+          <input type="text" id="customTranslateModel" placeholder="Or type any model name..." style="width:100%;font-size:11px;margin-top:1px">
+        </div>
         <label>Polish:</label>
         <select id="polishModelSelect">
-          <option value="auto" selected>AUTO (NVIDIA → Ollama)</option>
+          <option value="auto" selected>Auto (Ollama)</option>
           <option value="qwen2.5:7b">qwen2.5:7b (Ollama, 4.7 GB)</option>
-          <option value="thinkverse/towerinstruct">TowerInstruct 7B (translation-specialized, 3.8 GB)</option>
-          <option value="gemma4:e4b">gemma4:e4b (thinking model, may not work)</option>
         </select>
+        <div class="full-row model-custom-row">
+          <input type="text" id="customPolishModel" placeholder="Or type any model name..." style="width:100%;font-size:11px;margin-top:1px">
+        </div>
         <label>Parallel:</label>
         <select id="polishParallelSelect">
-          <option value="1">1 (sequential)</option>
-          <option value="2" selected>2 (balanced)</option>
-          <option value="3">3 (fast)</option>
+          <option value="1" selected>1 (sequential)</option>
+          <option value="2">2 (parallel)</option>
+          <option value="3">3 (aggressive)</option>
         </select>
         <div class="full-row checkbox-row">
           <input type="checkbox" id="resumeCheck">
@@ -385,6 +420,34 @@ var dirBrowserPath = $('dirBrowserPath');
 var dirBrowserUp = $('dirBrowserUp');
 var dirBrowserList = $('dirBrowserList');
 var dirBrowserSelectBtn = $('dirBrowserSelectBtn');
+
+// ---- Mode card selection ----
+(function() {
+  var radios = document.querySelectorAll('.mode-option input[type=radio]');
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].addEventListener('change', function() {
+      var cards = document.querySelectorAll('.mode-option');
+      for (var j = 0; j < cards.length; j++) cards[j].classList.remove('selected');
+      if (this.checked) this.closest('.mode-option').classList.add('selected');
+    });
+  }
+  var checked = document.querySelector('.mode-option input[type=radio]:checked');
+  if (checked) checked.closest('.mode-option').classList.add('selected');
+})();
+
+// ---- Custom model input ----
+$('modelIdSelect').addEventListener('change', function() {
+  $('customTranslateModel').value = this.value;
+});
+$('customTranslateModel').addEventListener('input', function() {
+  if (this.value) $('modelIdSelect').value = '';
+});
+$('polishModelSelect').addEventListener('change', function() {
+  $('customPolishModel').value = this.value;
+});
+$('customPolishModel').addEventListener('input', function() {
+  if (this.value) $('polishModelSelect').value = '';
+});
 
 function formatSize(bytes) {
   if (!bytes || bytes <= 0) return '\u2014';
@@ -818,8 +881,8 @@ startBtn.addEventListener('click', function() {
     num_beams: numBeams,
     resume: resume,
     output_dir: outputDir,
-    model_id: $('modelIdSelect').value,
-    polish_model: $('polishModelSelect').value,
+    model_id: $('customTranslateModel').value || $('modelIdSelect').value,
+    polish_model: $('customPolishModel').value || $('polishModelSelect').value,
     polish_parallel: parseInt($('polishParallelSelect').value) || 1
   });
 
@@ -846,6 +909,8 @@ startBtn.addEventListener('click', function() {
   $('changeOutputBtn').disabled = true;
   var modeInputs = document.querySelectorAll('.mode-option input');
   for (var i = 0; i < modeInputs.length; i++) modeInputs[i].disabled = true;
+  $('customTranslateModel').disabled = true;
+  $('customPolishModel').disabled = true;
   $('deviceSelect').disabled = true;
   $('batchSize').disabled = true;
   $('numBeams').disabled = true;
@@ -908,6 +973,8 @@ function onJobEnd() {
   $('changeOutputBtn').disabled = false;
   var modeInputs = document.querySelectorAll('.mode-option input');
   for (var i = 0; i < modeInputs.length; i++) modeInputs[i].disabled = false;
+  $('customTranslateModel').disabled = false;
+  $('customPolishModel').disabled = false;
   $('deviceSelect').disabled = false;
   $('batchSize').disabled = false;
   $('numBeams').disabled = false;
