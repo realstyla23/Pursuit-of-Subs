@@ -1127,6 +1127,7 @@ def _learn_from_fixes(eng_texts: list[str], ger_texts: list[str],
              "onto", "upon"}
 
     added = 0
+    new_entries: dict[str, str] = {}
     for idx, corr in fixes.items():
         en = eng_texts[idx]
         nllb = ger_texts[idx]
@@ -1139,18 +1140,17 @@ def _learn_from_fixes(eng_texts: list[str], ger_texts: list[str],
             if len(w) < 3 or w in _SKIP:
                 continue
             if w in nllb.lower() and w not in corr.lower():
-                # English word was literally in NLLB output; find replacement
-                # by matching word positions
                 for i in range(min(len(nllb_words), len(corr_words))):
                     if nllb_words[i].lower().strip(",.!?") == w:
                         repl = corr_words[i].strip(",.!?")
-                        if repl.lower() != w and w not in auto_glossary:
+                        if repl.lower() != w and w not in auto_glossary and w not in new_entries:
+                            from translator.learning_db import add_evidence
+                            add_evidence(w, repl, model="heuristic_literal")
                             auto_glossary[w] = repl
+                            new_entries[w] = repl
                             added += 1
                         break
 
-    if added:
-        _save_auto_glossary(auto_glossary)
     return added
 
 
@@ -1253,17 +1253,18 @@ def _learn_broad(eng_texts: list[str], ger_texts: list[str],
                     best_de = ct.strip(",.!?;:")
                     break
             if best_de and best_en.lower() not in auto_glossary:
+                from translator.learning_db import add_evidence
+                add_evidence(best_en.lower(), best_de, model="heuristic_broad")
                 auto_glossary[best_en.lower()] = best_de
                 added += 1
 
-    if added:
-        _save_auto_glossary(auto_glossary)
     return added
 
 def _llm_extract_terms(term_candidates: list[tuple],
                        auto_glossary: dict[str, str],
                        polisher: tuple, already_added: int) -> int:
     """Use LLM to identify term-level corrections from a batch."""
+    from translator.learning_db import add_evidence
     session, chat_url, model_name, api_key, _all_providers = polisher
     lines = []
     for idx, en, nllb, corr in term_candidates[:60]:  # max 60 per call
@@ -1299,6 +1300,7 @@ def _llm_extract_terms(term_candidates: list[tuple],
                 en_term = parts[1].strip().lower()
                 de_term = parts[2].strip()
                 if en_term and de_term and en_term not in auto_glossary:
+                    add_evidence(en_term, de_term, model="llm_extraction")
                     auto_glossary[en_term] = de_term
                     added_local += 1
     return already_added + added_local
@@ -1380,6 +1382,15 @@ def _apply_learned_patterns(ger_texts: list[str]) -> int:
                     ger_texts[i] = new_t
                     count += 1
     return count
+
+
+def _promote_learning_db() -> int:
+    """Promote qualified learning candidates to auto-glossary."""
+    try:
+        from translator.learning_db import promote_candidates
+        return promote_candidates()
+    except Exception:
+        return 0
 
 
 def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -> int:
@@ -3876,6 +3887,9 @@ def translate_polish(fpath: Path, cfg: Config,
         learned = _learn_from_fixes(eng_texts, _pre_fix_ger, ollama_fixes, auto_glossary)
         if learned:
             print(f"  auto-glossary: {learned} new term(s) learned", flush=True)
+        promoted = _promote_learning_db()
+        if promoted:
+            print(f"  learning-db: {promoted} candidate(s) promoted", flush=True)
         timer.stop("Auto-Learn")
 
         # Re-apply glossary after Ollama may have modified lines
@@ -5206,6 +5220,11 @@ def translate_learn(fpath: Path, cfg: Config,
         if pat_learned:
             print(f"    pattern detect: {pat_learned} new pattern(s) learned", flush=True)
         timer.stop("Pattern Detect")
+
+        # Promote qualified learning candidates to auto-glossary
+        promoted = _promote_learning_db()
+        if promoted:
+            print(f"    learning-db: {promoted} candidate(s) promoted to glossary", flush=True)
 
     # Algorithmic error scan — catches NLLB artifacts without LLM
     timer.start("Error Scan")

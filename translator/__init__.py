@@ -73,3 +73,5 @@ __all__ = [
     "_CONFIG_CACHE",
     "TEST_LINES", "EXPECTED",
 ]
+
+from translator.sanitize import sanitize_auto_glossary, print_sanitize_summary

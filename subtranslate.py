@@ -87,6 +87,9 @@ def main():
                    help="After translation, print per-episode QA summary (first N lines).")
     p.add_argument("--qa-spotcheck-lines", type=int, default=50,
                    help="Number of leading lines to scan for --qa-report (default: 50).")
+    p.add_argument("--sanitize-learning", action="store_true",
+                   help="Sanitize auto_glossary.json: detect and quarantine garbage entries, "
+                        "preserve backup, output report.")
 
     a = p.parse_args()
 
@@ -105,6 +108,13 @@ def main():
         added = merge_glossary_auto(interactive=a.interactive, dry_run=a.dry_run)
         if added:
             print(f"  Glossary updated: {added} new term(s)")
+        return
+
+    # --sanitize-learning: analyze and clean auto_glossary.json
+    if a.sanitize_learning:
+        from translator.sanitize import sanitize_auto_glossary, print_sanitize_summary
+        report = sanitize_auto_glossary()
+        print_sanitize_summary(report)
         return
 
     # --generate-glossary: standalone extraction step
