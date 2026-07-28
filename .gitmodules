@@ -1,0 +1,3 @@
+[submodule "proxy"]
+	path = proxy
+	url = https://github.com/bigdata2211it-web/opencode-free-proxy.git
