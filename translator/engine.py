@@ -21,6 +21,7 @@ import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import transformers
 import huggingface_hub
+import tiktoken
 
 transformers.logging.set_verbosity_error()
 huggingface_hub.logging.set_verbosity_error()
@@ -71,7 +72,7 @@ class Config:
     model_id: str = "Helsinki-NLP/opus-mt-en-de"
     device: str = "cuda"
     batch_size: int = 64
-    num_beams: int = 4
+    num_beams: int = 6
     no_repeat_ngram: int = 3
     ollama_model: str = "subtitle-translator"
     ollama_host: str = "http://127.0.0.1:11434"
@@ -321,6 +322,7 @@ def build_context_prompt(ctx: dict) -> str:
 # ---------------------------------------------------------------------------
 
 LINE_TAG = re.compile(r'<LINE id="(\d+)">(.*?)</LINE>')
+IBF_RESPONSE_RE = re.compile(r'^\[(\d+)\]\s*(.*)')
 CONTEXT_WINDOW = 2
 
 def _xml_escape(text: str) -> str:
@@ -384,6 +386,87 @@ def build_contextual_xml(batch_ids: list[int], eng_texts: list[str],
         xml += "</CONTEXT>"
         blocks.append(xml)
     return "\n".join(blocks)
+
+def build_contextual_ibf(batch_ids: list[int], eng_texts: list[str],
+                          ger_texts: list[str], window: int = CONTEXT_WINDOW) -> str:
+    """Build compact IBF format with EN+DE context for lines being polished.
+    
+    Format:
+        @id
+        [ctx_id] English | German
+        >>[target_id] English | German
+        [ctx_id] English | German
+    
+    Returns blocks separated by blank lines, one per target line.
+    """
+    blocks = []
+    for idx in batch_ids:
+        start = max(0, idx - window)
+        end = min(len(eng_texts), idx + window + 1)
+        ctx_en = eng_texts[start:end]
+        ctx_de = ger_texts[start:end]
+        local_pos = idx - start
+        lines = [f"@{idx + 1}"]
+        for j in range(len(ctx_en)):
+            en_esc = ctx_en[j].replace("\n", " // ")
+            de_esc = ctx_de[j].replace("\n", " // ")
+            if j == local_pos:
+                lines.append(f">>[{idx + 1}] {en_esc} | {de_esc}")
+            else:
+                lines.append(f"[{start + j + 1}] {en_esc} | {de_esc}")
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks)
+
+
+def parse_ibf(text: str) -> dict[int, str]:
+    """Parse IBF response: [id] corrected_text. Falls back to XML."""
+    result = {}
+    for line in text.split("\n"):
+        line = line.strip()
+        m = IBF_RESPONSE_RE.match(line)
+        if m:
+            result[int(m.group(1))] = m.group(2).strip()
+    if result:
+        return result
+    return parse_xml(text)
+
+
+def _verify_ibf_ids(parsed: dict[int, str], expected: list[int]) -> int:
+    """Return count of unexpected IDs in parsed output (hallucinations)."""
+    expected_set = set(expected)
+    unexpected = [sid for sid in parsed if sid not in expected_set]
+    return len(unexpected)
+
+
+def _compute_token_aware_batches(indices: list[int], eng_texts: list[str],
+                                  ger_texts: list[str], window: int = CONTEXT_WINDOW,
+                                  target_tokens: int = 4000) -> list[tuple[int, int]]:
+    """Split indices into batch ranges, each filling ~target_tokens.
+    
+    Returns list of (start, end) pairs into indices list.
+    """
+    if not indices:
+        return []
+    enc = tiktoken.get_encoding("cl100k_base")
+    batch_ends = []
+    running = 0
+    for i, idx in enumerate(indices):
+        ctx_start = max(0, idx - window)
+        ctx_end = min(len(eng_texts), idx + window + 1)
+        entry_tokens = 15  # format overhead
+        for j in range(ctx_start, ctx_end):
+            entry_tokens += len(enc.encode(eng_texts[j])) + len(enc.encode(ger_texts[j]))
+        if running + entry_tokens > target_tokens and running > 0:
+            batch_ends.append(i)
+            running = entry_tokens
+        else:
+            running += entry_tokens
+    batch_ends.append(len(indices))
+    starts = [0]
+    for e in batch_ends[:-1]:
+        starts.append(e)
+    return list(zip(starts, batch_ends))
+
 
 # ---------------------------------------------------------------------------
 # Pipeline profiling timer
@@ -1071,6 +1154,234 @@ def _learn_from_fixes(eng_texts: list[str], ger_texts: list[str],
     return added
 
 
+# ── Learned patterns (regex + fuzzy fixes persisted across episodes) ──
+
+_LEARNED_PATTERNS_PATH = _config_path("learned_patterns.json")
+
+def _load_learned_patterns() -> dict:
+    if _LEARNED_PATTERNS_PATH.exists():
+        try:
+            with open(_LEARNED_PATTERNS_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"patterns": [], "fuzzy_fixes": []}
+    return {"patterns": [], "fuzzy_fixes": []}
+
+def _save_learned_patterns(data: dict):
+    try:
+        _LEARNED_PATTERNS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(_LEARNED_PATTERNS_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"  [WARN] Could not save learned patterns: {e}", flush=True)
+
+_LEARN_BROAD_SKIP = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+    "has", "have", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "shall", "can", "not", "no", "yes", "it",
+    "its", "this", "that", "these", "those", "i", "you", "he", "she",
+    "we", "they", "my", "your", "his", "her", "our", "their", "me",
+    "him", "us", "them", "what", "who", "which", "where", "when", "why",
+    "how", "all", "each", "every", "some", "any", "many", "much",
+    "more", "most", "few", "less", "very", "too", "so", "just", "also",
+    "only", "now", "then", "here", "there", "up", "down", "out", "off",
+    "over", "under", "again", "further", "once", "than", "as", "if",
+    "because", "while", "though", "until", "about", "after", "before",
+    "between", "through", "during", "without", "along", "around",
+    "near", "among", "across", "behind", "beyond", "inside", "outside",
+    "onto", "upon"}
+
+_TERM_EXTRACT_PROMPT = """You are analyzing English-to-German subtitle corrections. For each correction below, determine if it represents a SPECIFIC ENGLISH TERM that should ALWAYS be translated as a SPECIFIC GERMAN WORD (suitable for a glossary), or if it is a LINE-LEVEL correction (grammar, fluency, or context-specific).
+
+Only output for term-level corrections. Format:
+TERM|<english_term>|<correct_german>
+
+Skip line-level corrections — output nothing for those.
+
+Corrections:
+{corrections}"""
+
+def _learn_broad(eng_texts: list[str], ger_texts: list[str],
+                 fixes: dict[int, str], auto_glossary: dict[str, str],
+                 polisher: tuple | None = None) -> int:
+    """Broad learning from ALL LLM corrections — not just English literals.
+    
+    Uses LLM when available to identify term-level corrections, otherwise
+    falls back to heuristic: detect when Opus-MT output and LLM correction
+    differ substantially and learn the changed content as a glossary entry.
+    """
+    added = _learn_from_fixes(eng_texts, ger_texts, fixes, auto_glossary)
+
+    # Collect corrections with substantial changes
+    term_candidates = []
+    for idx, corr in fixes.items():
+        en = eng_texts[idx]
+        nllb = ger_texts[idx]
+        if corr == nllb:
+            continue
+        nllb_clean = nllb.strip(",.!?;: ").lower()
+        corr_clean = corr.strip(",.!?;: ").lower()
+        if nllb_clean == corr_clean:
+            continue
+        if len(corr) < 5:
+            continue
+        term_candidates.append((idx, en, nllb, corr))
+
+    if not term_candidates:
+        return added
+
+    # LLM-based term extraction
+    if polisher:
+        added = _llm_extract_terms(term_candidates, auto_glossary, polisher, added)
+
+    # Heuristic fallback: learn substantial word replacements
+    for idx, en, nllb, corr in term_candidates:
+        en_tokens = [w.strip(",.!?;:'\"()[]♪-") for w in en.split()
+                     if w.lower().strip(",.!?;:'\"()[]♪-") not in _LEARN_BROAD_SKIP
+                     and len(w.strip(",.!?;:'\"()[]♪-")) > 2]
+        if not en_tokens:
+            continue
+        nllb_tokens_lower = [t.strip(",.!?;:").lower() for t in nllb.split()]
+        corr_tokens_lower = [t.strip(",.!?;:").lower() for t in corr.split()]
+        new_words = [t for t in corr_tokens_lower
+                     if t not in nllb_tokens_lower and len(t) > 2]
+        if new_words and en_tokens:
+            best_en = ' '.join(en_tokens)
+            best_de = None
+            for ct in corr.split():
+                if ct.strip(",.!?;:").lower() == new_words[0]:
+                    best_de = ct.strip(",.!?;:")
+                    break
+            if best_de and best_en.lower() not in auto_glossary:
+                auto_glossary[best_en.lower()] = best_de
+                added += 1
+
+    if added:
+        _save_auto_glossary(auto_glossary)
+    return added
+
+def _llm_extract_terms(term_candidates: list[tuple],
+                       auto_glossary: dict[str, str],
+                       polisher: tuple, already_added: int) -> int:
+    """Use LLM to identify term-level corrections from a batch."""
+    session, chat_url, model_name, api_key, _all_providers = polisher
+    lines = []
+    for idx, en, nllb, corr in term_candidates[:60]:  # max 60 per call
+        lines.append(f"Line {idx+1}:\nEN: {en}\nMT: {nllb}\nDE: {corr}")
+    if not lines:
+        return 0
+    prompt = _TERM_EXTRACT_PROMPT.format(corrections="\n\n".join(lines))
+    if api_key:
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0, "max_tokens": len(lines) * 60,
+        }
+        headers = {"Authorization": f"Bearer {api_key}"}
+        result = _ollama_chat(session, chat_url, payload, headers=headers, timeout=60)
+    else:
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "options": {"temperature": 0, "num_ctx": 8192, "num_predict": len(lines) * 60, "keep_alive": "30m"},
+        }
+        result = _ollama_chat(session, chat_url, payload, timeout=60)
+    if result is None:
+        return already_added
+    content = result.get("message", {}).get("content", "") if not api_key else result.get("choices", [{}])[0].get("message", {}).get("content", "")
+    added_local = 0
+    for line in content.strip().split("\n"):
+        line = line.strip()
+        if line.startswith("TERM|"):
+            parts = line.split("|", 2)
+            if len(parts) == 3:
+                en_term = parts[1].strip().lower()
+                de_term = parts[2].strip()
+                if en_term and de_term and en_term not in auto_glossary:
+                    auto_glossary[en_term] = de_term
+                    added_local += 1
+    return already_added + added_local
+
+def _learn_regex_patterns(eng_texts: list[str], ger_texts: list[str],
+                          fixes: dict[int, str]) -> int:
+    """Detect repeating error patterns across multiple fixes.
+    If the same pattern appears 3+ times, learn it as a regex pattern."""
+    existing = _load_learned_patterns()
+    existing_regex = {p["find_regex"] for p in existing.get("patterns", [])}
+    pattern_counts: dict[str, tuple[str, str, list[int]]] = {}
+    for idx, corr in fixes.items():
+        nllb = ger_texts[idx]
+        if corr == nllb:
+            continue
+        # Pattern: prefix removal (e.g. "^wieder, " → "")
+        prefix_match = re.match(r'^(\w+,\s+)(.*)', nllb)
+        if prefix_match and corr == prefix_match.group(2):
+            prefix = prefix_match.group(1)
+            pat = f'^{re.escape(prefix)}'
+            if pat in pattern_counts:
+                c, _, r, idxs = pattern_counts[pat]
+                pattern_counts[pat] = (c + 1, prefix, "", idxs + [idx])
+            else:
+                pattern_counts[pat] = (1, prefix, "", [idx])
+        # Pattern: dual synonym (e.g. "Premierminister ministerpräsident" → "Ministerpräsident")
+        tokens = nllb.split()
+        corr_tokens = corr.split()
+        if len(tokens) >= 3 and len(corr_tokens) >= 1:
+            for i in range(min(len(tokens) - 1, 4)):
+                pair = tokens[i] + " " + tokens[i + 1]
+                if pair[0].isupper() and pair.split()[1][0].isupper():
+                    pair_lower = pair.lower()
+                    corr_lower = corr.lower()
+                    if pair_lower in corr_lower and pair not in corr:
+                        sub_pat = re.escape(pair)
+                        if sub_pat in pattern_counts:
+                            c, _, r, idxs = pattern_counts[sub_pat]
+                            pattern_counts[sub_pat] = (c + 1, pair, corr_tokens[min(i, len(corr_tokens)-1)], idxs + [idx])
+                        else:
+                            pattern_counts[sub_pat] = (1, pair, corr_tokens[min(i, len(corr_tokens)-1)], [idx])
+    added = 0
+    for pat, (count, find, replace, _idx_list) in pattern_counts.items():
+        if count >= 3 and pat not in existing_regex:
+            existing.setdefault("patterns", []).append({
+                "type": "regex", "find_regex": pat, "replace": replace or ""
+            })
+            existing_regex.add(pat)
+            added += 1
+    if added:
+        _save_learned_patterns(existing)
+        existing_fixes = load_json("german_fixes.json")
+        existing_finds = {f.get("find", "").lower() for f in existing_fixes}
+        for pat, (count, find, replace, _) in pattern_counts.items():
+            if count >= 3:
+                fix_find = find
+                if fix_find.lower() not in existing_finds:
+                    existing_fixes.append({
+                        "type": "regex", "find_regex": pat, "replace": replace or ""
+                    })
+                    existing_fixes_path = CONFIG_DIR / "german_fixes.json"
+                    with open(existing_fixes_path, "w", encoding="utf-8") as f:
+                        json.dump(existing_fixes, f, ensure_ascii=False, indent=2)
+                        f.write("\n")
+    return added
+
+def _apply_learned_patterns(ger_texts: list[str]) -> int:
+    """Apply learned regex patterns to German output before Pass 2."""
+    data = _load_learned_patterns()
+    patterns = data.get("patterns", [])
+    if not patterns:
+        return 0
+    count = 0
+    for i, t in enumerate(ger_texts):
+        for pat in patterns:
+            if pat.get("type") == "regex":
+                new_t = re.sub(pat["find_regex"], pat["replace"], t)
+                if new_t != t:
+                    ger_texts[i] = new_t
+                    count += 1
+    return count
+
+
 def apply_glossary(eng_texts: list[str], ger_texts: list[str], glossary: dict) -> int:
     """Source-aware glossary correction. Check EN input against DE output.
     Supports both old (str) and new (dict with default/acceptable) formats.
@@ -1525,10 +1836,17 @@ def load_short_fragments() -> dict[str, str]:
     return load_json("short_fragments.json")
 
 def apply_german_fixes(ger_texts: list[str], fixes: list[dict]) -> int:
-    """Fix known awkward German translations. Case-insensitive matching, case-insensitive replacement."""
+    """Fix known awkward German translations. Case-insensitive matching, case-insensitive replacement.
+    Supports regex patterns via fix["type"] == "regex" with fix["find_regex"]."""
     count = 0
     for i, t in enumerate(ger_texts):
         for fix in fixes:
+            if fix.get("type") == "regex":
+                new_t = re.sub(fix["find_regex"], fix["replace"], t)
+                if new_t != t:
+                    ger_texts[i] = new_t
+                    count += 1
+                continue
             f = fix["find"]
             r = fix["replace"]
             if f.lower() not in t.lower():
@@ -3302,7 +3620,6 @@ def translate_polish(fpath: Path, cfg: Config,
 
         _, _, _, _, _all_providers = polisher
 
-        batch_size = 10
         ollama_fixes = {}
         n_rejected = 0
         n_cache_hits = 0
@@ -3317,7 +3634,8 @@ def translate_polish(fpath: Path, cfg: Config,
             except Exception as e:
                 print(f"  [WARN] Failed to load Ollama cache: {e}", flush=True)
         timer.start("Ollama Batches")
-        total_batches = (len(suspicious) + batch_size - 1) // batch_size
+        batch_ranges = _compute_token_aware_batches(suspicious, eng_texts, ger_texts)
+        total_batches = len(batch_ranges)
         from concurrent.futures import ThreadPoolExecutor, as_completed
         import threading
         _cache_lock = threading.Lock()
@@ -3350,7 +3668,7 @@ def translate_polish(fpath: Path, cfg: Config,
 
             _session, _chat_url, _model, _api_key, _label = provider
 
-            xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
+            ibf_input = build_contextual_ibf(uncached_ids, eng_texts, ger_texts)
             mem_ctx = ConversationMemory.get_context_text()
             pass2_header = ""
             if polish_pass > 0:
@@ -3360,9 +3678,10 @@ def translate_polish(fpath: Path, cfg: Config,
                 )
             user_msg = (
                 pass2_header
-                + "Improve each German <de> translation inside <current> using context.\n"
+                + "Improve each German translation (marked with >>) using surrounding context.\n"
                 "Rules:\n"
-                "- ONLY rewrite the <de> text within <current>, never <previous> or <next>\n"
+                "- For each >>[id] En | De line, output: [id] corrected_German\n"
+                "- ONLY output [id] corrected lines, one per target\n"
                 "- Use surrounding context to ensure consistent character voices\n"
                 "- Use correct German pronouns: Fan Changyu (female) → 'sie', not 'es'; Xie Zheng (male) → 'er', not 'es'\n"
                 "- Preserve all [SFX] brackets exactly\n"
@@ -3380,7 +3699,7 @@ def translate_polish(fpath: Path, cfg: Config,
                 "  NEVER output 'Wort, wort' patterns — use only the correct single form\n"
                 "  NEVER prepend stray words or song fragments before the actual line content\n"
                 "  NEVER leave 'war, ♪', 'Laterne, ♪', 'Feind, ♪' style prefixes on song lines\n"
-                "- If the <de> text is empty or contains only the English source, translate entirely from English\n"
+                "- If the target text is empty or contains only English, translate entirely from English\n"
                 "- NLLB often invents fake German by corrupting or concatenating words:\n"
                 "  * Broken prefixes: 'vrumheiratet'→'verheiratet', 'wrumden'→'würden', 'übrumtragen'→'übertragen'\n"
                 "  * Fake compounds: 'Reisebewilligung'→'Reiseerlaubnis' (if EN has no 'travel permit'), 'Eigentumsurkunde'→correct document name\n"
@@ -3394,7 +3713,7 @@ def translate_polish(fpath: Path, cfg: Config,
                 "- Keep subtitle length appropriate\n"
                 + (f"\nShow context:\n{_show_context_str}\n" if _show_context_str else "")
                 + (f"\nContext from recent scenes:\n{mem_ctx}\n" if mem_ctx else "")
-                + "\n" + xml_input
+                + "\n" + ibf_input
             )
 
             if _label == "ollama":
@@ -3429,11 +3748,15 @@ def translate_polish(fpath: Path, cfg: Config,
                 content = result.get("message", {}).get("content") or ""
             else:
                 content = result.get("choices", [{}])[0].get("message", {}).get("content") or ""
-            parsed = parse_xml(content)
+            parsed = parse_ibf(content)
+            hallu = _verify_ibf_ids(parsed, [idx + 1 for idx in uncached_ids])
+            if hallu:
+                print(f"  [WARN] {hallu} hallucinated ID(s) in response", flush=True)
             return parsed, local_rejected, local_cache_hits, True
 
-        def _submit_batch(s):
-            batch_ids = suspicious[s : s + batch_size]
+        def _submit_batch(batch_range):
+            s, e = batch_range
+            batch_ids = suspicious[s:e]
             local_fixes = []
             local_rejected = 0
             local_cache_hits = 0
@@ -3506,20 +3829,19 @@ def translate_polish(fpath: Path, cfg: Config,
 
             return local_fixes, local_rejected, local_cache_hits, False
 
-        batch_starts = list(range(0, len(suspicious), batch_size))
         parallel = getattr(cfg, "polish_parallel", 2) if total_batches > 1 else 1
         _polish_done = 0
         with ThreadPoolExecutor(max_workers=parallel) as executor:
-            futures = {executor.submit(_submit_batch, s): s for s in batch_starts}
+            futures = {executor.submit(_submit_batch, r): r for r in batch_ranges}
             for future in as_completed(futures):
-                s = futures[future]
+                s, e = futures[future]
                 try:
                     local_fixes, local_rejected, local_cache_hits, all_cached = future.result()
                 except Exception as exc:
-                    print(f"  [WARN] Batch at line {s+1} failed: {exc}", flush=True)
+                    print(f"  [WARN] Batch failed: {exc}", flush=True)
                     continue
                 if local_fixes is None:
-                    print(f"  [WARN] Skipping batch at line {s+1}", flush=True)
+                    print(f"  [WARN] Skipping batch", flush=True)
                     continue
                 with _fixes_lock:
                     for idx, corr in local_fixes:
@@ -3527,7 +3849,7 @@ def translate_polish(fpath: Path, cfg: Config,
                         total_ollama_fixes[idx] = corr
                     n_rejected += local_rejected
                     n_cache_hits += local_cache_hits
-                _polish_done += batch_size
+                _polish_done += e - s
                 done = min(_polish_done, len(suspicious))
                 elapsed = time.time() - t_start
                 tag = "  (all cached)" if all_cached else ""
@@ -4209,6 +4531,8 @@ def translate_polish_multi(files: list[Path], cfg: Config,
 POLISH_PASS2_PROMPT = (
     "You are a German proofreader. Your ONLY job: fix errors in this German subtitle.\n"
     "Rules:\n"
+    "- Input format: >>[id] English | German  — fix the German after |\n"
+    "- Output format: [id] corrected_German  — one line per target\n"
     "- EVERY word must be real German\n"
     "- If you see a non-German word (e.g. \"vrumheiratet\" → \"verheiratet\"), fix it\n"
     "- If you see an English word, replace it with the correct German word\n"
@@ -4228,7 +4552,7 @@ POLISH_PASS2_PROMPT = (
     "  * Characters who are family, close friends, or married → use \"du\"/\"dich\"/\"dein\"\n"
     "  * Strangers, servants↔masters, commoners↔officials → use \"Sie\"/\"Ihnen\"/\"Ihr\"\n"
     "  * NEVER mix both in one sentence (e.g. \"Sie\" + \"dein\" is WRONG)\n"
-    "Return ONLY the corrected text. If unchanged, return the original."
+    "Return ONLY the corrected [id] lines. If unchanged, return the original."
 )
 
 LEARN_SCAN_PROMPT = (
@@ -4423,6 +4747,26 @@ def _nllb_artifact_scan(eng_texts: list[str], ger_texts: list[str]) -> list[dict
     for i, ger in enumerate(ger_texts):
         m = re.match(r'^\s*gesperrte[rn]?[,]\s*(.*)', ger, re.IGNORECASE)
         if m:
+            fixed = m.group(1)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "wieder, " hallucinated prefix — e.g. "wieder, meine Mutter"
+    for i, ger in enumerate(ger_texts):
+        m = re.match(r'^wieder[,]\s+(.*)', ger, re.IGNORECASE)
+        if m:
+            fixed = m.group(1)
+            key = (ger, fixed)
+            if key not in seen:
+                seen.add(key)
+                candidates.append({"find": ger, "replace": fixed})
+
+    # Pattern: "Metzger," injected as address when EN doesn't start with "butcher"
+    for i, (en, ger) in enumerate(zip(eng_texts, ger_texts)):
+        m = re.match(r'^Metzger[,]\s+(.*)', ger)
+        if m and not en.lower().lstrip().startswith('butcher'):
             fixed = m.group(1)
             key = (ger, fixed)
             if key not in seen:
@@ -4674,6 +5018,14 @@ def translate_learn(fpath: Path, cfg: Config,
     gfc = apply_german_fixes(ger_texts, load_german_fixes())
     timer.stop("German Fixes")
 
+    # Apply learned patterns (regex + fuzzy fixes from previous episodes)
+    timer.start("Learned Patterns")
+    lpc = _apply_learned_patterns(ger_texts)
+    if lpc:
+        print(f"    learned patterns: {lpc} pattern(s) applied", flush=True)
+        gfc += lpc
+    timer.stop("Learned Patterns")
+
     if already_learned:
         timer.start("Save")
         for i, sub in enumerate(ger):
@@ -4731,11 +5083,11 @@ def translate_learn(fpath: Path, cfg: Config,
     pass2_fixes = {}
     if suspicious:
         timer.start("Polish Pass 2")
-        batch_size = 10
-        pass2_batch_starts = list(range(0, len(suspicious), batch_size))
+        pass2_batch_ranges = _compute_token_aware_batches(suspicious, eng_texts, ger_texts)
 
-        def _submit_pass2(s):
-            batch_ids = suspicious[s:s + batch_size]
+        def _submit_pass2(batch_range):
+            s, e = batch_range
+            batch_ids = suspicious[s:e]
             # Check cache first
             cached_results = {}
             uncached_ids = []
@@ -4755,9 +5107,9 @@ def translate_learn(fpath: Path, cfg: Config,
                             pass2_fixes[idx] = corr
                 return
 
-            xml_input = build_contextual_xml(uncached_ids, eng_texts, ger_texts)
+            ibf_input = build_contextual_ibf(uncached_ids, eng_texts, ger_texts)
             ctx_block2 = f"\n\nShow context:\n{_learn_context_str}\n\n" if _learn_context_str else "\n\n"
-            user_msg = POLISH_PASS2_PROMPT + ctx_block2 + xml_input
+            user_msg = POLISH_PASS2_PROMPT + ctx_block2 + ibf_input
             if proxy_api_key:
                 payload = {
                     "model": polish_model_name,
@@ -4783,7 +5135,10 @@ def translate_learn(fpath: Path, cfg: Config,
                 content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
             else:
                 content = result.get("message", {}).get("content", "")
-            parsed = parse_xml(content)
+            parsed = parse_ibf(content)
+            hallu = _verify_ibf_ids(parsed, [idx + 1 for idx in uncached_ids])
+            if hallu:
+                print(f"  [WARN] {hallu} hallucinated ID(s) in response", flush=True)
             with _cache_lock:
                 for idx in uncached_ids:
                     sid = idx + 1
@@ -4801,18 +5156,19 @@ def translate_learn(fpath: Path, cfg: Config,
                     with _fixes_lock:
                         pass2_fixes[idx] = corr
 
-        parallel = getattr(cfg, "polish_parallel", 2) if len(pass2_batch_starts) > 1 else 1
+        parallel = getattr(cfg, "polish_parallel", 2) if len(pass2_batch_ranges) > 1 else 1
         pass2_done = 0
         with ThreadPoolExecutor(max_workers=parallel) as executor:
-            futures = {executor.submit(_submit_pass2, s): s for s in pass2_batch_starts}
+            futures = {executor.submit(_submit_pass2, r): r for r in pass2_batch_ranges}
             for future in as_completed(futures):
+                s, e = futures[future]
                 try:
                     future.result()
                 except Exception as exc:
                     print(f"  [WARN] Pass 2 batch failed: {exc}", flush=True)
-                pass2_done += 1
-                if progress_callback and pass2_batch_starts and len(pass2_batch_starts) > 1:
-                    progress_callback(pass2_done * batch_size, n)
+                pass2_done += e - s
+                if progress_callback and pass2_batch_ranges and len(pass2_batch_ranges) > 1:
+                    progress_callback(pass2_done, n)
 
         # Persist cache to disk so future runs benefit
         try:
@@ -4829,6 +5185,27 @@ def translate_learn(fpath: Path, cfg: Config,
             ger_texts[idx] = new_text.replace(" // ", "\n")
         print(f"    pass 2: {len(pass2_fixes)} fix(es)", flush=True)
         timer.stop("Polish Pass 2")
+
+        # Broad learning: extract term-level corrections from Pass 2 fixes
+        timer.start("Broad Learn")
+        auto_glossary = _load_auto_glossary()
+        broad_learned = _learn_broad(eng_texts, ger_texts, pass2_fixes, auto_glossary, polisher)
+        if broad_learned:
+            print(f"    broad learn: {broad_learned} new term(s) in auto-glossary", flush=True)
+            # Re-apply glossary with newly learned terms
+            merged = dict(load_glossary())
+            for k, v in _load_auto_glossary().items():
+                if k not in merged:
+                    merged[k] = v
+            apply_glossary(eng_texts, ger_texts, merged)
+        timer.stop("Broad Learn")
+
+        # Pattern detection: find repeating error patterns across fixes
+        timer.start("Pattern Detect")
+        pat_learned = _learn_regex_patterns(eng_texts, ger_texts, pass2_fixes)
+        if pat_learned:
+            print(f"    pattern detect: {pat_learned} new pattern(s) learned", flush=True)
+        timer.stop("Pattern Detect")
 
     # Algorithmic error scan — catches NLLB artifacts without LLM
     timer.start("Error Scan")
