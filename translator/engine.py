@@ -2389,7 +2389,7 @@ def translate_fast(fpath: Path, cfg: Config,
                 print(f"  [{done}/{n}  {elapsed:.0f}s  {rate:.0f} l/s  (restored from checkpoint)]",
                        flush=True)
                 if progress_callback:
-                    progress_callback(done, n)
+                    progress_callback(done, n, all_trans[done] if done < len(all_trans) else None)
                 continue
 
             # Translate only text content (no ZZZ placeholders reach model)
@@ -2438,7 +2438,7 @@ def translate_fast(fpath: Path, cfg: Config,
             eta = (n - done) / rate if rate > 0 else 0
             print(f"  [{done}/{n}  {elapsed:.0f}s  {rate:.0f} l/s  ETA {eta:.0f}s]", flush=True)
             if progress_callback:
-                progress_callback(done, n)
+                progress_callback(done, n, all_trans[done] if done < len(all_trans) else None)
 
             _save_checkpoint(fpath, out, completed_batches, batch_size, n, elapsed, all_trans,
                              cfg.sentence_aware, cfg.merge_gap_ms)

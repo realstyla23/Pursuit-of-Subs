@@ -138,7 +138,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
 
             push_event("step_changed", {"step": "Translating (NLLB)"})
 
-            def timed_progress(done, total):
+            def timed_progress(done, total, de_text=None):
                 if _cancel_event.is_set():
                     raise KeyboardInterrupt()
                 elapsed = time.time() - t0
@@ -148,13 +148,8 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 push_event("speed_eta", {"speed": round(rate, 1), "eta": round(eta, 1)})
                 if done > 0 and done - 1 < len(eng_texts):
                     push_event("current_en", {"text": eng_texts[done - 1]})
-                # Read current DE from output checkpoint
-                try:
-                    ger_subs = pysrt.open(str(out), encoding="utf-8")
-                    if done <= len(ger_subs):
-                        push_event("current_de", {"text": ger_subs[done - 1].text})
-                except Exception:
-                    pass
+                if de_text is not None:
+                    push_event("current_de", {"text": de_text})
 
             t0 = time.time()
 
@@ -222,7 +217,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 model_label = _pm.split(":")[0] if _pm else "auto"
                 push_event("step_changed", {"step": f"Learn mode ({model_label})"})
 
-                def learn_progress(done, total):
+                def learn_progress(done, total, de_text=None):
                     if _cancel_event.is_set():
                         raise KeyboardInterrupt()
                     lap_elapsed = time.time() - t0
@@ -232,12 +227,8 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                     push_event("speed_eta", {"speed": round(rate, 1), "eta": round(eta, 1)})
                     if done > 0 and done - 1 < len(eng_texts):
                         push_event("current_en", {"text": eng_texts[done - 1]})
-                    try:
-                        ger_subs = pysrt.open(str(out), encoding="utf-8")
-                        if done <= len(ger_subs):
-                            push_event("current_de", {"text": ger_subs[done - 1].text})
-                    except Exception:
-                        pass
+                    if de_text is not None:
+                        push_event("current_de", {"text": de_text})
 
                 try:
                     translate_learn(fpath, file_cfg, nllb_path=out,
