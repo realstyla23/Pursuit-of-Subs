@@ -2,6 +2,8 @@
 
 Claude has read the full source. This answers open questions with file/line citations.
 
+> **Update (2026-07-28):** P0–P2 hardening session completed. See `.superpowers/sdd/progress.md` for commit details. Key changes: checkpoint validation, .gitmodules restored, dead providers removed, E01 reference regression wired, comparator fixed.
+
 ---
 
 ## §1 sentence_aware default flip
@@ -29,9 +31,9 @@ The 1 "regressed" line is a **false positive** — the regression framework comp
 
 ## §2 checkpoint/resume + sentence_aware interaction
 
-`_load_checkpoint()` (`engine.py:2057-2077`) validates: `input` path, `batch_size`, `version`. It does **NOT** check `sentence_aware` or `merge_gap_ms`.
+**FIXED (P0-1).** See `engine.py:_save_checkpoint()` and `_load_checkpoint()`. Both `sentence_aware` and `merge_gap_ms` are now saved and validated on restore. Legacy checkpoints (missing keys) log a message and use config values. Mismatches log a warning and use config values. Never blocks loading.
 
-**Has this been tested?** NO. Assumption: interrupting a `--sentence-aware` run mid-batch and resuming with different `sentence_aware`/`merge_gap_ms` would silently misapply translated text — the checkpoint stores only completed batch indices and their translations, not the merge configuration that produced them. No guard exists.
+Commit: `e3a6c55`
 
 ---
 
@@ -45,7 +47,9 @@ The user's claim "parallel=1 seems faster than 2" is **one anecdotal run** — n
 
 ## §4 config/e01_reference.srt
 
-**No code reads this file.** Grep confirms zero references in `translator/*.py`, `web_gui/*.py`, `subtranslate.py`. It is a manually-diffed reference, not wired into any pipeline stage.
+**WIRED (P1-1).** `run_regression()` now reads both `config/e01_reference.srt` and `tests/corpus/drama_01_eng.srt`, translates via `translate_fast_to_texts()`, compares with whitespace-normalized strings, and reports results in the same summary table as the corpus files.
+
+Commit: `6aee1b8`
 
 Generated from **qwen2.5:7b** via Ollama, manually corrected by a human. It's a 763-block natural German translation of E01 (Chinese period drama), verified against the English source and the old website German SRT. Purpose: spot-check pipeline output quality and extract `german_fixes.json` patterns.
 
@@ -62,7 +66,9 @@ Generated from **qwen2.5:7b** via Ollama, manually corrected by a human. It's a 
 | `8b8552c` v4.5.1 | Reorder to NVIDIA→Ollama, remove OpenRouter | OpenRouter removed as primary; NVIDIA used briefly |
 | `b95ace7` (now) | No chain change | — |
 
-**Are keys in active use?** OpenRouter: removed as provider, key env var still read (`engine.py:88,101`). NVIDIA: key read from `NVAPI_KEY` env var (`engine.py:91,103`), but `_strip_junk_prefix` (`engine.py:3164-3166`) exists specifically to clean NVIDIA's hallucinations. **User stated qwen2.5:7b locally is better and more reliable.** The provider fallback code is **dead weight** — all three providers (OpenRouter, NVIDIA, proxy) are inferior to local Ollama with qwen2.5:7b. Flagged for removal.
+**Are keys in active use?** **REMOVED (P0-3).** OpenRouter/NVIDIA config fields, env-var fallbacks, `_try_nvidia()`, and CLI args (`--openrouter-model`, `--nvidia-key`, etc.) have been removed from `engine.py` and `subtranslate.py`. Ollama is now the only fallback provider.
+
+Commit: `cfd1437`
 
 ---
 
@@ -77,9 +83,11 @@ Generated from **qwen2.5:7b** via Ollama, manually corrected by a human. It's a 
 
 ## §7 proxy/ submodule
 
-Points to: `https://github.com/bigdata2211it-web/opencode-free-proxy.git` (git submodule, not in `.gitmodules` — bare repo reference).
+Points to: `https://github.com/bigdata2211it-web/opencode-free-proxy.git` (git submodule, **.gitmodules now exists** — P0-2 added it).
 
 It's an **OpenAI-compatible proxy server** for routing through third-party API providers. **Not required** for normal pipeline operation. Optional/experimental — the pipeline falls through to Ollama if proxy is unavailable.
+
+Commit: `dd39f57`
 
 ---
 
@@ -87,7 +95,7 @@ It's an **OpenAI-compatible proxy server** for routing through third-party API p
 
 No `TODO`/`FIXME`/`HACK` comments in `translator/`. No open issues filed. The `.superpowers/sdd/progress.md` shows only the sentence-aware tasks as completed with clean reviews.
 
-From the user's own workflow (last session): the main pain point is **pipeline output quality vs reference** — 83.5% of blocks still differ after polish. Specific remaining gaps:
+From the user's own workflow (last session): the main pain point is **pipeline output quality vs reference** — 83.5% of blocks still differ after polish. The false-positive comparator has been fixed (strip normalization), and `german_fixes.json` entries are now sorted for easier review. Specific remaining gaps:
 - "Loser" at block 362 not fixed (not in `german_fixes.json`)
 - English word remnants in ~25 blocks (after German-whitelist filtering)
 - Ollama polish misses things the human translator catches
@@ -98,6 +106,6 @@ The anchors file (`AGENTS.md`) lists "Pipeline output quality gap" as the active
 
 ## §9 test/regression status
 
-**Last regression run**: executed just now (see §1 for full output). Done on CPU (no GPU available in this environment). 2 passes, 1 false-positive regression. The regression framework (`engine.py:3917-4020`) is **too simplistic** — it compares QA heuristic scores, not semantic quality, so it flags any divergence as potentially bad.
+**Last regression run**: executed previously in a prior session. Done on CPU (no GPU available in this environment). The false-positive comparator has been **fixed (P1-1)** — whitespace normalization prevents trivial diffs from being flagged. The E01 reference check is now wired but requires GPU to actually execute and report.
 
-**No automated test suite exists** — no `pytest` tests, no CI pipeline. The only "tests" are `--mode regression` (3 tiny corpus files) and `--mode test` (translates 100 lines and validates structure).
+**No automated test suite exists** — no `pytest` tests, no CI pipeline. The only "tests" are `--mode regression` (3 tiny corpus files + E01 reference) and `--mode test` (translates 100 lines and validates structure).
