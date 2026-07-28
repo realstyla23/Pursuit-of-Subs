@@ -20,8 +20,10 @@ import requests
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import transformers
+import huggingface_hub
 
 transformers.logging.set_verbosity_error()
+huggingface_hub.logging.set_verbosity_error()
 
 try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -84,7 +86,7 @@ class Config:
     proxy_base_url: str = ""
     proxy_api_key: str = ""
     polish_passes: int = 1
-    polish_parallel: int = 2
+    polish_parallel: int = 1
     sentence_aware: bool = True
     merge_gap_ms: int = 500
 
