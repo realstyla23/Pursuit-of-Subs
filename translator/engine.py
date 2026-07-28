@@ -2370,14 +2370,14 @@ def translate_fast(fpath: Path, cfg: Config,
             print(f"  [RESUME] {len(completed_batches)} batches done, {n - len(all_trans)} remaining",
                   flush=True)
 
-    timer.start("NLLB Load")
+    timer.start("Model Load")
     tok, model = load_translation_model(cfg)
-    timer.stop("NLLB Load")
+    timer.stop("Model Load")
     use_opus = (cfg.model_id == _OPUS_MODEL_NAME)
     forced_bos = None if use_opus else tok.convert_tokens_to_ids(cfg.tgt_lang)
 
     try:
-        timer.start("NLLB Translate")
+        timer.start("Model Translate")
         for s in range(0, n, batch_size):
             batch_idx = s // batch_size
             if batch_idx in completed_batches:
@@ -2454,7 +2454,7 @@ def translate_fast(fpath: Path, cfg: Config,
         print(f"\n  [CRASH] Checkpoint saved. Use --resume to continue.", flush=True)
         raise
 
-    timer.stop("NLLB Translate")
+    timer.stop("Model Translate")
 
     # Reconstruct ger_texts then canonically restore any ZZZ placeholders
     timer.start("Restore")
@@ -2511,9 +2511,9 @@ def translate_fast(fpath: Path, cfg: Config,
     timer.stop("Titles")
 
     # Fix NLLB "rum" hallucination (systematic prefix corruption)
-    timer.start("NLLB Rum Fix")
+    timer.start("Model Rum Fix")
     rfc = fix_nllb_hallucinations(ger_texts)
-    timer.stop("NLLB Rum Fix")
+    timer.stop("Model Rum Fix")
     mjc = fix_mojibake(ger_texts)
 
     timer.start("Cleanup")
@@ -2988,9 +2988,9 @@ def translate_llm(fpath: Path, cfg: Config,
     timer.stop("Titles")
 
     # Fix NLLB "rum" hallucination
-    timer.start("NLLB Rum Fix")
+    timer.start("Model Rum Fix")
     rfc = fix_nllb_hallucinations(ger_texts)
-    timer.stop("NLLB Rum Fix")
+    timer.stop("Model Rum Fix")
     mjc = fix_mojibake(ger_texts)
 
     timer.start("Cleanup")
