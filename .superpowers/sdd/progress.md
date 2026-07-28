@@ -3,3 +3,4 @@ Task 2: complete (commits 8011234..1923c9f, review clean after fixing gap/dur un
 Task 3: complete (commits 1923c9f..ad80b05, review clean)
 Task 4: complete (commit 58b4cf7, wire into translate_fast/Config/CLI/__init__)
 Task 5: complete (commit b3c0eac, drama_03_eng.srt added to corpus)
+Task 6: complete (all committed & pushed to GitHub as version 174fca3..81bb3ec)

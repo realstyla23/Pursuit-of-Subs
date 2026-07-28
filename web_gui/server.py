@@ -112,7 +112,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 device=cfg.device,
                 batch_size=cfg.batch_size,
                 num_beams=cfg.num_beams,
-                ollama_model=polish_model or cfg.ollama_model,
+                ollama_model=polish_model if polish_model != "auto" else cfg.ollama_model,
                 ollama_host=ollama_host,
                 input_dir=str(fpath.parent),
                 force=cfg.force,
@@ -192,7 +192,8 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 push_event("log", {"message": "Cancelled before polish", "level": "warn"})
                 break
             if polish_needed:
-                model_label = polish_model.split(":")[0] if polish_model else "qwen"
+                _pm = None if polish_model == "auto" else polish_model
+                model_label = _pm.split(":")[0] if _pm else "auto"
                 push_event("step_changed", {"step": f"Polishing ({model_label})"})
 
                 def polish_progress(done, total):
@@ -206,7 +207,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
 
                 try:
                     translate_polish(fpath, file_cfg, nllb_path=out,
-                                    polish_model=polish_model or None,
+                                    polish_model=_pm,
                                     progress_callback=polish_progress)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Polish error (non-fatal): {e}",
@@ -217,7 +218,8 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
                 push_event("log", {"message": "Cancelled before learn", "level": "warn"})
                 break
             if mode == "learn":
-                model_label = polish_model.split(":")[0] if polish_model else "qwen"
+                _pm = None if polish_model == "auto" else polish_model
+                model_label = _pm.split(":")[0] if _pm else "auto"
                 push_event("step_changed", {"step": f"Learn mode ({model_label})"})
 
                 def learn_progress(done, total):
@@ -239,7 +241,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
 
                 try:
                     translate_learn(fpath, file_cfg, nllb_path=out,
-                                   polish_model=polish_model or None,
+                                   polish_model=_pm,
                                    progress_callback=learn_progress)
                 except Exception as e:
                     push_event("log", {"message": f"  [WARN] Learn error (non-fatal): {e}",
@@ -266,7 +268,7 @@ def _worker(files: list[Path], cfg: Config, output_dir: str | None,
             except Exception:
                 pass
 
-            push_event("file_done", {"name": fpath.name, "stats": stats})
+            push_event("file_done", {"name": fpath.name, "stats": stats, "out_path": str(out)})
             push_event("log", {"message": f"  DONE: {out.name}", "level": "done"})
 
         push_event("step_changed", {"step": "Complete"})
@@ -340,8 +342,9 @@ def api_start():
     )
 
     polish_model = body.get("polish_model", "auto")
-    if polish_model == "auto":
-        polish_model = "qwen2.5:7b"
+    # Keep "auto" as-is so the code knows to use fallback chain
+    # Set default Ollama model for the fallback
+    cfg.ollama_model = "qwen2.5:7b"
     polish_parallel = body.get("polish_parallel", 2)
     ollama_host = body.get("ollama_host", "http://127.0.0.1:11434")
 
@@ -497,6 +500,21 @@ def _save_upload(name: str, content: str | bytes, is_bytes: bool = False) -> tup
     else:
         dest.write_text(content, encoding="utf-8")
     return dest.resolve(), dest.stat().st_size
+
+
+@app.route("/api/download", methods=["GET"])
+def api_download():
+    path_str = request.args.get("path", "")
+    if not path_str:
+        return jsonify({"error": "path required"}), 400
+    p = Path(path_str).resolve()
+    # Only serve files from uploads/ to prevent path traversal
+    uploads = _UPLOAD_DIR.resolve()
+    if not str(p).startswith(str(uploads)):
+        return jsonify({"error": "access denied"}), 403
+    if not p.exists():
+        return jsonify({"error": "not found"}), 404
+    return send_from_directory(p.parent, p.name, as_attachment=True)
 
 
 @app.route("/api/upload", methods=["POST"])

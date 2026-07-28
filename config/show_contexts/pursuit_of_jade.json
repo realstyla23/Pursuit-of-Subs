@@ -1,0 +1,66 @@
+{
+  "show_name": "Pursuit of Jade",
+  "alternate_names": ["Pursuit.of.Jade"],
+  "slug": "pursuit_of_jade",
+  "language": "zh",
+  "synopsis": "A historical costume drama (wuxia) set in the fictional Great Yin Dynasty. The story follows Fan Changyu, a pragmatic butcher's daughter, and Xie Zheng, the Marquis of Wu'an hiding as a scholar named Yan Zheng to investigate the massacre of his family 16 years prior in the Jinzhou Incident. A matrilocal marriage of convenience evolves into love amidst political intrigue and war.",
+  "setting": "Fictional Great Yin Dynasty. Core Conflict: The Jinzhou Incident (16 years prior) where Crown Prince Chengde and General Xie Linshan died due to withheld reinforcements, sparking a power struggle between the Wei Faction (Prime Minister Wei Yan) and the Li Faction.",
+  "characters": {
+    "Fan Changyu": {"gender": "female", "role": "protagonist", "description": "Pragmatic butcher's daughter, ~18. Becomes female head of household after parents' death. Physically strong, wields a butcher's knife."},
+    "Xie Zheng": {"gender": "male", "role": "protagonist", "description": "Marquis of Wu'an (Wu'an Hou). Hides identity as frail scholar 'Yan Zheng' to investigate family's massacre. Switches between gentle humble tone (as Yan Zheng) and authoritative commanding tone (as Marquis/General)."},
+    "Fan Changning": {"gender": "female", "role": "supporting", "description": "Changyu's little sister, ~8 years old."},
+    "Song Yan": {"gender": "male", "role": "supporting", "description": "Scholar, formerly engaged to Changyu."},
+    "Fan Erniu": {"gender": "male", "role": "supporting", "description": "Changyu's father, deceased butcher."},
+    "Meng Lihua": {"gender": "female", "role": "supporting", "description": "Changyu's mother, deceased."},
+    "Fan Daniu": {"gender": "male", "role": "antagonist", "description": "Changyu's uncle."},
+    "Wei Yan": {"gender": "male", "role": "antagonist", "description": "Prime Minister, Xie Zheng's maternal uncle, primary antagonist. Leads the Wei Faction."},
+    "Lord Changxin": {"gender": "male", "role": "supporting", "description": "Prince Changxin, powerful political figure, Lord of Changxin."},
+    "He Jingyuan": {"gender": "male", "role": "supporting", "description": "General He, Prefect of Jizhou, Wei Yan's trusted advisor."},
+    "Wei Xuan": {"gender": "male", "role": "antagonist", "description": "Wei Yan's son, cowardly and cruel."},
+    "Wei Qilin": {"gender": "male", "role": "supporting", "description": "General under Wei Yan, household military commander."},
+    "Sui Yuanqing": {"gender": "male", "role": "supporting", "description": "Lord Changxin's younger son."},
+    "Sui Yuanhuai": {"gender": "male", "role": "supporting", "description": "Lord Changxin's eldest son."},
+    "Li Huai'an": {"gender": "male", "role": "supporting", "description": "Grand Tutor's grandson, has unrequited feelings for Changyu."},
+    "Yu Qianqian": {"gender": "female", "role": "supporting", "description": "Changyu's loyal best friend, restaurant owner."},
+    "Cui Qianjin": {"gender": "female", "role": "supporting", "description": "Local woman, knows the Fan family."},
+    "Zhao Xun": {"gender": "male", "role": "supporting", "description": "Manager of Lin'an rice shop."},
+    "Xie Jiuheng": {"gender": "male", "role": "supporting", "description": "Reckless young man, troublemaker."},
+    "Kang Dan": {"gender": "male", "role": "supporting", "description": "Writes spring festival couplets, local scholar."},
+    "Manager Yu": {"gender": "male", "role": "supporting", "description": "Local business manager."},
+    "Fuling": {"gender": "female", "role": "supporting", "description": "Maid/servant."},
+    "Frau Chen": {"gender": "female", "role": "supporting", "description": "Neighbor."},
+    "Granny Kang": {"gender": "female", "role": "supporting", "description": "Elderly neighbor."},
+    "Mr. Zhao": {"gender": "male", "role": "supporting", "description": "Physician."},
+    "Crown Prince Chengde": {"gender": "male", "role": "historical", "description": "Died in Jinzhou Incident 16 years ago."},
+    "General Xie Linshan": {"gender": "male", "role": "historical", "description": "Xie Zheng's father, died in Jinzhou Incident."}
+  },
+  "locations": ["Lin'an", "Xigu Alley", "Chongzhou", "Jizhou", "Qingping", "Yao Pass", "Jinzhou", "Beijue", "Yanzhou", "Liaodong"],
+  "key_terms": ["Jinzhou Incident", "Jinzhou Battle", "Blood-Robed Cavalry", "Wei Faction", "Li Faction", "matrilocal marriage", "marriage of convenience", "Great Yin Dynasty", "Dayin Dynasty", "Marquis of Wu'an", "Wu'an Hou"],
+  "titles": {
+    "Marquis of Wu'an": "Wu'an Hou",
+    "Prime Minister": "Wei Yan's title",
+    "Grand Tutor": "Li Huai'an's grandfather"
+  },
+  "formality": {
+    "note": "German formal/informal address. Ancient China setting: use formal Sie for servants→masters, commoners→officials, strangers, formal audiences. Use informal du for these character pairs:",
+    "informal_pairs": [
+      "Fan Changyu ↔ Fan Changning (sisters)",
+      "Fan Changyu ↔ Yan Zheng/Xie Zheng (married couple)",
+      "Fan Changyu ↔ Yu Qianqian (best friends)",
+      "Fan Changyu ↔ Li Huai'an (childhood friends)",
+      "Fan Changyu ↔ Song Yan (former fiance, still informal)",
+      "Fan Changyu ↔ Fuling (mistress to maid, downward)",
+      "Fan family members among themselves",
+      "Yu Qianqian ↔ Fan Changning (close friends)",
+      "Yu Qianqian ↔ Yan Zheng (friends by association)"
+    ],
+    "always_formal": [
+      "Servants addressing masters (upward)",
+      "Commoners addressing officials or nobility",
+      "Anyone to Lord Changxin, Marquis of Wu'an, Prime Minister Wei Yan, General He",
+      "Younger to elder in formal settings",
+      "Strangers to each other",
+      "Court or official settings"
+    ]
+  }
+}

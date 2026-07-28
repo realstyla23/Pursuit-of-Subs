@@ -12,11 +12,11 @@ Los.
 
 4
 00:00:09,000 --> 00:00:10,500
-Warten Sie mal.
+Warten es mal.
 
 5
 00:00:11,000 --> 00:00:14,000
-General, der Feind ist am Tor.
+General der Feind ist am Tor.
 
 6
 00:00:15,000 --> 00:00:17,500
@@ -28,11 +28,11 @@ Oberst, was sind Ihre Befehle?
 
 8
 00:00:22,000 --> 00:00:25,000
-Hauptmann, melden Sie sich an den Kommandoposten.
+Hauptmann, melden es sich an den Kommandoposten.
 
 9
 00:00:26,000 --> 00:00:29,000
-Leutnant, nehmen Sie Ihre Truppe und halten Sie die Brücke fest.
+Leutnant, nehmen es Ihre Truppe und halten es die Brücke fest.
 
 10
 00:00:30,000 --> 00:00:33,000
@@ -44,15 +44,15 @@ Sekte Leader, der Dämon nähert sich.
 
 12
 00:00:38,000 --> 00:00:41,000
-Junger Herr, Junger Herr, Ihr älterer Bruder wartet.
+Junger Herr, junge Meister Ihr älterer Bruder wartet.
 
 13
 00:00:42,000 --> 00:00:45,000
-Ältere Schwester, bitte verzeih mir.
+Ältere Schwester bitte verzeih mir.
 
 14
 00:00:46,000 --> 00:00:49,000
-mein Herr, ja, mein Herr!
+herrlich, ja, herrlich!
 
 15
 00:00:50,000 --> 00:00:53,000
@@ -60,7 +60,7 @@ Junge Dame, der Wagen ist bereit.
 
 16
 00:00:54,000 --> 00:00:57,000
-Kultivierung, meister, die Kultivierungshalle ist vorbereitet.
+Kultivierung, Meister die Kultivierungshalle ist vorbereitet.
 
 17
 00:00:58,000 --> 00:01:01,000
@@ -72,7 +72,7 @@ Unsterblicher, unsterblich, bitte akzeptiere dieses Angebot.
 
 19
 00:01:06,000 --> 00:01:09,000
-General, danke für Ihren Dienst.
+General danke für Ihren Dienst.
 
 20
 00:01:10,000 --> 00:01:13,000

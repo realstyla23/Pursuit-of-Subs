@@ -85,10 +85,6 @@ class Config:
     proxy_api_key: str = ""
     polish_passes: int = 1
     polish_parallel: int = 2
-    openrouter_api_key: str = ""
-    openrouter_model: str = "openrouter/free"
-    nvidia_api_key: str = ""
-    nvidia_model: str = "nvidia/nemotron-3-nano-30b-a3b"
     sentence_aware: bool = True
     merge_gap_ms: int = 500
 
@@ -97,10 +93,6 @@ class Config:
             self.proxy_base_url = os.environ.get("PROXY_BASE_URL", "")
         if not self.proxy_api_key:
             self.proxy_api_key = os.environ.get("PROXY_API_KEY", "")
-        if not self.openrouter_api_key:
-            self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        if not self.nvidia_api_key:
-            self.nvidia_api_key = os.environ.get("NVAPI_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Filesystem helpers
@@ -3102,20 +3094,11 @@ def _test_openai_provider(session, chat_url, model, api_key, label):
 def load_polisher(cfg: Config, model_override: str | None = None):
     """Returns (session, chat_url, model, api_key, all_providers) or None.
     When model_override is set (user picked a specific model), Ollama-only mode.
-    When model_override is None, fallback chain: NVIDIA → Ollama.
+    When model_override is None, falls back to Ollama.
     all_providers is a list of (session, chat_url, model, api_key, label) for fallback.
     """
     session = requests.Session()
     model_name = model_override or cfg.ollama_model
-
-    def _try_nvidia():
-        if not cfg.nvidia_api_key:
-            return None
-        chat_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        model = cfg.nvidia_model
-        if _test_openai_provider(session, chat_url, model, cfg.nvidia_api_key, "NVIDIA"):
-            return session, chat_url, model, cfg.nvidia_api_key, "nvidia"
-        return None
 
     def _try_ollama():
         chat_url = f"{cfg.ollama_host}/api/chat"
@@ -3135,15 +3118,9 @@ def load_polisher(cfg: Config, model_override: str | None = None):
         return session, chat_url, m, None, "ollama"
 
     all_providers = []
-    # model_override set → user selected a specific Ollama model → skip NVIDIA
-    if model_override:
-        attempts = [_try_ollama]
-    else:
-        attempts = [_try_nvidia, _try_ollama]
-    for attempt in attempts:
-        p = attempt()
-        if p:
-            all_providers.append(p)
+    p = _try_ollama()
+    if p:
+        all_providers.append(p)
 
     if not all_providers:
         return None

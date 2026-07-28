@@ -51,14 +51,6 @@ def main():
                    help="Number of polish batches to run in parallel (default: 2)")
     p.add_argument("--polish-passes", type=int, default=1,
                    help="Number of polish passes (2 = dual-pass; default: 1)")
-    p.add_argument("--openrouter-model", default="openrouter/free",
-                   help="OpenRouter model for polish (default: openrouter/free auto-router)")
-    p.add_argument("--openrouter-key",
-                   help="OpenRouter API key (falls back to OPENROUTER_API_KEY env var)")
-    p.add_argument("--nvidia-model", default="nvidia/nemotron-3-nano-30b-a3b",
-                   help="NVIDIA model for polish via build.nvidia.com (default: nvidia/nemotron-3-nano-30b-a3b)")
-    p.add_argument("--nvidia-key",
-                   help="NVIDIA API key (falls back to NVAPI_KEY env var)")
     p.add_argument("--sentence-aware", action="store_true",
                    help="Merge captions at sentence boundaries before translation")
     p.add_argument("--merge-gap-ms", type=int, default=500,
@@ -152,10 +144,6 @@ def main():
         polish_model=a.polish_model,
         polish_passes=a.polish_passes,
         polish_parallel=a.polish_parallel,
-        openrouter_api_key=a.openrouter_key or "",
-        openrouter_model=a.openrouter_model,
-        nvidia_api_key=a.nvidia_key or "",
-        nvidia_model=a.nvidia_model,
         sentence_aware=a.sentence_aware,
         merge_gap_ms=a.merge_gap_ms,
     )

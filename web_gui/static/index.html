@@ -47,6 +47,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .queue-table tr:last-child td{border-bottom:none}
 .queue-table tr:hover td{background:rgba(255,255,255,.03)}
 .queue-table .col-file{min-width:120px}
+.queue-table .download-link{color:var(--accent);text-decoration:none;margin-left:6px;font-size:14px}
+.queue-table .download-link:hover{color:var(--accent2)}
 .queue-table .col-size{width:80px;text-align:right;color:var(--fg3)}
 .queue-table .col-progress{width:160px}
 .queue-table .col-status{width:130px}
@@ -237,12 +239,12 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--accent)}
         <input type="number" id="numBeams" value="4" min="1" max="8" title="NLLB beam search width">
         <label>Translate:</label>
         <select id="modelIdSelect">
-          <option value="facebook/nllb-200-distilled-600M" selected>NLLB-600M (default)</option>
-          <option value="Helsinki-NLP/opus-mt-en-de">Opus-MT EN-DE</option>
+          <option value="facebook/nllb-200-distilled-600M">NLLB-600M</option>
+          <option value="Helsinki-NLP/opus-mt-en-de" selected>Opus-MT EN-DE (default)</option>
         </select>
         <label>Polish:</label>
         <select id="polishModelSelect">
-          <option value="auto" selected>AUTO (OpenRouter → NVIDIA → Ollama)</option>
+          <option value="auto" selected>AUTO (NVIDIA → Ollama)</option>
           <option value="qwen2.5:7b">qwen2.5:7b (Ollama, 4.7 GB)</option>
           <option value="thinkverse/towerinstruct">TowerInstruct 7B (translation-specialized, 3.8 GB)</option>
           <option value="gemma4:e4b">gemma4:e4b (thinking model, may not work)</option>
@@ -447,7 +449,13 @@ dropZone.addEventListener('drop', function(e) {
 dropZone.addEventListener('click', function() { fileInput.click(); });
 
 // ---- File selection ----
-$('browseFilesBtn').addEventListener('click', function() { fileInput.click(); });
+function _openDirBrowser() {
+  currentDirBrowserMode = 'files';
+  dirBrowserSelectBtn.style.display = 'none';
+  browseDir('');
+  dirBrowserModal.classList.add('show');
+}
+$('browseFilesBtn').addEventListener('click', _openDirBrowser);
 
 fileInput.addEventListener('change', function() {
   for (var i = 0; i < fileInput.files.length; i++) {
@@ -474,12 +482,7 @@ $('manualPathInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { $('addPathBtn').click(); }
 });
 
-$('browseFolderBtn').addEventListener('click', function() {
-  currentDirBrowserMode = 'files';
-  dirBrowserSelectBtn.style.display = 'none';
-  browseDir('');
-  dirBrowserModal.classList.add('show');
-});
+$('browseFolderBtn').addEventListener('click', _openDirBrowser);
 
 function uploadFile(fileObj) {
   var name = fileObj.name || fileObj.path.split(/[\\/]/).pop();
@@ -633,8 +636,12 @@ function renderQueue() {
       progressHtml = '<span style="color:var(--fg3);font-size:11px;">' + (f.status === 'waiting' ? '\u25CB Waiting' : '\u23ED Skipped') + '</span>';
     }
 
+    var downloadHtml = '';
+    if (f.status === 'done' && f.out_path) {
+      downloadHtml = ' <a href="/api/download?path=' + encodeURIComponent(f.out_path) + '" class="download-link" download>&#8595;</a>';
+    }
     html += '<tr>'
-      + '<td class="col-file" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.name) + '</td>'
+      + '<td class="col-file" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.name) + downloadHtml + '</td>'
       + '<td class="col-size">' + formatSize(f.size) + '</td>'
       + '<td class="col-progress">' + progressHtml + '</td>'
       + '<td class="col-status"><span class="' + statusClass + '">' + statusText + '</span></td>'
@@ -750,12 +757,20 @@ function connectSSE() {
       if (fileQueue[i].name === d.name) {
         fileQueue[i].status = st.error ? 'error' : st.skipped ? 'skipped' : 'done';
         fileQueue[i].stats = st;
+        fileQueue[i].out_path = d.out_path;
         break;
       }
     }
-    results.push([d.name, st]);
+    results.push([d.name, st, d.out_path]);
     renderQueue();
     if (st.qa_score !== undefined) $('statQa').textContent = 'QA: ' + st.qa_score;
+    // Auto-download if file is in uploads/ (user won't find it on disk)
+    if (d.out_path && d.out_path.indexOf('uploads') >= 0) {
+      var a = document.createElement('a');
+      a.href = '/api/download?path=' + encodeURIComponent(d.out_path);
+      a.download = d.name.replace(/\.srt$/i, '_ger.srt');
+      a.click();
+    }
   });
 
   eventSource.addEventListener('all_done', function() {

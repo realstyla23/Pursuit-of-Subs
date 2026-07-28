@@ -22,7 +22,6 @@
   "elder brother": "älterer Bruder",
   "elder sister": "ältere Schwester",
   "young lady": "junge Dame",
-  "sect leader": "Sektenführer",
   "head disciple": "Hauptschüler",
   "master": "Meister",
   "martial brother": "Kampfbruder",
@@ -76,7 +75,13 @@
   "mace": "Qian (Mace)",
   "cleaver": "Fleischerbeil",
   "long-handled blade techniques": "Langstielklingen-Techniken",
-  "butcher": { "default": "Metzger", "acceptable": ["Metzgers", "Metzgern"] },
+  "butcher": {
+    "default": "Metzger",
+    "acceptable": [
+      "Metzgers",
+      "Metzgern"
+    ]
+  },
   "title deed": "Eigentumsurkunde",
   "male heir": "Männlicher Erbe",
   "closest kin": "Nächste Verwandte",
@@ -134,5 +139,27 @@
   "wound healing elixir": "Wundheilungselixier",
   "butcher girl": "Metzgerin",
   "surname change": "Nachnamensänderung",
-  "bridal chamber": "Brautgemach"
+  "bridal chamber": "Brautgemach",
+  "reinforcements": "Verstärkung",
+  "battlefield": "Schlachtfeld",
+  "Army": "Armee",
+  "Troops": "Truppen",
+  "Noodles": "Nudeln",
+  "Almanac": "Almanach",
+  "Coffin": "Sarg",
+  "Grave": "Grab",
+  "Scholar": "Gelehrter",
+  "County": "Kreis",
+  "Capital city": "Hauptstadt",
+  "Prison": "Gefängnis",
+  "Enemy": "Feind",
+  "Scout": "Späher",
+  "Courtyard": "Hof",
+  "Pawnshop": "Pfandhaus",
+  "Shadow play": "Schattenstück",
+  "lantern": "Laterne",
+  "spicy hotpot": "würziger Feuertopf",
+  "bridal chamber": "Brautkammer",
+  "intimacy instruction drawings": "Zeichnungen zur Intimitätsanweisung",
+  "mutton dumplings": "Hammelknödel"
 }

@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from translator import (
     __version__, Config, _auto_device, find_srt_files, output_path_for,
-    translate_fast, translate_polish,
-    load_nllb, load_glossary, load_german_fixes, load_titles,
+    translate_fast, translate_polish, translate_learn,
+    load_translation_model, load_glossary, load_german_fixes, load_titles,
     generate_qa_report,
     _checkpoint_path, _remove_checkpoint,
 )
@@ -58,8 +58,9 @@ class LogCapture(io.StringIO):
         self._signal = signal
 
     def write(self, s: str):
-        if s.strip():
-            self._signal.written.emit(s.rstrip())
+        stripped = s.strip()
+        if stripped and not stripped.startswith("127.0.0.1") and not stripped.startswith("[INFO] "):
+            self._signal.written.emit(stripped)
         super().write(s)
 
     def flush(self):
@@ -257,6 +258,14 @@ class TranslationWorker(QObject):
                         translate_polish(fpath, file_cfg, nllb_path=out)
                     except Exception as e:
                         self.log.emit(f"  [WARN] Polish error (non-fatal): {e}")
+
+                if self.mode == "learn":
+                    self.step_changed.emit("Learning (Ollama Pass 2)")
+                    try:
+                        translate_learn(fpath, file_cfg, nllb_path=out,
+                                        progress_callback=timed_progress)
+                    except Exception as e:
+                        self.log.emit(f"  [WARN] Learn error (non-fatal): {e}")
 
                 # --- Read QA report ---
                 stats = {"skipped": False}
@@ -480,8 +489,8 @@ SECTION_HEADER_LIGHT = """
 """
 
 DARK_STYLE = f"""
-QMainWindow, QDialog {{ background: #1e1e1e; }}
-QWidget {{ color: #ddd; font-size: 12px; }}
+QMainWindow, QDialog {{ background: #1a1a1a; }}
+QWidget {{ color: #ddd; font-size: 13px; }}
 QGroupBox {{
     border: 1px solid #444; border-radius: 6px; margin-top: 16px;
     padding: 18px 12px 12px; font-weight: bold; font-size: 12px; color: #bbb;
@@ -565,11 +574,11 @@ QCheckBox::indicator:checked {{
     background: #2a8b4c; border-color: #2a8b4c;
 }}
 QLabel#subPreviewEn {{
-    color: #7af; font-size: 12px; padding: 6px 8px;
+    color: #7af; font-size: 14px; padding: 8px 10px;
     border: 1px solid #333; border-radius: 3px; background: #181818;
 }}
 QLabel#subPreviewDe {{
-    color: #7f7; font-size: 12px; padding: 6px 8px;
+    color: #7f7; font-size: 14px; padding: 8px 10px;
     border: 1px solid #333; border-radius: 3px; background: #181818;
 }}
 QLabel#curFileLabel {{
@@ -592,7 +601,7 @@ QSplitter::handle {{ background: #333; width: 2px; }}
 
 LIGHT_STYLE = f"""
 QMainWindow, QDialog {{ background: #f5f5f5; }}
-QWidget {{ color: #222; font-size: 12px; }}
+QWidget {{ color: #222; font-size: 13px; }}
 QGroupBox {{
     border: 1px solid #ccc; border-radius: 6px; margin-top: 16px;
     padding: 18px 12px 12px; font-weight: bold; font-size: 12px; color: #555;
@@ -674,14 +683,14 @@ QCheckBox::indicator {{
 QCheckBox::indicator:checked {{
     background: #2a8b4c; border-color: #2a8b4c;
 }}
-QLabel#subPreviewEn {{
-    color: #2366ad; font-size: 12px; padding: 6px 8px;
-    border: 1px solid #ddd; border-radius: 3px; background: #f0f4ff;
-}}
-QLabel#subPreviewDe {{
-    color: #1a8b3c; font-size: 12px; padding: 6px 8px;
-    border: 1px solid #ddd; border-radius: 3px; background: #f0fff4;
-}}
+    QLabel#subPreviewEn {{
+        color: #2366ad; font-size: 14px; padding: 8px 10px;
+        border: 1px solid #ddd; border-radius: 3px; background: #f0f4ff;
+    }}
+    QLabel#subPreviewDe {{
+        color: #1a8b3c; font-size: 14px; padding: 8px 10px;
+        border: 1px solid #ddd; border-radius: 3px; background: #f0fff4;
+    }}
 QLabel#curFileLabel {{
     font-size: 14px; font-weight: bold; color: #2366ad; padding: 4px 0;
 }}
@@ -769,8 +778,8 @@ class TranslatorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"Pursuit of Subs v{__version__}")
-        self.setMinimumSize(960, 680)
-        self.resize(1100, 760)
+        self.setMinimumSize(1024, 720)
+        self.resize(1200, 820)
 
         self.file_queue: list[Path] = []
         self.results: list[tuple[str, dict]] = []
@@ -943,7 +952,7 @@ class TranslatorWindow(QMainWindow):
         self.queue_table.verticalHeader().setVisible(False)
         self.queue_table.verticalHeader().setDefaultSectionSize(26)
         queue_lay.addWidget(self.queue_table)
-        outer.addWidget(queue_grp, 3)
+        outer.addWidget(queue_grp, 2)
 
         # === Settings row ===
         settings_row = QHBoxLayout()
@@ -996,6 +1005,10 @@ class TranslatorWindow(QMainWindow):
         rb_reg, lay_reg = make_mode_radio("Regression", "Developer testing", 3)
         self.mode_regression = rb_reg
         mode_w.addLayout(lay_reg)
+
+        rb_learn, lay_learn = make_mode_radio("Learn", "Full + Pass 2 + auto-glossary", 4, recommended=True)
+        self.mode_learn = rb_learn
+        mode_w.addLayout(lay_learn)
 
         mode_w.addStretch()
         mode_lay.addWidget(mode_widgets)
@@ -1123,7 +1136,7 @@ class TranslatorWindow(QMainWindow):
 
         prog_lay.addWidget(preview_frame)
 
-        outer.addWidget(prog_grp, 1)
+        outer.addWidget(prog_grp, 0)
 
         # === Log Section ===
         log_grp = QGroupBox("Log")
@@ -1156,7 +1169,7 @@ class TranslatorWindow(QMainWindow):
         log_btn_row.addStretch()
         log_lay.addLayout(log_btn_row)
 
-        outer.addWidget(log_grp, 0)
+        outer.addWidget(log_grp, 3)
 
         # === Bottom Buttons ===
         btn_row = QHBoxLayout()
@@ -1295,7 +1308,7 @@ class TranslatorWindow(QMainWindow):
 
         # Determine mode
         mode_id = self.mode_group.checkedId()
-        mode_map = {0: "fast", 1: "polish", 2: "full", 3: "regression"}
+        mode_map = {0: "fast", 1: "polish", 2: "full", 3: "regression", 4: "learn"}
         mode = mode_map.get(mode_id, "fast")
 
         # Auto-detect Ollama for Full/Polish mode (informational only — does not change mode)
@@ -1367,6 +1380,7 @@ class TranslatorWindow(QMainWindow):
         self.mode_polish.setEnabled(False)
         self.mode_full.setEnabled(False)
         self.mode_regression.setEnabled(False)
+        self.mode_learn.setEnabled(False)
         self.device_combo.setEnabled(False)
         self.batch_spin.setEnabled(False)
         self.beams_spin.setEnabled(False)
@@ -1572,6 +1586,7 @@ class TranslatorWindow(QMainWindow):
         self.mode_polish.setEnabled(True)
         self.mode_full.setEnabled(True)
         self.mode_regression.setEnabled(True)
+        self.mode_learn.setEnabled(True)
         self.device_combo.setEnabled(True)
         self.batch_spin.setEnabled(True)
         self.beams_spin.setEnabled(True)
@@ -1655,7 +1670,7 @@ class TranslatorWindow(QMainWindow):
         if out:
             self.out_path.setText(out)
         mode = self.settings.value("settings/mode", "fast")
-        mode_map = {"fast": 0, "polish": 1, "full": 2, "regression": 3}
+        mode_map = {"fast": 0, "polish": 1, "full": 2, "regression": 3, "learn": 4}
         if mode in mode_map:
             btn = self.mode_group.button(mode_map[mode])
             if btn:
@@ -1688,7 +1703,7 @@ class TranslatorWindow(QMainWindow):
         self.settings.setValue("settings/batch_size", self.batch_spin.value())
         self.settings.setValue("settings/num_beams", self.beams_spin.value())
         self.settings.setValue("settings/output_dir", self.out_path.text())
-        mode_map = {0: "fast", 1: "polish", 2: "full", 3: "regression"}
+        mode_map = {0: "fast", 1: "polish", 2: "full", 3: "regression", 4: "learn"}
         mode = mode_map.get(self.mode_group.checkedId(), "fast")
         self.settings.setValue("settings/mode", mode)
         self.settings.setValue("settings/resume", "true" if self.resume_cb.isChecked() else "false")
