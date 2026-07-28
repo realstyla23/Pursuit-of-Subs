@@ -2033,7 +2033,8 @@ def _checkpoint_path(out: Path) -> Path:
 
 def _save_checkpoint(fpath: Path, out: Path, completed_batches: list[int],
                      batch_size: int, total_lines: int, elapsed: float,
-                     all_trans: dict | None = None):
+                     all_trans: dict | None = None,
+                     sentence_aware: bool = False, merge_gap_ms: int = 0):
     """Save translation progress checkpoint with optional translated text."""
     ckp: dict = {
         "input": str(fpath),
@@ -2045,6 +2046,8 @@ def _save_checkpoint(fpath: Path, out: Path, completed_batches: list[int],
         "translated_count": len(completed_batches) * batch_size,
         "elapsed_seconds": round(elapsed, 1),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "sentence_aware": sentence_aware,
+        "merge_gap_ms": merge_gap_ms,
     }
     if all_trans is not None:
         ckp["translated"] = {str(k): v for k, v in all_trans.items()}
@@ -2068,6 +2071,12 @@ def _load_checkpoint(fpath: Path, out: Path, cfg: Config
                 and ckp.get("version") == __version__):
             n = ckp.get("translated_count", 0)
             print(f"  [RESUME] checkpoint: {n}/{ckp['total_lines']} lines", flush=True)
+            for key, cfg_val in [("sentence_aware", cfg.sentence_aware), ("merge_gap_ms", cfg.merge_gap_ms)]:
+                loaded_val = ckp.get(key)
+                if loaded_val is None:
+                    print(f"  [RESUME] Legacy checkpoint — setting {key}={cfg_val} from config", flush=True)
+                elif loaded_val != cfg_val:
+                    print(f"  [RESUME] Checkpoint {key} mismatch: loaded={loaded_val}, config={cfg_val} — using config value", flush=True)
             batches = ckp["completed_batches"]
             raw = ckp.get("translated", {})
             trans = {int(k): v for k, v in raw.items()}
@@ -2437,16 +2446,19 @@ def translate_fast(fpath: Path, cfg: Config,
             if progress_callback:
                 progress_callback(done, n)
 
-            _save_checkpoint(fpath, out, completed_batches, batch_size, n, elapsed, all_trans)
+            _save_checkpoint(fpath, out, completed_batches, batch_size, n, elapsed, all_trans,
+                             cfg.sentence_aware, cfg.merge_gap_ms)
 
     except KeyboardInterrupt:
         _save_checkpoint(fpath, out, completed_batches, batch_size, n,
-                         time.time() - t_start, all_trans)
+                         time.time() - t_start, all_trans,
+                         cfg.sentence_aware, cfg.merge_gap_ms)
         print(f"\n  [INTERRUPT] Checkpoint saved. Use --resume to continue.", flush=True)
         return False
     except Exception:
         _save_checkpoint(fpath, out, completed_batches, batch_size, n,
-                         time.time() - t_start, all_trans)
+                         time.time() - t_start, all_trans,
+                         cfg.sentence_aware, cfg.merge_gap_ms)
         print(f"\n  [CRASH] Checkpoint saved. Use --resume to continue.", flush=True)
         raise
 
