@@ -3961,7 +3961,7 @@ def run_regression(cfg: Config):
         names = load_names()
 
         for i in range(n):
-            if ger_texts[i] != expected_texts[i]:
+            if ger_texts[i].strip() != expected_texts[i].strip():
                 changed += 1
                 # Compare QA scores to classify
                 titles = load_titles()
@@ -3996,6 +3996,78 @@ def run_regression(cfg: Config):
             "improved": improved,
             "regressed": regressed,
         })
+
+    # ---- E01 reference regression: compare against config/e01_reference.srt ----
+    print(f"\n{'='*50}")
+    print(f"E01 Reference Check:", flush=True)
+
+    e01_source = Path("tests") / "corpus" / "drama_01_eng.srt"
+    e01_ref = Path("config") / "e01_reference.srt"
+
+    if not e01_source.exists():
+        print(f"  [SKIP] E01 source not found: {e01_source}")
+    elif not e01_ref.exists():
+        print(f"  [SKIP] E01 reference not found: {e01_ref}")
+    else:
+        print(f"  source:   {e01_source.name}", flush=True)
+        print(f"  expected: {e01_ref.name}", flush=True)
+        e01_out = translate_fast_to_texts(e01_source, cfg)
+        if e01_out is not None:
+            ger_texts = e01_out
+            expected_subs = safe_open_srt(e01_ref)
+            expected_texts = [sub.text for sub in expected_subs]
+
+            n = min(len(ger_texts), len(expected_texts))
+            if len(ger_texts) != len(expected_texts):
+                print(f"  [WARN] Line count mismatch: got {len(ger_texts)}, expected {len(expected_texts)}")
+                n = min(len(ger_texts), len(expected_texts))
+
+            changed = 0
+            improved = 0
+            regressed = 0
+            diffs = []
+
+            en_subs = safe_open_srt(e01_source)
+            en_texts = [sub.text for sub in en_subs]
+
+            glossary = load_glossary()
+            names = load_names()
+
+            for i in range(n):
+                if ger_texts[i].strip() != expected_texts[i].strip():
+                    changed += 1
+                    titles = load_titles()
+                    got_score = score_line(en_texts[i] if i < len(en_texts) else "",
+                                           ger_texts[i], glossary, names, titles)
+                    exp_score = score_line(en_texts[i] if i < len(en_texts) else "",
+                                           expected_texts[i], glossary, names, titles)
+                    if got_score["score"] <= exp_score["score"]:
+                        improved += 1
+                    else:
+                        regressed += 1
+                    if changed <= 5:
+                        diffs.append((i + 1, expected_texts[i][:60], ger_texts[i][:60]))
+
+            total_changed += changed
+            total_improved += improved
+            total_regressed += regressed
+
+            print(f"    lines: {n}")
+            print(f"    changed: {changed}")
+            print(f"    improved: {improved} (QA lower or equal)")
+            print(f"    regressed: {regressed} (QA higher)")
+            for ln, exp, got in diffs:
+                print(f"    L{ln}:")
+                print(f"      expected: {exp}")
+                print(f"      got:      {got}")
+
+            all_results.append({
+                "file": "E01 (reference)",
+                "lines": n,
+                "changed": changed,
+                "improved": improved,
+                "regressed": regressed,
+            })
 
     print(f"\n{'='*50}")
     print(f"Regression Summary:")
